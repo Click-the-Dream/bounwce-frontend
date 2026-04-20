@@ -1,6 +1,4 @@
 "use client";
-import { ArrowUp, Plus } from "lucide-react";
-import SafeImage from "@/app/_components/SafeImage";
 import SendMessage from "./SendMessage";
 import MessageList from "./MessageList";
 import ChatHeader from "./ChatHeader";
@@ -20,7 +18,7 @@ const ChatWindow = () => {
       <MessageList />
 
       {/* Input Area */}
-      <SendMessage />
+      {chatId && <SendMessage />}
     </div>
   );
 };

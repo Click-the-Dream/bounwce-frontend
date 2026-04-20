@@ -10,7 +10,6 @@ const ChatImageMessage = ({ msg, mediaImages, onOpen }: any) => {
         className={`${styles.bubble} p-0.5 relative w-71.25 rounded-[10px] overflow-hidden shadow-sm`}
       >
         {/* IMAGES */}
-        {/* IMAGES */}
         {msg.images?.length === 1 ? (
           <div
             className="relative cursor-pointer"
@@ -38,7 +37,7 @@ const ChatImageMessage = ({ msg, mediaImages, onOpen }: any) => {
               return (
                 <div
                   key={i}
-                  className="relative cursor-pointer"
+                  className={`relative cursor-pointer ${msg.images.length === 3 && i === 2 ? "col-span-2" : ""}`}
                   onClick={() => {
                     const index = mediaImages.findIndex(
                       (m: any) => m.src === img,
@@ -54,7 +53,7 @@ const ChatImageMessage = ({ msg, mediaImages, onOpen }: any) => {
                     className="w-full h-44 object-cover"
                   />
 
-                  {/* 🔥 +MORE OVERLAY */}
+                  {/* +MORE OVERLAY */}
                   {isLast && extraCount > 0 && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded">
                       <span className="text-white text-lg font-semibold">
