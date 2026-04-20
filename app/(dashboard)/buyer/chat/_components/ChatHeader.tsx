@@ -28,7 +28,7 @@ const ChatHeader = () => {
             }}
           >
             {selectedChat?.type === "initials" ? (
-              <div className="w-9.25 h-9.25 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-black text-xs">
+              <div className="w-9.25 h-9.25 rounded-[10px] bg-gray-100 flex items-center justify-center font-bold text-black text-xs">
                 {selectedChat?.initials}
               </div>
             ) : (

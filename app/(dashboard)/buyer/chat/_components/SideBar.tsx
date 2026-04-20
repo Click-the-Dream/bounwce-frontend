@@ -1,13 +1,15 @@
 "use client";
-import { useState } from "react"; // 1. Import useState
+import { useState } from "react";
 import { Search, PlusCircle } from "lucide-react";
 import ChatCard from "./ChatCard";
 import { CHATS } from "@/app/_utils/dummy";
 import { useParams } from "next/navigation";
+import NewChatModal from "./NewChatModal";
 
 const ChatSidebar = () => {
   const { chatId } = useParams();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredChats = CHATS.filter(
     (chat) =>
@@ -21,7 +23,10 @@ const ChatSidebar = () => {
     >
       <div className="p-4 flex items-center justify-between h-15.5  border-b-[0.53px] border-[#00000033]">
         <h2 className="text-[16px] font-semibold">Chats</h2>
-        <button className="cursor-pointer max-w-17.75 h-7.5 flex-1 bg-orange outline-[0.83px] outline-orange border border-[#F4F4F4] hover:bg-[#ee3d15] text-white p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="cursor-pointer max-w-17.75 h-7.5 flex-1 bg-orange outline-[0.83px] outline-orange border border-[#F4F4F4] hover:bg-[#ee3d15] text-white p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all"
+        >
           <PlusCircle fill="#8a0202" className="size-4 mr-1.75" /> New
         </button>
       </div>
@@ -49,6 +54,12 @@ const ChatSidebar = () => {
           </div>
         )}
       </div>
+
+      {/* Render the Modal */}
+      <NewChatModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
