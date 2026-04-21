@@ -18,7 +18,7 @@ const ImageViewer = ({ media, startIndex, onClose, user }: any) => {
       <ViewerNav user={user} display={current} handleClose={onClose} />
 
       {/* VIEWPORT */}
-      <div className="relative flex-1 flex items-center justify-center bg-[#F9F9F9] overflow-hidden">
+      <div className="relative flex-1 flex items-center justify-center overflow-hidden">
         {/* LEFT */}
         <button
           onClick={() => setIndex((i: number) => Math.max(i - 1, 0))}
@@ -51,19 +51,19 @@ const ImageViewer = ({ media, startIndex, onClose, user }: any) => {
       </div>
 
       {/* THUMBNAILS */}
-      <div className="h-24 bg-white flex items-center gap-3 px-6 overflow-x-auto border-t border-[#0000000d]">
+      <div className="h-21.25 bg-white flex items-center gap-3 px-6 overflow-x-auto border-t border-[#00000033]">
         {media.map((m: any, i: number) => (
           <div
-            key={i} // ✅ FIXED
+            key={i}
             onClick={() => setIndex(i)}
-            className={`min-w-14 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+            className={`min-w-19.75 h-18 overflow-hidden cursor-pointer border-2 transition-all ${
               i === index
                 ? "border-orange scale-110 shadow-sm"
                 : "border-transparent opacity-50"
             }`}
           >
             <img
-              src={m.src} // ✅ FIXED
+              src={m.src}
               className="w-full h-full object-cover"
               alt="thumb"
             />

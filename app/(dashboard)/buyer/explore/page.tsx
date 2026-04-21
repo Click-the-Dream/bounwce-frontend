@@ -18,7 +18,7 @@ const ExplorePage = () => {
             "Gym Partners near me"
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-x-2.5 gap-y-8.75 pb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-2.5 gap-y-8.75 pb-12">
             {cards.map((card, index) => (
               <ExploreCard key={index} {...card} />
             ))}
