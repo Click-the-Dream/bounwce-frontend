@@ -1,5 +1,9 @@
+"use client"
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage } from "../_utils/formatters";
 
@@ -12,17 +16,23 @@ export interface NewsletterPayload {
 
 export const useNewsletter = () => {
   const queryClient = useQueryClient();
+  const { authDetails } = useContext(AuthContext);
 
   // --- QUERIES ---
+  console.log("Full Auth Details:", authDetails);
+  console.log("My Token:", authDetails?.access_token)
 
   const getNewsletters = (page: number = 1, pageSize: number = 10) =>
     useQuery({
       queryKey: ["newsletters", page, pageSize],
       queryFn: async () => {
-        const { data } = await api.get(`/newsletters?page=${page}&page_size=${pageSize}`);  
-        return data?.data; 
+        const response = await api.get(`/newsletters/?page=${page}&page_size=${pageSize}`);  
+        console.log("Raw backend response: ", response.data)
+        return response.data?.data; 
       },
+      enabled: !!authDetails?.access_token,
     });
+    // 
 
   const getNewsletterById = (id: string) =>
     useQuery({
