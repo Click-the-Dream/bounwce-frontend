@@ -5,39 +5,41 @@ import useNewsletters from "@/app/hooks/useNewsletter";
 
 export default function NewsletterDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [ editingId, setEditingId] = useState<string | null>(null);
-  const [ formData, setFormData ] = useState({ subject: "", content: "", name: "", description: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ subject: "", content: "", name: "", description: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
-  const { 
+  const {
     getNewsletters,
-    getNewsletterById,
     createNewsletter,
     updateNewsletter,
     deleteNewsletter,
     broadcastNewsletter,
-
   } = useNewsletters();
-  const [ currentPage, setCurrentPage ] = useState(1);
-  const { data: newslettersData, isLoading, isError } = getNewsletters(currentPage, 10);
-  console.log(newslettersData);
-  const newsletterList = newslettersData?.newsletters|| [];
+
+  const { data: response, isLoading } = getNewsletters(currentPage, pageSize);
+  
+  const newsletterList = response?.newsletters || [];
+  const totalItems = response?.total || 0;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-        updateNewsletter.mutate({ id: editingId, payload: formData});
+      updateNewsletter.mutate({ id: editingId, payload: formData });
     } else {
-        createNewsletter.mutate(formData);
+      createNewsletter.mutate(formData);
     }
     setIsModalOpen(false);
   };
 
   const handleEditClick = (newsletter: any) => {
     setEditingId(newsletter.id);
-    setFormData({ 
-      name: newsletter.name || "", 
-      description: newsletter.description || "", 
-      subject: newsletter.subject || "", 
+    setFormData({
+      name: newsletter.name || "",
+      description: newsletter.description || "",
+      subject: newsletter.subject || "",
       content: newsletter.content || ""
     });
     setIsModalOpen(true);
@@ -45,18 +47,19 @@ export default function NewsletterDashboard() {
 
   const handleCreateNewClick = () => {
     setEditingId(null);
-    setFormData({ 
-      name: "",
-      description: "",
-      subject: "", 
-      content: "" 
-    });
+    setFormData({ name: "", description: "", subject: "", content: "" });
     setIsModalOpen(true);
   };
 
-  const handleBroadcast = (id: number, subject: string) => {
+  const handleBroadcast = (id: string, subject: string) => {
     if (window.confirm(`Are you sure you want to broadcast "${subject}" to all subscribers?`)) {
-      console.log("Broadcasting newsletter ID:", id);
+      broadcastNewsletter.mutate(id);
+    }
+  };
+
+  const handleDelete = (id: string, subject: string) => {
+    if (window.confirm(`Are you sure you want to delete "${subject}"? This action cannot be undone.`)) {
+      deleteNewsletter.mutate(id);
     }
   };
 
@@ -67,7 +70,7 @@ export default function NewsletterDashboard() {
       <div className="flex justify-between flex-col md:flex-row gap-3 mb-8">
         <div>
           <h1 className="text-xl lg:text-3xl font-semibold tracking-tight">Newsletters</h1>
-          <p className="text-stone-500 mt-1 text-sm lg:text-3xl">Manage and broadcast email campaigns.</p>
+          <p className="text-stone-500 mt-1 text-sm">Manage and broadcast email campaigns.</p>
         </div>
         <button 
           onClick={handleCreateNewClick}
@@ -89,70 +92,93 @@ export default function NewsletterDashboard() {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-200">
-            {
-                isLoading ? (
-                    <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-stone-500">
-                            Loading campaigns...
-                        </td>
-                    </tr>
-                ) : newsletterList.length === 0 ? (
-                    <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-stone-500">
-                            No newsletters found. Create a draft to get started.
-                        </td>
-                    </tr>
-                ) : (
-                    newsletterList.map((newsletter: any) => (
-                        <tr key={newsletter.id} className="hover:bg-stone-50 transition-colors">
-                            <td className="px-6 py-4 font-medium text-stone-800">{newsletter.subject}</td>
-                            <td className="px-6 py-4 text-stone-500">{newsletter.date}</td>
-                            <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                newsletter.status === "Broadcasted" 
-                                ? "bg-green-100 text-green-800" 
-                                : "bg-stone-200 text-stone-800"
-                            }`}>
-                                {newsletter.status}
-                            </span>
-                            </td>
-                            <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                            <button
-                                onClick={() => handleEditClick(newsletter)}
-                                disabled={newsletter.status === "Broadcasted"}
-                                className={`text-sm font-medium px-4 py-2 rounded border ${
-                                newsletter.status === "Broadcasted"
-                                    ? "border-stone-200 text-stone-400 cursor-not-allowed"
-                                    : "border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white transition-colors"
-                                }`}
-                            >
-                                Edit
-                            </button>
-                            <button 
-                                onClick={() => handleBroadcast(newsletter.id, newsletter.subject)}
-                                disabled={newsletter.status === "Broadcasted"}
-                                className={`text-sm font-medium px-4 py-2 rounded border ${
-                                newsletter.status === "Broadcasted"
-                                    ? "border-stone-200 text-stone-400 cursor-not-allowed"
-                                    : "border-stone-900 text-stone-900 hover:bg-stone-900 hover:text-white transition-colors"
-                                }`}
-                            >
-                                {newsletter.status === "Broadcasted" ? "Sent" : "Broadcast"}
-                            </button>
-                            </td>
-                        </tr>
-                    ))
-                )
-            }            
+            {isLoading ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-stone-500">
+                  Loading campaigns...
+                </td>
+              </tr>
+            ) : newsletterList.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-stone-500">
+                  No newsletters found. Create a draft to get started.
+                </td>
+              </tr>
+            ) : (
+              newsletterList.map((newsletter: any) => (
+                <tr key={newsletter.id} className="hover:bg-stone-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-stone-800">{newsletter.subject}</td>
+                  <td className="px-6 py-4 text-stone-500">
+                    {new Date(newsletter.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      newsletter.is_sent 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-stone-200 text-stone-800"
+                    }`}>
+                      {newsletter.is_sent ? "Broadcasted" : "Draft"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                    <button
+                      onClick={() => handleEditClick(newsletter)}
+                      disabled={newsletter.is_sent}
+                      className="text-sm font-medium px-3 py-1.5 rounded border border-stone-200 hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleBroadcast(newsletter.id, newsletter.subject)}
+                      disabled={newsletter.is_sent}
+                      className="text-sm font-medium px-3 py-1.5 rounded bg-stone-900 text-white hover:bg-stone-800 disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {newsletter.is_sent ? "Sent" : "Broadcast"}
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(newsletter.id, newsletter.subject)}
+                      className="text-sm font-medium px-3 py-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}            
           </tbody>
         </table>
+
+        {/* Pagination Footer */}
+        <div className="w-full px-6 py-4 border-t border-stone-200 flex items-center justify-between bg-stone-50">
+          <p className="text-sm text-stone-500">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 text-sm font-medium border border-stone-300 rounded-md bg-white hover:bg-stone-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-4 py-2 text-sm font-medium border border-stone-300 rounded-md bg-white hover:bg-stone-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* create newsletter modal */}
+      {/* Create/Edit Newsletter Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative">
-            <h2 className="text-2xl font-semibold mb-6">Create New Campaign</h2>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-semibold mb-6">
+              {editingId ? "Edit Campaign" : "Create New Campaign"}
+            </h2>
             
             <form onSubmit={handleCreateSubmit} className="space-y-5">
               <div>
@@ -174,7 +200,7 @@ export default function NewsletterDashboard() {
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="e.g., Targetting active buyers from last month"
+                  placeholder="e.g., Targeting active buyers"
                   className="w-full border border-stone-300 rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-stone-900"
                 />
               </div>
@@ -195,7 +221,8 @@ export default function NewsletterDashboard() {
                 <label className="block text-sm font-medium text-stone-700 mb-1">Email Content</label>
                 <textarea 
                   required
-                  rows={8}value={formData.content}
+                  rows={8}
+                  value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   placeholder="Write your newsletter content here..."
                   className="w-full border border-stone-300 rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-stone-900 resize-none"
