@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import useNewsletters from "@/app/hooks/useNewsletter";
 
