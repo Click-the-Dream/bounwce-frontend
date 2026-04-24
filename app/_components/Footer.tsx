@@ -1,5 +1,5 @@
 "use client";
-import footerLogo from "../assets/footer-logo.png";
+import footerLogo from "../assets/bouwnce-main.png";
 import Link from "next/link";
 import Image from "next/image";
 import { navLinks, socialLinks } from "../_utils/fields";
@@ -10,7 +10,13 @@ const Footer = () => {
         {/* Logo + Navigation */}
         <div className="flex flex-col md:flex-row justify-center md:justify-between md:items-center gap-4 w-full">
           <div className="mx-auto md:mx-0">
-            <Image src={footerLogo} alt="bouwnce" height={32} />
+            <Image
+              src={footerLogo}
+              alt="bouwnce"
+              height={40}
+              width={100}
+              className="h-8 w-auto"
+            />
           </div>
 
           <ul className="flex flex-wrap justify-center md:justify-end items-center gap-3 text-blackfont-medium">

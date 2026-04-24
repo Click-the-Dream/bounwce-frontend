@@ -4,7 +4,7 @@ import { cubicBezier, motion } from "framer-motion";
 import createPicImg from "../../assets/createpic.jpg";
 import { usePathname } from "next/navigation";
 import Logo from "@/app/_components/common/Logo";
-import navLogo from "../../assets/nav-logo.png";
+import navLogo from "../../assets/bouwnce-main.png";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -78,7 +78,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
               width={100}
               height={40}
               loading="eager"
-              className="h-6 w-auto mb-4 hidden md:block invert brightness-0"
+              className="h-5 w-auto mb-4 hidden md:block invert brightness-0"
             />
           </Link>
         </motion.div>

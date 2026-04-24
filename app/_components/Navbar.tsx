@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { Play } from "lucide-react";
-import navLogo from "../assets/nav-logo.png";
+import navLogo from "../assets/bouwnce-main.png";
 import { useAuth } from "../context/AuthContext";
 import { useScroll, useMotionValueEvent } from "framer-motion";
 import Image from "next/image";
