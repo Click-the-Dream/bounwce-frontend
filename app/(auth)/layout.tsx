@@ -1,5 +1,5 @@
-import AuthLayout from "./_components/AuthLayout";
+// import AuthLayout from "./_components/AuthLayout";
 
-export default function AuthFlow({ children }: { children: React.ReactNode }) {
-  return <AuthLayout>{children}</AuthLayout>;
-}
+// export default function AuthFlow({ children }: { children: React.ReactNode }) {
+//   return <AuthLayout>{children}</AuthLayout>;
+// }
