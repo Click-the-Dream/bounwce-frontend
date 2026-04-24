@@ -6,7 +6,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const productData = await marketFetcher({ filters: { per_page: 100 } });
 
-  const products = productData?.data || [];
+  const products = productData?.products || [];
 
   const productEntries: MetadataRoute.Sitemap = products.map(
     (product: any) => ({

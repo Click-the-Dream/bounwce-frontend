@@ -11,7 +11,7 @@ export const marketFetcher = async ({ filters }: any) => {
       timeout: 10000, // prevent hanging
     });
 
-    return data || { data: [], total: 0 };
+    return data || { products: [], total: 0 };
   } catch (error: any) {
     return {
       data: [],
