@@ -9,10 +9,11 @@ export const generateMetadata = async ({ params }: any) => {
   const category = params?.category || "";
 
   const data = await marketFetcher({
-    name: search,
-    category,
+    filters: {
+      name: search,
+      category,
+    },
   });
-
   const products = data?.products || [];
   const total = data?.total || 0;
 

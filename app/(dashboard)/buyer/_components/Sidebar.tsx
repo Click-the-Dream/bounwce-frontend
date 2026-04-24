@@ -4,8 +4,8 @@ import { Compass, Home, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import logo from "../../../assets/nav-logo.png";
-import logoIcon from "../../../assets/bouwnce.png";
+import logo from "../../../assets/bouwnce-main.png";
+import logoIcon from "../../../assets/bouwnce-icon.png";
 import { LuSquareUserRound } from "react-icons/lu";
 import { PiDotsNineBold } from "react-icons/pi";
 import { useState } from "react";
@@ -54,7 +54,13 @@ const Sidebar = ({
               exit={{ opacity: 0, scale: 0.8 }}
               className="flex items-center justify-center"
             >
-              <Image src={logoIcon.src} alt="LogoIcon" width={30} height={30} />
+              <Image
+                src={logoIcon.src}
+                alt="LogoIcon"
+                width={30}
+                height={30}
+                className="h-7.5 w-auto"
+              />
             </motion.div>
           ) : (
             <motion.div

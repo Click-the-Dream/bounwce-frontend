@@ -8,7 +8,7 @@ import { MdOutlineMailOutline } from "react-icons/md";
 import { MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useMemo } from "react";
-import navLogo from "../../assets/nav-logo.png";
+import navLogo from "../../assets/bouwnce-main.png";
 import parsePhoneNumberFromString from "libphonenumber-js";
 import PhoneNumberInput from "./PhoneNumberInput";
 import WaitlistInsight from "../WaitlistInsight";
@@ -112,7 +112,7 @@ const Waitlist = () => {
             alt="bouwnce"
             width={100}
             height={24}
-            className="h-6 w-auto mb-4 hidden md:block invert brightness-0"
+            className="h-5 w-auto mb-4 hidden md:block invert brightness-0"
           />
         </motion.div>
 
@@ -137,7 +137,7 @@ const Waitlist = () => {
           width={200}
           height={200}
         />
-        <div className="flex flex-col items-center justify-center w-full p-4 md:p-6 md:p-12 md:overflow-y-auto">
+        <div className="flex flex-col items-center justify-center w-full p-4 md:p-6 md:overflow-y-auto">
           <motion.div
             className="max-w-md flex flex-col items-center"
             initial={{ opacity: 0, y: 30 }}
@@ -148,7 +148,7 @@ const Waitlist = () => {
               <Image
                 src={navLogo}
                 alt="bouwnce"
-                className="h-8 w-auto mb-4 block md:hidden"
+                className="h-6 w-auto mb-4 block md:hidden"
                 width={100}
                 height={20}
               />

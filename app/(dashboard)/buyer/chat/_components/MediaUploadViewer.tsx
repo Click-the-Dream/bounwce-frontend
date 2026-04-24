@@ -109,7 +109,7 @@ const MediaUploadModal = ({
         {/* The "+" Button from the image */}
         <button
           onClick={onAddMore}
-          className="shrink-0 w-17 h-15 border-[0.83px] border-[#00000033] flex items-center justify-center hover:bg-gray-50 transition-all ml-1"
+          className="bg-white shrink-0 w-17 h-15 border-[0.83px] border-[#00000033] flex items-center justify-center hover:bg-gray-50 transition-all ml-1"
         >
           <Plus size={18} className="text-black" strokeWidth={2} />
         </button>

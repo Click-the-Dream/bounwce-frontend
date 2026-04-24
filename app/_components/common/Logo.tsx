@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import logoFull from "../../assets/footer-logo.png";
-import logoIcon from "../../assets/bouwnce.png";
+import logoFull from "../../assets/bouwnce-main.png";
+import logoIcon from "../../assets/bouwnce-icon.png";
 const Logo = ({
   onlyImage = false,
   size,
