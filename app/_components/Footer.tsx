@@ -15,7 +15,7 @@ const Footer = () => {
               alt="bouwnce"
               height={40}
               width={100}
-              className="h-8 w-auto"
+              className="h-6 w-auto"
             />
           </div>
 

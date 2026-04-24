@@ -78,7 +78,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
               width={100}
               height={40}
               loading="eager"
-              className="h-5 w-auto mb-4 hidden md:block invert brightness-0"
+              className="h-4 w-auto mb-4 hidden md:block invert brightness-0"
             />
           </Link>
         </motion.div>
