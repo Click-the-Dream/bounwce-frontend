@@ -1,0 +1,28 @@
+import { MetadataRoute } from 'next';
+
+export default function robots(): MetadataRoute.Robots {
+  const baseUrl = "https://bouwnce.com"; 
+
+  return {
+    rules: [
+      {
+        userAgent: '*',
+        allow: [
+          '/',            // Allow homepage
+          '/marketplace', // Allow marketplace
+          '/waitlist',    // Allow waitlist
+          '/login',   
+          '/register', 
+        ],
+        disallow: [
+          '/api/',        // Hide backend routes
+          '/admin/',      // Hide admin panels
+          '/buyer/',  // Hide user private areas
+          '/vendor/',  // Hide user private areas
+          '/*?*',         // prevent indexing of internal search/filter URLs
+        ],
+      },
+    ],
+    sitemap: `${baseUrl}/sitemap.xml`,
+  };
+}
