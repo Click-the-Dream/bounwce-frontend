@@ -1,5 +1,5 @@
 import { generatePageMetadata } from "@/app/_utils/metadata";
-import NewsletterDashboard from "./_components/NewsletterDashboard";
+import Newsletter from "./_components/Newsletter";
 
 export const metadata = generatePageMetadata({
   title: "Newsletter Dashboard | Manage Campaigns & Subscribers",
@@ -8,7 +8,7 @@ export const metadata = generatePageMetadata({
 });
 
 const page = () => {
-  return <NewsletterDashboard />;
+  return <Newsletter />;
 };
 
 export default page;

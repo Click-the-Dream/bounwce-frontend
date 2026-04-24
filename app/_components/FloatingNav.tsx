@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 const FloatingNav = () => {
   const { authDetails } = useContext(AuthContext);
   const router = useRouter();
-  const user = authDetails?.user && authDetails?.user?.role == "buyer";
+  const user = authDetails?.user && authDetails?.user?.role == "user";
   const constraintsRef = useRef<HTMLDivElement | null>(null);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +17,7 @@ const FloatingNav = () => {
   const [pos, setPos] = useState({ x: 0, y: 0 });
 
   const BUTTON_SIZE = 48;
-  const EDGE_THRESHOLD = 100; // 💡 Only snaps if within 100px of an edge
+  const EDGE_THRESHOLD = 100;
   const PADDING = 20;
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const FloatingNav = () => {
   ];
 
   /**
-   * 🍃 MINIMAL SNAP LOGIC
+   * MINIMAL SNAP LOGIC
    * Only sticks to the wall if the user drops it very close to one.
    * Otherwise, it stays exactly where the finger let go.
    */

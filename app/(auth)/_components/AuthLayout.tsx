@@ -46,12 +46,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="flex h-screen overflow-hidden">
       {/* --- Left Illustration Section (Animates Only Once) --- */}
       <div className="hidden md:block relative w-[55%] h-full">
-        <motion.div
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 2, ease: "easeOut" }}
-          className="w-full h-full relative"
-        >
+        <div className="w-full h-full relative">
           <Image
             src={createPicImg.src}
             alt="workspace"
@@ -59,7 +54,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
             height={800}
             className="[clip-path:polygon(0_0,100%_0,80%_100%,0_100%)] object-cover w-full h-full"
           />
-        </motion.div>
+        </div>
 
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/30 [clip-path:polygon(0_0,100%_0,80%_100%,0_100%)]" />
