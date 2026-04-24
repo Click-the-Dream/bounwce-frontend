@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 const FloatingNav = () => {
   const { authDetails } = useContext(AuthContext);
   const router = useRouter();
-  const user = authDetails?.user && authDetails?.user?.role !== "vendor";
+  const user = authDetails?.user && authDetails?.user?.role == "buyer";
   const constraintsRef = useRef<HTMLDivElement | null>(null);
 
   const [isOpen, setIsOpen] = useState(false);

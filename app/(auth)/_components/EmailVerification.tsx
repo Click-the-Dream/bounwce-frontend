@@ -116,7 +116,9 @@ const VerifyAccount = ({
               return;
             }
 
-            if (user?.role === "vendor") {
+            if (user?.role === "admin") {
+              router.replace("/admin/newsletter");
+            } else if (user?.role === "vendor") {
               const path =
                 user?.is_store_owner === false ? "/vendor/setup" : "/vendor";
               router.replace(path);
