@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 import { marketFetcher } from "./_utils/server_functions/fetchers";
-
+export const dynamic = "force-dynamic";
 // This ensures the sitemap is generated fresh
 export const revalidate = 3600;
 
@@ -44,6 +44,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // 2. Dynamic Products
     const response = await marketFetcher({ filters: { per_page: 50 } });
+    console.log(
+      "API Response in Sitemap:",
+      JSON.stringify(response).slice(0, 100),
+    );
     const products = response?.products || response?.data || [];
 
     if (Array.isArray(products) && products.length > 0) {
