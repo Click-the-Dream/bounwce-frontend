@@ -16,7 +16,8 @@ export const useCart = () => {
         const { data } = await api.get("/users/carts/?page=1&page_size=10");
         return data?.data?.carts;
       },
-      enabled: !!authDetails?.access_token,
+      enabled:
+        authDetails?.user?.role === "user" && !!authDetails?.access_token,
     });
 
   const getCartById = (cartId: number) =>

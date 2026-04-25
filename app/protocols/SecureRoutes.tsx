@@ -11,38 +11,60 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const { useGetStoreOnboardingStatus } = useStore();
 
-  const userId = authDetails?.user?.id;
+  const user = authDetails?.user;
+  const userId = user?.id;
+
+  const isVendorRoute = pathname.startsWith("/vendor");
+  const isAdminRoute = pathname.startsWith("/admin");
+
   const { data: onboardingStatus, isLoading: statusLoading } =
     useGetStoreOnboardingStatus(userId);
 
-  // 🔹 Show fallback until everything is loaded
-  if (authLoading || statusLoading) {
+  // 🔹 Wait for auth + onboarding
+  if (authLoading || (user?.role === "vendor" && statusLoading)) {
     return <Fallback />;
   }
 
-  const user = authDetails?.user;
-
-  // 🔹 Only redirect if user is definitively null or inactive
+  // 🔹 Not logged in
   if (!user) {
     return <Redirect to="/login" />;
   }
 
+  // 🔹 Inactive account
   if (!user.is_active) {
     return <Redirect to="/login" />;
   }
 
+  // 🔹 ROLE-BASED ACCESS CONTROL
   switch (user.role) {
+    case "admin":
+      // Only allow admin routes
+      if (!isAdminRoute) {
+        return <Redirect to="/admin/newsletter" replace />;
+      }
+      return <>{children}</>;
+
     case "vendor":
-      // 🔹 Only redirect if we have onboarding info
+      // Block vendor from admin
+      if (isAdminRoute) {
+        return <Redirect to="/vendor" replace />;
+      }
+
+      // Enforce onboarding
       if (onboardingStatus && !onboardingStatus.is_onboarded) {
         if (pathname === "/vendor/setup") {
           return <>{children}</>;
         }
         return <Redirect to="/vendor/setup" replace />;
       }
+
       return <>{children}</>;
 
     case "user":
+      // Block user from admin/vendor
+      if (isAdminRoute || isVendorRoute) {
+        return <Redirect to="/" replace />;
+      }
       return <>{children}</>;
 
     default:

@@ -56,7 +56,7 @@ const Navbar = () => {
           <div className="flex items-center gap-3">
             {!user && (
               <Link
-                href="/waitlist"
+                href="/register"
                 className="flex h-8.5 justify-between items-center gap-2 text-[13px] px-6.25 py-1.5 bg-orange text-black font-bold rounded-lg border-2 border-black transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none"
               >
                 Sign Up

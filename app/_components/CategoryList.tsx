@@ -1,36 +1,20 @@
+"use client";
 import { useRouter } from "next/navigation";
+import useProduct from "../hooks/use-product";
 
-const categories = [
-  {
-    name: "Weekend date",
-    suggestion: "Looking for someone to go out with this weekend.",
-  },
-  {
-    name: "Gym partner",
-    suggestion: "Need a gym partner nearby to stay consistent.",
-  },
-  {
-    name: "Food spot",
-    suggestion: "Looking for somewhere nice to eat.",
-  },
-  {
-    name: "Networking event",
-    suggestion: "Looking for a social or  business event to attend.",
-  },
-];
 const CategoryList = ({ setQuery }: any) => {
   const router = useRouter();
-  //const { useGetProductCategories } = useProduct();
-  //const { data: categories = [] } = useGetProductCategories();
+  const { useGetProductCategories } = useProduct();
+  const { data: categories = [] } = useGetProductCategories();
 
-  const handleCategoryClick = (cat: { name?: string; suggestion: any }) => {
+  const handleCategoryClick = (cat: any) => {
     setQuery(cat?.suggestion);
-    // router.push(`/marketplace?category=${encodeURIComponent(cat?.name || "")}`);
+    router.push(`/marketplace?category=${encodeURIComponent(cat?.name || "")}`);
   };
 
   return (
     <div className="flex flex-wrap justify-center gap-3.5 mt-5 max-w-162.5">
-      {categories?.map((cat, index) => (
+      {categories?.map((cat: any, index: number) => (
         <button
           key={index}
           onClick={() => handleCategoryClick(cat)}
