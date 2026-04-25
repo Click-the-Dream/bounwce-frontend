@@ -8,11 +8,12 @@ const SearchBar = () => {
   const [query, setQuery] = useState(""); // Track search input
 
   const handleSearch = () => {
-    if (query.trim()) {
-      router.push(`/marketplace?search=${encodeURIComponent(query)}`);
-    } else {
-      router.push(`/marketplace`);
-    }
+    router.push(`/waitlist`);
+    // if (query.trim()) {
+    //   router.push(`/marketplace?search=${encodeURIComponent(query)}`);
+    // } else {
+    //   router.push(`/marketplace`);
+    // }
   };
 
   return (
