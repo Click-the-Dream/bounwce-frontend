@@ -8,7 +8,7 @@ const ConfirmBroadcast = ({
 }: any) => {
   return (
     <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-md z-100 flex items-center justify-center p-6">
-      <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl text-center space-y-8">
+      <div className="bg-white w-full max-w-md rounded-[10px] p-10 shadow-2xl text-center space-y-8">
         <div className="w-16 h-16 bg-orange-50 text-[#ff3b0a] rounded-full flex items-center justify-center mx-auto">
           <AlertCircle size={32} />
         </div>
@@ -20,7 +20,7 @@ const ConfirmBroadcast = ({
           <button
             onClick={handleBroadcast}
             disabled={isBroadcasting}
-            className="w-full bg-[#ff3b0a] text-white py-5 rounded-2xl font-bold hover:bg-black transition-all flex justify-center items-center gap-2 disabled:opacity-70"
+            className="cursor-pointer w-full bg-[#ff3b0a] text-white py-3 rounded-[10px] font-medium hover:bg-[#d0340d] transition-all flex justify-center items-center gap-2 disabled:opacity-70"
           >
             {isBroadcasting ? (
               <>
@@ -33,7 +33,7 @@ const ConfirmBroadcast = ({
           </button>
           <button
             onClick={() => setShowFinalCheck(false)}
-            className="w-full py-2 text-stone-400 text-xs font-bold uppercase tracking-widest"
+            className="cursor-pointer w-full py-2 text-stone-400 text-xs font-medium uppercase tracking-widest"
           >
             Back to Studio
           </button>

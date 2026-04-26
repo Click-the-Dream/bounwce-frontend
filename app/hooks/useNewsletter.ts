@@ -70,10 +70,6 @@ export const useNewsletter = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["newsletters"] });
       queryClient.invalidateQueries({ queryKey: ["newsletter", variables.id] });
-      onSuccess({
-        title: "Success",
-        message: "Newsletter updated successfully!",
-      });
     },
     onError: (error: any) => {
       onFailure({
@@ -104,11 +100,11 @@ export const useNewsletter = () => {
       const { data } = await api.post(`/newsletters/${id}/broadcast/`);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (res, _) => {
       queryClient.invalidateQueries({ queryKey: ["newsletters"] });
       onSuccess({
-        title: "Broadcast Initiated",
-        message: "Your newsletter is sending!",
+        title: "Broadcast",
+        message: res?.message || "newslettersent!",
       });
     },
     onError: (error: any) => {

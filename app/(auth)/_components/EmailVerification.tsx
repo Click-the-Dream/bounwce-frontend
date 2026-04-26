@@ -234,7 +234,7 @@ const VerifyAccount = ({
             <button
               onClick={handleResendOtp}
               disabled={requestOtp.isPending}
-              className="text-orange font-semibold hover:underline disabled:opacity-50"
+              className="cursor-pointer text-orange font-semibold hover:underline disabled:opacity-50"
             >
               {requestOtp.isPending ? "Resending..." : "Resend OTP"}
             </button>

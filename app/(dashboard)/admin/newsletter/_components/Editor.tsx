@@ -9,17 +9,14 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import ConfirmBroadcast from "./ConfirmBroadcast";
-import { onFailure } from "@/app/_utils/notification";
+import { onFailure, onSuccess } from "@/app/_utils/notification";
 
-const Editor = ({
-  setIsEditorOpen,
-  formData,
-  setFormData,
-  editingId,
-  isBroadcasting,
-}: any) => {
+const Editor = ({ setIsEditorOpen, formData, setFormData, editingId }: any) => {
   const { updateNewsletter, createNewsletter, broadcastNewsletter } =
     useNewsletter();
+
+  const isBroadcasting =
+    broadcastNewsletter.isPending || updateNewsletter.isPending;
   const [showFinalCheck, setShowFinalCheck] = useState(false);
 
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">(
@@ -34,28 +31,34 @@ const Editor = ({
 
   const generatedHtml = useMemo(() => {
     return `<!doctype html>
-<html lang="und">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { margin: 0; padding: 0; background-color: #f9f9f9; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-    .email-container { background: #ffffff; margin: 20px auto; max-width: 600px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .header { background: #ff3b0a; padding: 30px; text-align: center; color: white; font-weight: bold; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+    body { margin: 0; padding: 0; background-color: #f9f9f8; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .email-container { background: #ffffff; margin: 20px auto; max-width: 600px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #eee; }
+    /* The fixed orange header */
+    .header { background: #ff3b0a; padding: 25px; text-align: center; color: white; font-weight: 900; font-size: 24px; text-transform: uppercase; letter-spacing: 4px; }
     .body { padding: 40px; color: #333333; line-height: 1.6; font-size: 16px; }
-    .footer { padding: 30px; border-top: 1px solid #eeeeee; font-size: 14px; color: #999999; }
+    /* The Subject display inside the mail */
+    .subject-preview { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .main-title { font-size: 22px; font-weight: 800; color: #111; margin-bottom: 24px; line-height: 1.2; }
+    .footer { padding: 30px; background: #fafafa; border-top: 1px solid #eeeeee; font-size: 12px; color: #aaaaaa; text-align: center; }
   </style>
 </head>
 <body>
   <div class="email-container">
-    <div class="header">${debouncedData.subject || "Campaign Subject"}</div>
+    <div class="header">BOUWNCE</div>
     <div class="body">
-      <p style="font-size: 18px; font-weight: bold;">Hi [Customer Name],</p>
-      <div style="white-space: pre-wrap;">${debouncedData.content || "Start typing your content..."}</div>
+      <div class="subject-preview">Subject: ${debouncedData.subject || "No Subject"}</div>
+      
+      <p style="font-size: 16px; font-weight: bold; color: #444;">Hi [Customer Name],</p>
+      <div style="white-space: pre-wrap; color: #555;">${debouncedData.content || "Start typing your content..."}</div>
     </div>
     <div class="footer">
-      Best regards,<br/>
-      <strong>The Branding Team</strong>
+      &copy; 2026 Bounce Branding Team<br/>
+      You are receiving this because you opted into our newsletter.
     </div>
   </div>
 </body>
@@ -67,11 +70,14 @@ const Editor = ({
     action.mutate(
       editingId ? { id: editingId, payload: formData } : (formData as any),
       {
-        onSuccess: (res) => {
-          const id = editingId || res?.id;
-          if (id) broadcastNewsletter.mutate(id);
-          setIsEditorOpen(false);
-          setShowFinalCheck(false);
+        onSuccess: async (res, variables: any) => {
+          setFormData(res.data);
+          const id = variables.id;
+          if (id) {
+            await broadcastNewsletter.mutateAsync(id);
+            setIsEditorOpen(false);
+            setShowFinalCheck(false);
+          }
         },
       },
     );
@@ -110,7 +116,16 @@ const Editor = ({
     const action = editingId ? updateNewsletter : createNewsletter;
     action.mutate(
       editingId ? { id: editingId, payload: formData } : (formData as any),
-      { onSuccess: () => setIsEditorOpen(false) },
+      {
+        onSuccess: () => {
+          onSuccess({
+            title: "Success",
+            message: "Newsletter updated successfully!",
+          });
+
+          setIsEditorOpen(false);
+        },
+      },
     );
   };
   return (
@@ -126,7 +141,7 @@ const Editor = ({
           <div className="h-6 w-px bg-stone-100 hidden md:block" />
           <input
             className="text-lg font-bold focus:outline-none w-full max-w-50 md:max-w-xs"
-            placeholder="Internal Name"
+            placeholder="Campaign Name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
@@ -185,30 +200,31 @@ const Editor = ({
           <div className="space-y-8">
             <div>
               <label className="text-[10px] font-black text-stone-300 uppercase mb-3 block">
-                Public Subject Line
+                Campaign Description
               </label>
               <input
-                className="w-full border-b-2 border-stone-100 focus:border-[#ff3b0a] transition-all py-4 outline-none font-bold text-xl"
-                placeholder="Subject..."
-                value={formData.subject}
-                onChange={(e) =>
-                  setFormData({ ...formData, subject: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-black text-stone-300 uppercase mb-3 block">
-                Description (Internal)
-              </label>
-              <input
-                className="w-full border-b border-stone-100 focus:border-stone-900 transition-all py-2 outline-none text-sm italic text-stone-500"
-                placeholder="Summary..."
+                className="w-full border-b border-stone-100 focus:border-stone-900 transition-all py-2 outline-none text-sm italic text-stone-800"
+                placeholder="Campaign Notes"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
               />
             </div>
+            <div>
+              <label className="text-[10px] font-black text-stone-300 uppercase mb-3 block">
+                Public Subject Line
+              </label>
+              <input
+                className="w-full border-b-2 border-stone-100 focus:border-[#ff3b0a] transition-all py-4 outline-none font-bold text-xl"
+                placeholder="Email Subject Line"
+                value={formData.subject}
+                onChange={(e) =>
+                  setFormData({ ...formData, subject: e.target.value })
+                }
+              />
+            </div>
+
             <div>
               <label className="text-[10px] font-black text-stone-300 uppercase mb-3 block">
                 Message Content
