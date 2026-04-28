@@ -3,8 +3,11 @@ import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { ChatProvider } from "@/app/context/ChatContext";
+import { useAuth } from "@/app/context/AuthContext";
+import InterestSelector from "./InterestSelector";
 
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
+  const { authDetails } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -43,6 +46,8 @@ const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
           <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
+
+      <InterestSelector />
     </ChatProvider>
   );
 };
