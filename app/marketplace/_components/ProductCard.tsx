@@ -1,5 +1,5 @@
+"use client";
 import { FaStar } from "react-icons/fa6";
-import { useContext } from "react";
 import { useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import useCart from "@/app/hooks/use-cart";
@@ -85,7 +85,7 @@ const ProductCard = ({
       "
       >
         {/* Image wrapper */}
-        <div className="overflow-hidden rounded-t-xl h-32 md:h-60">
+        <div className="overflow-hidden rounded-t-xl h-32 md:h-48">
           <ProductImageDisplay
             images={product?.images}
             height="h-full"

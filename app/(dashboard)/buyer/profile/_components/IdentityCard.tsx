@@ -41,8 +41,8 @@ const IdentityCard: React.FC<{ data: any }> = ({ data }) => (
     <p className="text-[#888888] text-[13px] mb-4">{data.handle}</p>
 
     <div className="flex gap-2 mb-5.5 items-center">
-      <button className="cursor-pointer max-w-20.5 h-7.5 flex-1 bg-orange outline-[0.83px] outline-orange border border-[#F4F4F4] hover:bg-[#ee3d15] text-white p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all">
-        <PlusCircle fill="#8a0202" className="size-4 mr-1.75" /> Match
+      <button className="cursor-pointer max-w-22 h-7.5 flex-1 bg-orange outline-[0.83px] outline-orange border border-[#F4F4F4] hover:bg-[#ee3d15] text-white p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all">
+        <PlusCircle fill="#8a0202" className="size-4 mr-1.75" /> Connect
       </button>
       <button className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all">
         <MessageCircleReply className="size-3.5 mr-1.75" /> Message

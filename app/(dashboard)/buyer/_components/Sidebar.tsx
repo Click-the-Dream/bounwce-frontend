@@ -36,7 +36,7 @@ const Sidebar = ({
       animate={{ width: collapsed ? 80 : 256 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={`
-        h-screen bg-white lg:flex flex-col border-r-[0.53px] border-[#00000033]
+        shrink-0 h-screen bg-white lg:flex flex-col border-r-[0.53px] border-[#00000033]
         ${isMobile ? "flex" : "hidden lg:flex"}
       `}
     >

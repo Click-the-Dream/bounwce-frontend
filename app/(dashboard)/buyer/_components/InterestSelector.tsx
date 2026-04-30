@@ -17,12 +17,14 @@ const InterestSelector = () => {
     data: availableData,
     isLoading: isLoadingAvailable,
     isError: isErrorAvailable,
+    refetch: refetchAvailableInterests,
   } = useGetAvailableInterests();
 
   const {
     data: userData,
     isLoading: isLoadingUser,
     isError: isErrorUser,
+    refetch: refetchUserInterests,
   } = useGetUserInterests();
 
   const isLoading = isLoadingAvailable || isLoadingUser;
@@ -33,17 +35,11 @@ const InterestSelector = () => {
 
   const [selected, setSelected] = useState<Record<string, string[]>>({});
 
-  /**
-   * Decide if modal should open (ONLY for new users)
-   */
   useEffect(() => {
     const hasInterests = safeUser.length > 0;
     setIsOpen(!hasInterests);
   }, [safeUser]);
 
-  /**
-   * Map backend → UI state
-   */
   useEffect(() => {
     if (!safeUser.length) return;
 
@@ -57,18 +53,12 @@ const InterestSelector = () => {
     setSelected(formatted);
   }, [safeUser]);
 
-  /**
-   * Build categories dynamically
-   */
   const categories = safeAvailable.map((item: any) => ({
     id: item.category?.toLowerCase().replace(/\s/g, "_"),
     title: item.category,
     options: item.interests,
   }));
 
-  /**
-   * Toggle interest selection
-   */
   const toggleInterest = (categoryId: string, option: string) => {
     setSelected((prev) => {
       const current = prev[categoryId] || [];
@@ -83,11 +73,10 @@ const InterestSelector = () => {
     });
   };
 
-  /**
-   * Submit handler with proper error handling
-   */
   const handleSave = async () => {
     setSubmitError(null);
+
+    console.log(selected);
 
     const payload = {
       interests: Object.values(selected).flat().filter(Boolean),
@@ -118,9 +107,6 @@ const InterestSelector = () => {
     }
   };
 
-  /**
-   * LOADING STATE
-   */
   if (isLoading) {
     return (
       <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -134,9 +120,6 @@ const InterestSelector = () => {
     );
   }
 
-  /**
-   * ERROR STATE (FETCH FAIL)
-   */
   if (isError) {
     return (
       <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -148,7 +131,10 @@ const InterestSelector = () => {
             Please check your connection and try again.
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              refetchAvailableInterests();
+              refetchUserInterests();
+            }}
             className="bg-orange text-white px-4 py-2 rounded-lg text-sm"
           >
             Retry
@@ -158,9 +144,6 @@ const InterestSelector = () => {
     );
   }
 
-  /**
-   * DO NOT SHOW MODAL
-   */
   if (!isOpen) return null;
 
   return (

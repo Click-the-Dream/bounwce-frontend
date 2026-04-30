@@ -14,7 +14,7 @@ const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
             className="w-full h-full object-cover rounded-[20px]"
           />
           <button className="cursor-pointer w-20.25 h-7.5 absolute top-1.5 right-1.75 bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-[50px] text-xs flex justify-around items-center gap-1 shadow-sm transition-colors">
-            Match <PlusIcon className="size-2.5" />
+            Connect <PlusIcon className="shrink-0 size-2.5" />
           </button>
         </div>
 
