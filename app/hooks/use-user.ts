@@ -2,18 +2,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage } from "../_utils/formatters";
+import { useAuth } from "../context/AuthContext";
 
 const useUser = () => {
+  const { authDetails } = useAuth();
   const client = api;
   const queryClient = useQueryClient();
 
-  const useGetCurrentUser = () =>
+  const useGetCurrentUser = (
+    enabled: boolean = authDetails?.user?.id !== undefined,
+  ) =>
     useQuery({
       queryKey: ["currentUser"],
       queryFn: async () => {
         const res = await client.get(`/users/me`);
         return res.data;
       },
+      enabled,
     });
 
   const useGetUserById = (userId: any) =>

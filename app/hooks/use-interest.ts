@@ -9,14 +9,14 @@ const useInterest = () => {
   // =========================
   // GET: Available Interests
   // =========================
-  const useGetAvailableInterests = () => {
+  const useGetAvailableInterests = (hasInterests: boolean) => {
     return useQuery({
       queryKey: ["interests", "available"],
       queryFn: async () => {
         const res = await api.get("/interests/available");
         return res.data.data;
       },
-      enabled: !!authDetails?.access_token,
+      enabled: !!authDetails?.access_token && !hasInterests,
     });
   };
 
@@ -28,7 +28,7 @@ const useInterest = () => {
       queryKey: ["interests", "user"],
       queryFn: async () => {
         const res = await api.get("/interests/user");
-        return res.data.data;
+        return res?.data?.data?.interests || [];
       },
       enabled: !!authDetails?.access_token,
     });

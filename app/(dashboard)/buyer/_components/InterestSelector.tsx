@@ -1,3 +1,4 @@
+import Fallback from "@/app/_components/Fallback";
 import { onFailure } from "@/app/_utils/notification";
 import useInterest from "@/app/hooks/use-interest";
 import { useEffect, useState } from "react";
@@ -14,44 +15,43 @@ const InterestSelector = () => {
   } = useInterest();
 
   const {
-    data: availableData,
-    isLoading: isLoadingAvailable,
-    isError: isErrorAvailable,
-    refetch: refetchAvailableInterests,
-  } = useGetAvailableInterests();
-
-  const {
-    data: userData,
+    data: userData = [],
     isLoading: isLoadingUser,
     isError: isErrorUser,
     refetch: refetchUserInterests,
   } = useGetUserInterests();
 
-  const isLoading = isLoadingAvailable || isLoadingUser;
+  const hasInterests = userData.length > 0;
+
+  const {
+    data: availableData,
+    isLoading: isLoadingAvailable,
+    isError: isErrorAvailable,
+    refetch: refetchAvailableInterests,
+  } = useGetAvailableInterests(hasInterests);
+
   const isError = isErrorAvailable || isErrorUser;
 
   const safeAvailable = availableData ?? [];
-  const safeUser = userData ?? [];
 
   const [selected, setSelected] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    const hasInterests = safeUser.length > 0;
     setIsOpen(!hasInterests);
-  }, [safeUser]);
+  }, [userData]);
 
   useEffect(() => {
-    if (!safeUser.length) return;
+    if (!userData.length) return;
 
     const formatted: Record<string, string[]> = {};
 
-    safeUser.forEach((item: any) => {
+    userData.forEach((item: any) => {
       const key = item.category?.toLowerCase().replace(/\s/g, "_");
       formatted[key] = item.interests;
     });
 
     setSelected(formatted);
-  }, [safeUser]);
+  }, [userData]);
 
   const categories = safeAvailable.map((item: any) => ({
     id: item.category?.toLowerCase().replace(/\s/g, "_"),
@@ -88,7 +88,7 @@ const InterestSelector = () => {
     }
 
     try {
-      if (safeUser.length > 0) {
+      if (userData.length > 0) {
         await updateUserInterests.mutateAsync(payload as any);
       } else {
         await addUserInterests.mutateAsync(payload as any);
@@ -107,7 +107,11 @@ const InterestSelector = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoadingUser) {
+    return <Fallback />;
+  }
+
+  if (!hasInterests && isLoadingAvailable) {
     return (
       <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm">
         <div className="bg-white px-6 py-5 rounded-xl shadow-lg flex items-center gap-3">

@@ -26,25 +26,6 @@ const vendors = [
 ];
 
 const TopVendors = () => {
-  const [offset, setOffset] = useState(0);
-  const [paused, setPaused] = useState(false);
-
-  // subtle auto movement (very slow, not distracting)
-  useEffect(() => {
-    if (paused) return;
-
-    const t = setInterval(() => {
-      setOffset((prev) => (prev + 1) % vendors.length);
-    }, 6000);
-
-    return () => clearInterval(t);
-  }, [paused]);
-
-  const visibleVendors = [
-    ...vendors.slice(offset),
-    ...vendors.slice(0, offset),
-  ];
-
   return (
     <section>
       {/* HEADER */}
@@ -57,12 +38,8 @@ const TopVendors = () => {
       </div>
 
       {/* CAROUSEL */}
-      <div
-        className="flex gap-4 overflow-x-auto pb-2 no-scrollbar"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
-        {visibleVendors.map((vendor, i) => (
+      <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+        {vendors?.map((vendor, i) => (
           <motion.div
             key={vendor.name}
             layout
@@ -70,7 +47,7 @@ const TopVendors = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
             className="
-              min-w-[240px]
+              min-w-60
               bg-white
               rounded-xl
               p-5
@@ -83,7 +60,7 @@ const TopVendors = () => {
             "
           >
             {/* subtle live glow */}
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-transparent to-gray-50 opacity-0 hover:opacity-100 transition pointer-events-none" />
+            <div className="absolute inset-0 rounded-xl bg-linear-to-tr from-transparent via-transparent to-gray-50 opacity-0 hover:opacity-100 transition pointer-events-none" />
 
             {/* HEADER */}
             <div className="flex items-start gap-3 relative z-10">

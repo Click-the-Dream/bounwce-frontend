@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { ChatProvider } from "@/app/context/ChatContext";
-import { useAuth } from "@/app/context/AuthContext";
 import InterestSelector from "./InterestSelector";
 
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {

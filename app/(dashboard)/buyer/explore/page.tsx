@@ -1,6 +1,16 @@
+"use client";
+import useMatch from "@/app/hooks/use-match";
 import ExploreCard from "./_components/ExploreCard";
+import useUser from "@/app/hooks/use-user";
 
 const ExplorePage = () => {
+  const { useGetSuggestedCandidates } = useMatch();
+  const { useGetUsers } = useUser();
+  const { data: users } = useGetUsers();
+  const { data: suggestions, isLoading } = useGetSuggestedCandidates();
+
+  console.log(suggestions);
+
   const cards = Array(8).fill({
     name: "Victorious Victor",
     handle: "p-origamixiii",
