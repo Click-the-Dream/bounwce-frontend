@@ -74,7 +74,7 @@ const HomeDiscovery = () => {
       <div className="grow" />
 
       {/* Bottom Search (NOT fixed anymore) */}
-      <div className="w-full max-w-2xl pb-10 sticky bottom-2">
+      <div className="w-full max-w-2xl pb-6 sticky bottom-2">
         <div className="relative flex items-center bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 px-3 py-2 transition-all focus-within:ring-2 focus-within:ring-orange-300">
           <div className="pl-3 text-gray-400">
             <Search className="w-5 h-5" />
