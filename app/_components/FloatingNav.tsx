@@ -64,7 +64,7 @@ const FloatingNav = () => {
   return (
     <div
       ref={constraintsRef}
-      className="fixed inset-0 z-50 pointer-events-none"
+      className="fixed bottom-40 inset-0 z-50 pointer-events-none"
     >
       <AnimatePresence>
         {isOpen && (
