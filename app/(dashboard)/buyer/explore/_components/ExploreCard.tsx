@@ -2,9 +2,10 @@ import Image from "next/image";
 import userImg from "../../../../assets/buyer/user.jpg";
 import { PlusIcon } from "lucide-react";
 
+const interests = ["Reading", "Cooking", "Fitness"];
 const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col max-w-65">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col w-65">
       <div className="p-1.5 pb-0">
         {/* Header Image */}
         <div className="relative h-32.5 w-full rounded-[20px] bg-gray-100 ">
@@ -37,16 +38,30 @@ const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
           <h3 className="font-medium text-black text-[13px] leading-tight">
             {name}
           </h3>
-          <p className="text-[#888888] text-[13px] mb-3.75">{handle}</p>
+          <p className="text-[#888888] text-[13px]">{handle}</p>
 
-          <p className="text-[#888888] text-xs leading-relaxed mb-[8.73px]">
+          {/* <p className="text-[#888888] text-xs leading-relaxed mb-[8.73px]">
             {bio}
-          </p>
+          </p> */}
         </div>
+      </div>
+      <div className="flex-1 flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
+        <p className="text-xs text-[#888888]">Followers:</p>{" "}
+        <span className="font-medium text-[13px] ">{followers}</span>
+      </div>
+      <div className="flex-1 flex flex-wrap gap-2 mt-3.5 mb-5.75 px-4">
+        {interests.map((interest, index) => (
+          <span
+            key={interest}
+            className="px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
+          >
+            {interest}
+          </span>
+        ))}
       </div>
 
       {/* Stats Grid */}
-      <div className="flex-1 grid grid-cols-3 divide-x-[0.53px] divide-[#00000033] border-t-[0.53px] border-[#00000033]">
+      {/* <div className="flex-1 grid grid-cols-3 divide-x-[0.53px] divide-[#00000033] border-t-[0.53px] border-[#00000033]">
         <div className="flex flex-col items-center justify-center pt-[13.26px] pb-5.75">
           <span className="font-bold text-black text-[13px]">{followers}</span>
           <span className="text-xs text-[#888888]">followers</span>
@@ -59,7 +74,7 @@ const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
           <span className="font-bold text-black text-[13px]">{badges}</span>
           <span className="text-xs text-[#888888]">Badges</span>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
