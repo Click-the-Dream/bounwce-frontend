@@ -5,7 +5,7 @@ import { PlusIcon } from "lucide-react";
 const interests = ["Reading", "Cooking", "Fitness"];
 const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col w-65">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col max-w-65 w-full">
       <div className="p-1.5 pb-0">
         {/* Header Image */}
         <div className="relative h-32.5 w-full rounded-[20px] bg-gray-100 ">
