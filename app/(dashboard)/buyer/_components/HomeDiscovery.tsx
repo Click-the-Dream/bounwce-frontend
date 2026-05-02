@@ -98,7 +98,7 @@ const HomeDiscovery = () => {
           <button
             key={index}
             onClick={() => setSearchValue(tag.label)}
-            className="flex items-center gap-2.5 px-5 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-800 hover:shadow-md hover:border-orange-200 transition-all active:scale-95"
+            className="flex items-center gap-2.5 px-5 py-2.5 bg-white border border-gray-200 rounded-full text-xs md:text-sm font-medium text-gray-800 hover:shadow-md hover:border-orange-200 transition-all active:scale-95"
           >
             {tag.label}
           </button>
@@ -106,7 +106,9 @@ const HomeDiscovery = () => {
       </div>
 
       {/* LIVE FEED */}
-      <div className="sticky bottom-36 w-full max-w-2xl mb-2">
+      <div
+        className={`sticky  w-full max-w-2xl mb-2 ${suggestions.length > 0 ? "bottom-35" : "bottom-26"}`}
+      >
         {/* COMPACT FEED BAR */}
         {!expandedFeed && (
           <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm flex items-center gap-4">

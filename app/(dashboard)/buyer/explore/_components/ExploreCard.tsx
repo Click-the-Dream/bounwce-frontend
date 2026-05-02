@@ -1,11 +1,41 @@
 import Image from "next/image";
 import userImg from "../../../../assets/buyer/user.jpg";
-import { PlusIcon } from "lucide-react";
+import { Loader2, PlusIcon } from "lucide-react";
+import { SuggestedCandidate } from "@/app/_utils/types/payload";
+import useMatch from "@/app/hooks/use-match";
+import { useRouter } from "next/navigation";
+
+type Props = SuggestedCandidate & {
+  onConnect: (id: string) => void;
+  isPending?: boolean;
+};
 
 const interests = ["Reading", "Cooking", "Fitness"];
-const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
+const ExploreCard = ({
+  full_name,
+  user_id,
+  shared_interests,
+  score,
+  onConnect,
+  isPending,
+}: Props) => {
+  const router = useRouter();
+  const { createMatchRequest } = useMatch();
+
+  const goToProfile = () => {
+    router.push(`/buyer/profile/${user_id}`);
+  };
+  const handleConnect = () => {
+    createMatchRequest.mutate({
+      target_user_id: user_id,
+    });
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col max-w-65 w-full">
+    <div
+      onClick={goToProfile}
+      className="cursor-pointer bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col w-full hover:shadow-md transition"
+    >
       <div className="p-1.5 pb-0">
         {/* Header Image */}
         <div className="relative h-32.5 w-full rounded-[20px] bg-gray-100 ">
@@ -14,8 +44,28 @@ const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
             alt="background"
             className="w-full h-full object-cover rounded-[20px]"
           />
-          <button className="cursor-pointer w-20.25 h-7.5 absolute top-1.5 right-1.75 bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-[50px] text-xs flex justify-around items-center gap-1 shadow-sm transition-colors">
-            Connect <PlusIcon className="shrink-0 size-2.5" />
+
+          <button
+            disabled={isPending}
+            onClick={(e) => {
+              e.stopPropagation();
+              onConnect(user_id);
+            }}
+            className={`cursor-pointer absolute top-1.5 right-1.75 min-w-20.25 h-7.5 rounded-[50px] text-xs flex items-center justify-center gap-1 shadow-sm transition
+              ${
+                isPending
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white hover:bg-gray-100 text-gray-800"
+              }
+            `}
+          >
+            {isPending ? "Request Sent" : "Connect"}
+
+            {isPending ? (
+              <Loader2 className="shrink-0 size-2.5 animate-spin" />
+            ) : (
+              <PlusIcon className="shrink-0 size-2.5" />
+            )}
           </button>
         </div>
 
@@ -36,9 +86,9 @@ const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
           </div>
 
           <h3 className="font-medium text-black text-[13px] leading-tight">
-            {name}
+            {full_name}
           </h3>
-          <p className="text-[#888888] text-[13px]">{handle}</p>
+          <p className="text-[#888888] text-[13px]"> @{user_id?.slice(0, 8)}</p>
 
           {/* <p className="text-[#888888] text-xs leading-relaxed mb-[8.73px]">
             {bio}
@@ -47,17 +97,21 @@ const ExploreCard = ({ name, handle, bio, followers, posts, badges }: any) => {
       </div>
       <div className="flex-1 flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
         <p className="text-xs text-[#888888]">Followers:</p>{" "}
-        <span className="font-medium text-[13px] ">{followers}</span>
+        <span className="font-medium text-[13px]">{Math.max(0, score)}</span>
       </div>
       <div className="flex-1 flex flex-wrap gap-2 mt-3.5 mb-5.75 px-4">
-        {interests.map((interest, index) => (
-          <span
-            key={interest}
-            className="px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
-          >
-            {interest}
-          </span>
-        ))}
+        {shared_interests?.length > 0 ? (
+          shared_interests.map((interest, index) => (
+            <span
+              key={index}
+              className="px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
+            >
+              {interest}
+            </span>
+          ))
+        ) : (
+          <span className="text-xs text-gray-400">No interests</span>
+        )}
       </div>
 
       {/* Stats Grid */}

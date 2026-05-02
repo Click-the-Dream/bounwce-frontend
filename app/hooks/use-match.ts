@@ -11,20 +11,18 @@ const useMatch = () => {
     return useQuery({
       queryKey: ["matches", "suggest"],
       queryFn: async () => {
-        const res = await api.post("/matches/suggest");
-        return res?.data?.data || res?.data;
+        const res = await api.get("/matches/suggest");
+        return res?.data?.items || res?.data;
       },
       enabled: !!authDetails?.access_token,
     });
   };
-
-  // GET: Match Requests (incoming/outgoing depending on backend)
   const useGetMatchRequests = () => {
     return useQuery({
       queryKey: ["matches", "requests"],
       queryFn: async () => {
         const res = await api.get("/matches/requests");
-        return res?.data?.data || [];
+        return res?.data?.items || res?.data;
       },
       enabled: !!authDetails?.access_token,
     });
@@ -32,7 +30,10 @@ const useMatch = () => {
 
   // POST: Create Match Request
   const createMatchRequest = useMutation({
-    mutationFn: async (payload: { user_id: string; message?: string }) => {
+    mutationFn: async (payload: {
+      target_user_id: string;
+      message?: string;
+    }) => {
       const res = await api.post("/matches/requests", payload);
       return res.data;
     },

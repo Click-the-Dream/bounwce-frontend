@@ -29,6 +29,7 @@
   --grid-template-columns-auto: repeat(auto-fill, minmax(220px, 1fr));
   --grid-template-columns-responsive: repeat(auto-fill, minmax(300px, 1fr));
   --grid-template-columns-mobile: repeat(auto-fill, minmax(100px, 1fr));
+  --grid-template-columns-explore: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 /* Custom Font Faces - Fixed Weights */

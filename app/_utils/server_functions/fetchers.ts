@@ -27,6 +27,10 @@ export const productFetcher = async (id: string) => {
 };
 
 export const profileFetcher = async (userId: string) => {
-  const { data } = await api.get(`/users/${userId}`);
-  return data?.data || {};
+  try {
+    const { data } = await api.get(`/users/${userId}`);
+    return data?.data || null;
+  } catch (err) {
+    return null; // prevent build crash
+  }
 };

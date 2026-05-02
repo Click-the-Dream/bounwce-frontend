@@ -4,19 +4,20 @@ import { profileFetcher } from "@/app/_utils/server_functions/fetchers";
 
 export const generateMetadata = async ({ params }: any) => {
   const { userId } = await params;
-  const profile = await profileFetcher(userId);
-  if (!profile) {
+
+  try {
+    const profile = await profileFetcher(userId);
+
     return generatePageMetadata({
-      title: "Profile Not Found | Bouwnce",
-      description: "The requested profile could not be found.",
+      title: `${profile?.full_name || userId}`,
+      description: `View ${profile?.full_name || userId}'s profile on Bouwnce.`,
+    });
+  } catch {
+    return generatePageMetadata({
+      title: `${userId}`,
       noIndex: true,
     });
   }
-
-  return generatePageMetadata({
-    title: `${profile.name} | Bouwnce`,
-    description: `View ${profile.name}'s profile on Bouwnce. Explore their activity, interests, and connections within the Bouwnce community.`,
-  });
 };
 
 const page = () => {

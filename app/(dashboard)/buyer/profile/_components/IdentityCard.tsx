@@ -1,16 +1,18 @@
 import {
+  Check,
   Image as ImageIcon,
+  Loader2,
   MessageCircleReply,
   MoreHorizontal,
   PlusCircle,
   Send,
-  Share2,
 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import userImg from "../../../../assets/buyer/user.jpg";
 import Image from "next/image";
 import SwitchAccountCard from "./SwitchAccountCard";
 import IdentityCardSkeleton from "./IdentityCardSkeleton";
+import useMatch from "@/app/hooks/use-match";
 
 type Props = {
   data: any;
@@ -19,7 +21,24 @@ type Props = {
 };
 
 const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
+  const { createMatchRequest } = useMatch();
+
+  const [sent, setSent] = useState(false);
+
   if (isLoading) return <IdentityCardSkeleton />;
+
+  const handleConnect = () => {
+    if (sent || createMatchRequest.isPending) return;
+
+    createMatchRequest.mutate(
+      { target_user_id: data.user_id },
+      {
+        onSuccess: () => {
+          setSent(true);
+        },
+      },
+    );
+  };
 
   return (
     <div className="bg-[#F7F7F7] p-3.75 w-full h-full">
@@ -58,8 +77,32 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
           </button>
         ) : (
           <>
-            <button className="cursor-pointer max-w-22 h-7.5 flex-1 bg-orange outline-[0.83px] outline-orange border border-[#F4F4F4] hover:bg-[#ee3d15] text-white p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all">
-              <PlusCircle fill="#8a0202" className="size-4 mr-1.75" /> Connect
+            <button
+              onClick={handleConnect}
+              disabled={sent || createMatchRequest.isPending}
+              className={`cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all
+                ${
+                  sent
+                    ? "bg-green-500 text-white cursor-not-allowed"
+                    : "bg-orange text-white hover:bg-[#ee3d15]"
+                }
+              `}
+            >
+              {sent ? (
+                <>
+                  <Check className="size-4 mr-1.75" />
+                  Sent
+                </>
+              ) : (
+                <>
+                  {createMatchRequest.isPending ? (
+                    <Loader2 className="size-4 animate-spin mr-1.75" />
+                  ) : (
+                    <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
+                  )}
+                  Connect
+                </>
+              )}
             </button>
             <button className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all">
               <MessageCircleReply className="size-3.5 mr-1.75" /> Message
@@ -88,7 +131,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
       </p>
 
       {/* SWITCH ACCOUNT */}
-      <SwitchAccountCard />
+      {isOwnProfile && <SwitchAccountCard />}
     </div>
   );
 };
