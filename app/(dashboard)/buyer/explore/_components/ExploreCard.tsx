@@ -1,13 +1,15 @@
 import Image from "next/image";
 import userImg from "../../../../assets/buyer/user.jpg";
 import { Loader2, PlusIcon } from "lucide-react";
-import { SuggestedCandidate } from "@/app/_utils/types/payload";
+import { ConnectStatus, SuggestedCandidate } from "@/app/_utils/types/payload";
 import useMatch from "@/app/hooks/use-match";
 import { useRouter } from "next/navigation";
+import { LuClock } from "react-icons/lu";
+import { slugify } from "@/app/_utils/slugify";
 
 type Props = SuggestedCandidate & {
   onConnect: (id: string) => void;
-  isPending?: boolean;
+  connectStatus?: ConnectStatus;
 };
 
 const interests = ["Reading", "Cooking", "Fitness"];
@@ -17,19 +19,16 @@ const ExploreCard = ({
   shared_interests,
   score,
   onConnect,
-  isPending,
+  connectStatus = "idle",
 }: Props) => {
   const router = useRouter();
-  const { createMatchRequest } = useMatch();
 
   const goToProfile = () => {
-    router.push(`/buyer/profile/${user_id}`);
+    router.push(`/buyer/profile/${slugify(full_name)}_${user_id}`);
   };
-  const handleConnect = () => {
-    createMatchRequest.mutate({
-      target_user_id: user_id,
-    });
-  };
+  const isLoading = connectStatus === "loading";
+  const isSent = connectStatus === "pending";
+  const isDisabled = isLoading || isSent;
 
   return (
     <div
@@ -46,22 +45,26 @@ const ExploreCard = ({
           />
 
           <button
-            disabled={isPending}
+            disabled={isDisabled}
             onClick={(e) => {
               e.stopPropagation();
-              onConnect(user_id);
+              if (!isDisabled) onConnect(user_id);
             }}
-            className={`cursor-pointer absolute top-1.5 right-1.75 min-w-20.25 h-7.5 rounded-[50px] text-xs flex items-center justify-center gap-1 shadow-sm transition
-              ${
-                isPending
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white hover:bg-gray-100 text-gray-800"
-              }
-            `}
+            className={`cursor-pointer absolute top-1.5 right-1.75 px-2 min-w-20.25 h-7.5 rounded-[50px] text-xs flex items-center justify-center gap-1 shadow-sm transition
+    ${
+      isSent
+        ? "bg-amber-50/70 text-amber-700 cursor-not-allowed"
+        : isLoading
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+          : "bg-white hover:bg-gray-100 text-gray-800"
+    }
+  `}
           >
-            {isPending ? "Request Sent" : "Connect"}
+            {isSent ? "Pending" : isLoading ? "Sending..." : "Connect"}
 
-            {isPending ? (
+            {isSent ? (
+              <LuClock />
+            ) : isLoading ? (
               <Loader2 className="shrink-0 size-2.5 animate-spin" />
             ) : (
               <PlusIcon className="shrink-0 size-2.5" />
@@ -101,7 +104,7 @@ const ExploreCard = ({
       </div>
       <div className="flex-1 flex flex-wrap gap-2 mt-3.5 mb-5.75 px-4">
         {shared_interests?.length > 0 ? (
-          shared_interests.map((interest, index) => (
+          shared_interests.slice(0, 3)?.map((interest, index) => (
             <span
               key={index}
               className="px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
@@ -110,7 +113,7 @@ const ExploreCard = ({
             </span>
           ))
         ) : (
-          <span className="text-xs text-gray-400">No interests</span>
+          <span className="text-xs text-gray-400">No interests in common</span>
         )}
       </div>
 

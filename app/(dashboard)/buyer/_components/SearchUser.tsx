@@ -1,13 +1,22 @@
 import SafeImage from "@/app/_components/SafeImage";
-import React from "react";
+import { slugify } from "@/app/_utils/slugify";
+import { SuggestedCandidate } from "@/app/_utils/types/payload";
+import { useRouter } from "next/navigation";
 
-const SearchUser = ({ item }: any) => {
+const SearchUser = ({ item }: { item: SuggestedCandidate }) => {
+  const router = useRouter();
+  const goToProfile = () => {
+    router.push(`/buyer/profile/${slugify(item?.full_name)}_${item?.user_id}`);
+  };
   return (
-    <div className="flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer transition-colors rounded-xl group">
+    <div
+      onClick={goToProfile}
+      className="flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer transition-colors rounded-xl group"
+    >
       <div className="relative w-10 h-10 shrink-0">
-        {item.type === "image" ? (
+        {item?.profile ? (
           <SafeImage
-            src={item.src}
+            src={item.profile}
             alt="Profile"
             width={40}
             height={40}
@@ -25,15 +34,17 @@ const SearchUser = ({ item }: any) => {
                 "0px 0px 2.03px 0.51px #00000040, 0.51px -3.05px 2.03px 1.52px #00000040 inset",
             }}
           >
-            {item.initials}
+            {item?.full_name?.slice(0, 2).toUpperCase() || "NA"}
           </div>
         )}
       </div>
       <div className="flex flex-col">
         <span className="text-[13px] text-black leading-tight transition-colors">
-          {item.name}
+          {item?.full_name}
         </span>
-        <span className="text-[13px] text-[#747474]">{item.handle}</span>
+        <span className="text-[13px] text-[#747474]">
+          @{item?.user_id?.slice(0, 10) || "N/A"}
+        </span>
       </div>
     </div>
   );

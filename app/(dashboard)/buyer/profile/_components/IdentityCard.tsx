@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Check,
   Image as ImageIcon,
@@ -6,13 +8,16 @@ import {
   MoreHorizontal,
   PlusCircle,
   Send,
+  X,
 } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import userImg from "../../../../assets/buyer/user.jpg";
 import Image from "next/image";
 import SwitchAccountCard from "./SwitchAccountCard";
 import IdentityCardSkeleton from "./IdentityCardSkeleton";
 import useMatch from "@/app/hooks/use-match";
+import { onSuccess } from "@/app/_utils/notification";
+import { useAuth } from "@/app/context/AuthContext";
 
 type Props = {
   data: any;
@@ -21,20 +26,91 @@ type Props = {
 };
 
 const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
-  const { createMatchRequest } = useMatch();
+  const { authDetails } = useAuth();
 
-  const [sent, setSent] = useState(false);
+  const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
+    useMatch();
+
+  const { data: matchRequests } = useGetMatchRequests();
 
   if (isLoading) return <IdentityCardSkeleton />;
 
+  // RELATIONSHIP CHECK (SOURCE OF TRUTH)
+  // const relation = matchRequests?.find((req: any) => {
+  //   return (
+  //     (req.requester_id === authDetails?.user?.id &&
+  //       req.target_user_id === data.id) ||
+  //     (req.requester_id === data.id &&
+  //       req.target_user_id === authDetails?.user?.id)
+  //   );
+  // });
+  const relation = matchRequests?.find((req: any) => {
+    return (
+      req.target_user_id === data.id ||
+      (req.requester_id === data.id &&
+        req.target_user_id === authDetails?.user?.id)
+    );
+  });
+
+  const status = relation?.status;
+
+  const isRequester = relation?.target_user_id !== authDetails?.user?.id;
+
+  const isPending = status === "pending";
+  const isConnected = status === "accepted";
+
+  const isIncoming = isPending && !isRequester;
+  const isOutgoing = isPending && isRequester;
+
+  const isSent = !!relation;
+
   const handleConnect = () => {
-    if (sent || createMatchRequest.isPending) return;
+    if (isSent || createMatchRequest.isPending) return;
 
     createMatchRequest.mutate(
-      { target_user_id: data.user_id },
+      { target_user_id: data.id },
       {
         onSuccess: () => {
-          setSent(true);
+          onSuccess({
+            title: "Connection Request Sent",
+            message: "Your connection request has been sent successfully.",
+          });
+        },
+      },
+    );
+  };
+
+  // ACCEPT
+  const handleAccept = () => {
+    respondToMatchRequest.mutate(
+      {
+        request_id: relation.request_id,
+        action: "accept",
+      },
+      {
+        onSuccess: () => {
+          onSuccess({
+            title: "Connected",
+            message: "You are now connected",
+          });
+        },
+      },
+    );
+  };
+
+  //  REJECT
+  const handleReject = () => {
+    respondToMatchRequest.mutate(
+      {
+        request_id: relation.request_id,
+        action: "reject",
+      },
+      {
+        onSuccess: () => {
+          onSuccess({
+            title: "Request Rejected",
+            message: "Connection request rejected",
+          });
         },
       },
     );
@@ -77,37 +153,70 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
           </button>
         ) : (
           <>
-            <button
-              onClick={handleConnect}
-              disabled={sent || createMatchRequest.isPending}
-              className={`cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all
-                ${
-                  sent
-                    ? "bg-green-500 text-white cursor-not-allowed"
-                    : "bg-orange text-white hover:bg-[#ee3d15]"
-                }
-              `}
-            >
-              {sent ? (
-                <>
-                  <Check className="size-4 mr-1.75" />
-                  Sent
-                </>
-              ) : (
-                <>
-                  {createMatchRequest.isPending ? (
-                    <Loader2 className="size-4 animate-spin mr-1.75" />
-                  ) : (
-                    <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
-                  )}
-                  Connect
-                </>
-              )}
-            </button>
+            {/* CONNECT BUTTON (ONLY WHEN NO RELATION) */}
+            {!relation && (
+              <button
+                onClick={handleConnect}
+                disabled={createMatchRequest.isPending}
+                className="cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all bg-orange text-white hover:bg-[#ee3d15]"
+              >
+                {createMatchRequest.isPending ? (
+                  <Loader2 className="size-4 animate-spin mr-1.75" />
+                ) : (
+                  <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
+                )}
+                Connect
+              </button>
+            )}
+
+            {/* PENDING OUTGOING */}
+            {isOutgoing && (
+              <button
+                disabled
+                className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center"
+              >
+                Pending
+              </button>
+            )}
+
+            {/* INCOMING REQUEST */}
+            {isIncoming && (
+              <>
+                <button
+                  onClick={handleAccept}
+                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition"
+                  title="Accept"
+                >
+                  <Check className="size-4" />
+                </button>
+
+                <button
+                  onClick={handleReject}
+                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition"
+                  title="Reject"
+                >
+                  <X className="size-4" />
+                </button>
+              </>
+            )}
+
+            {/* CONNECTED */}
+            {isConnected && (
+              <button
+                disabled
+                className="cursor-pointer max-w-22 h-7.5 flex-1 bg-green-100 text-green-700 rounded-full text-xs flex items-center justify-center"
+              >
+                Connected
+              </button>
+            )}
+
+            {/* MESSAGE BUTTON (UNCHANGED, ALWAYS PRESENT) */}
             <button className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all">
-              <MessageCircleReply className="size-3.5 mr-1.75" /> Message
+              <MessageCircleReply className="size-3.5 mr-1.75" />
+              Message
             </button>
 
+            {/* MORE BUTTON */}
             <button className="cursor-pointer ml-auto bg-[#D9D9D9] flex items-center justify-center text-black rounded-full hover:bg-[#c6c4c4] transition-colors w-6 h-6">
               <MoreHorizontal className="size-3" />
             </button>
@@ -135,4 +244,5 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
     </div>
   );
 };
+
 export default IdentityCard;

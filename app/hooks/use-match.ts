@@ -66,7 +66,7 @@ const useMatch = () => {
       queryKey: ["matches", "list"],
       queryFn: async () => {
         const res = await api.get("/matches");
-        return res?.data?.data || [];
+        return res?.data?.items || [];
       },
       enabled: !!authDetails?.access_token,
     });

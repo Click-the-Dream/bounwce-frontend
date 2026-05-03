@@ -1,28 +1,30 @@
 "use client";
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
-import { SEARCH_RESULTS } from "@/app/_utils/dummy";
 import SafeImage from "@/app/_components/SafeImage";
 import SearchUser from "./SearchUser";
+import useMatch from "@/app/hooks/use-match";
+import { SuggestedCandidate } from "@/app/_utils/types/payload";
 
 const SearchComponent = () => {
+  const { useGetMatches, useGetSuggestedCandidates } = useMatch();
   const [isFocused, setIsFocused] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: matches } = useGetMatches();
+  const { data: suggestions } = useGetSuggestedCandidates();
 
   // Memoized filtering logic based on name, handle, or tags
   const filteredResults = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
-    if (!query) return SEARCH_RESULTS;
 
-    // Split search into individual words (e.g., "gym partner" -> ["gym", "partner"])
     const keywords = query.split(/\s+/);
 
     const filterFn = (item: any) => {
-      const name = item.name.toLowerCase();
-      const handle = item.handle.toLowerCase();
-      const tags = item.tags?.map((t: string) => t.toLowerCase()) || [];
+      const name = item.full_name?.toLowerCase?.() || "";
+      const handle = item.handle?.toLowerCase?.() || "";
+      const tags =
+        item.shared_interests?.map((t: string) => t.toLowerCase()) || [];
 
-      // Check if EVERY keyword typed exists somewhere in the item's data
       return keywords.every(
         (word) =>
           name.includes(word) ||
@@ -31,11 +33,20 @@ const SearchComponent = () => {
       );
     };
 
+    if (!query) {
+      return {
+        matched: matches ?? [],
+        suggestions: suggestions ?? [],
+      };
+    }
+
     return {
-      matched: SEARCH_RESULTS.matched.filter(filterFn),
-      suggestions: SEARCH_RESULTS.suggestions.filter(filterFn),
+      matched: (matches ?? []).filter(filterFn),
+      suggestions: (suggestions ?? []).filter(filterFn),
     };
-  }, [searchTerm]);
+  }, [searchTerm, matches, suggestions]);
+
+  const isLoading = !matches || !suggestions;
 
   return (
     <div
@@ -58,7 +69,12 @@ const SearchComponent = () => {
 
       {/* --- DROPDOWN RESULTS --- */}
       {isFocused && (
-        <div className="absolute top-0 left-0 min-w-80 w-full max-h-109.75 pt-10 bg-white border border-gray-200 rounded-xl shadow-2xl z-10 overflow-hidden min-h-112.5 transition-all duration-200">
+        <div className="fixed md:absolute top-0 left-0 min-w-80 w-full max-h-109.75 pt-10 bg-white border border-gray-200 rounded-xl shadow-2xl z-10 overflow-hidden min-h-112.5 transition-all duration-200">
+          {isLoading && (
+            <div className="text-center py-6 text-sm text-gray-400">
+              Loading results...
+            </div>
+          )}
           <div className="p-4 space-y-6">
             {/* Matched Section */}
             {filteredResults.matched.length > 0 && (
@@ -67,9 +83,11 @@ const SearchComponent = () => {
                   Matched
                 </h4>
                 <div className="space-y-1 px-6">
-                  {filteredResults.matched.map((item) => (
-                    <SearchUser key={item.id} item={item} />
-                  ))}
+                  {filteredResults.matched.map(
+                    (item: SuggestedCandidate, idx: number) => (
+                      <SearchUser key={idx} item={item} />
+                    ),
+                  )}
                 </div>
               </section>
             )}
@@ -81,9 +99,11 @@ const SearchComponent = () => {
                   More Sugggestions
                 </h4>
                 <div className="space-y-1 px-6">
-                  {filteredResults.suggestions.map((item) => (
-                    <SearchUser key={item.id} item={item} />
-                  ))}
+                  {filteredResults.suggestions.map(
+                    (item: SuggestedCandidate, idx: number) => (
+                      <SearchUser key={idx} item={item} />
+                    ),
+                  )}
                 </div>
               </section>
             )}

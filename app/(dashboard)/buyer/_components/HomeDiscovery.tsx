@@ -1,20 +1,15 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Send } from "lucide-react";
+import useInterest from "@/app/hooks/use-interest";
 
 const HomeDiscovery = () => {
   const [searchValue, setSearchValue] = useState("");
   const [liveIndex, setLiveIndex] = useState(0);
   const [expandedFeed, setExpandedFeed] = useState<any>(null);
-
-  const discoveryTags = [
-    { label: "Artisan Coffee" },
-    { label: "Local Clothing Brands" },
-    { label: "Pet Grooming Nearby" },
-    { label: "Book Club Meetings" },
-    { label: "Artisanal Crafters" },
-    { label: "Local Plants & Flowers" },
-  ];
+  const { useGetUserInterests } = useInterest();
+  const { data: userInterests = [], isLoading: isLoadingInterests } =
+    useGetUserInterests();
 
   const suggestionBank = [
     "Find local coffee spots",
@@ -94,13 +89,13 @@ const HomeDiscovery = () => {
 
       {/* TAGS */}
       <div className="flex flex-wrap justify-center gap-3 max-w-3xl mb-10">
-        {discoveryTags.map((tag, index) => (
+        {userInterests.map((tag: string, index: number) => (
           <button
             key={index}
-            onClick={() => setSearchValue(tag.label)}
+            onClick={() => setSearchValue(tag)}
             className="flex items-center gap-2.5 px-5 py-2.5 bg-white border border-gray-200 rounded-full text-xs md:text-sm font-medium text-gray-800 hover:shadow-md hover:border-orange-200 transition-all active:scale-95"
           >
-            {tag.label}
+            {tag}
           </button>
         ))}
       </div>

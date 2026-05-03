@@ -10,7 +10,6 @@ import profileBg from "../../../../assets/buyer/profile-bg.jpg";
 import { profileHelper } from "@/app/helpers/profile-helper";
 import useUser from "@/app/hooks/use-user";
 import useInterest from "@/app/hooks/use-interest";
-import Fallback from "@/app/_components/Fallback";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("Posts");
@@ -58,6 +57,7 @@ export default function ProfilePage() {
   }
 
   const userData = {
+    id: user?.id,
     name: user?.full_name,
     handle: user?.username,
     bio: user?.bio ?? "Better to be woke and broke than sleep and creep",

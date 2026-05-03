@@ -1,5 +1,6 @@
 import { useParams } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import { getIDFromSlug } from "../_utils/slugify";
 
 export const profileHelper = () => {
   const { authDetails } = useAuth();
@@ -8,7 +9,7 @@ export const profileHelper = () => {
   const viewerId = authDetails?.user?.id;
 
   // IMPORTANT: explicit routing rule
-  const profileId = params?.userId ?? viewerId;
+  const profileId = getIDFromSlug(params?.userId)?.profileId ?? viewerId;
 
   const isOwnProfile = viewerId === profileId;
 

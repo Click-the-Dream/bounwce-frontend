@@ -45,7 +45,7 @@ const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
 
-      {/* <InterestSelector /> */}
+      <InterestSelector />
     </ChatProvider>
   );
 };

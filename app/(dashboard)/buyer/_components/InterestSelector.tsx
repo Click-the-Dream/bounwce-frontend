@@ -15,13 +15,13 @@ const InterestSelector = () => {
   } = useInterest();
 
   const {
-    data: userData = [],
+    data: userInterests = [],
     isLoading: isLoadingUser,
     isError: isErrorUser,
     refetch: refetchUserInterests,
   } = useGetUserInterests();
 
-  const hasInterests = userData.length > 0;
+  const hasInterests = userInterests.length > 0;
 
   const {
     data: availableData,
@@ -38,20 +38,20 @@ const InterestSelector = () => {
 
   useEffect(() => {
     setIsOpen(!hasInterests);
-  }, [userData]);
+  }, [userInterests]);
 
   useEffect(() => {
-    if (!userData.length) return;
+    if (!userInterests.length) return;
 
     const formatted: Record<string, string[]> = {};
 
-    userData.forEach((item: any) => {
+    userInterests.forEach((item: any) => {
       const key = item.category?.toLowerCase().replace(/\s/g, "_");
       formatted[key] = item.interests;
     });
 
     setSelected(formatted);
-  }, [userData]);
+  }, [userInterests]);
 
   const categories = safeAvailable.map((item: any) => ({
     id: item.category?.toLowerCase().replace(/\s/g, "_"),
@@ -88,7 +88,7 @@ const InterestSelector = () => {
     }
 
     try {
-      if (userData.length > 0) {
+      if (userInterests.length > 0) {
         await updateUserInterests.mutateAsync(payload as any);
       } else {
         await addUserInterests.mutateAsync(payload as any);
