@@ -2,8 +2,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Send } from "lucide-react";
 import useInterest from "@/app/hooks/use-interest";
+import useMatch from "@/app/hooks/use-match";
 
 const HomeDiscovery = () => {
+  const { useSearchUsers } = useMatch();
   const [searchValue, setSearchValue] = useState("");
   const [liveIndex, setLiveIndex] = useState(0);
   const [expandedFeed, setExpandedFeed] = useState<any>(null);

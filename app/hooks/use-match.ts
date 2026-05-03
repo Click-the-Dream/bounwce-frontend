@@ -72,10 +72,32 @@ const useMatch = () => {
     });
   };
 
+  const useSearchUsers = (
+    message: string,
+    page: number = 1,
+    page_size: number = 10,
+  ) => {
+    return useQuery({
+      queryKey: ["matches", "search", message, page, page_size],
+      queryFn: async () => {
+        const res = await api.get("/matches/search", {
+          params: {
+            message,
+            page,
+            page_size,
+          },
+        });
+        return res?.data?.items || res?.data || [];
+      },
+      enabled: !!authDetails?.access_token && !!message, // prevent empty calls
+    });
+  };
+
   return {
     useGetSuggestedCandidates,
     useGetMatchRequests,
     useGetMatches,
+    useSearchUsers,
     createMatchRequest,
     respondToMatchRequest,
   };

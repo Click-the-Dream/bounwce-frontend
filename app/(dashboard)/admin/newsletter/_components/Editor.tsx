@@ -14,7 +14,9 @@ const Editor = ({ setIsEditorOpen, formData, setFormData, editingId }: any) => {
     useNewsletter();
 
   const isBroadcasting =
-    broadcastNewsletter.isPending || updateNewsletter.isPending;
+    broadcastNewsletter.isPending ||
+    updateNewsletter.isPending ||
+    createNewsletter.isPending;
 
   const isSaving = createNewsletter.isPending || updateNewsletter.isPending;
 
