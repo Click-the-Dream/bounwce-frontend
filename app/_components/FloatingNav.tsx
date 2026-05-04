@@ -142,7 +142,7 @@ const FloatingNav = () => {
 
         <motion.button
           onClick={() => !isDragging && setIsOpen(!isOpen)}
-          className={`w-full h-full flex items-center justify-center rounded-full text-white shadow-xl ${
+          className={`cursor-pointer w-full h-full flex items-center justify-center rounded-full text-white shadow-xl ${
             isOpen ? "bg-neutral-800" : "bg-[#FF4B2B]"
           }`}
         >
