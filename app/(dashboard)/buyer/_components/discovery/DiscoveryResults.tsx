@@ -29,16 +29,7 @@ const DiscoveryResults = ({
   const hasPrev = currentIndex > 0;
 
   return (
-    <div className="w-full max-w-2xl space-y-3 mb-5">
-      {urlQuery && (
-        <div className="flex items-center gap-2 mb-5 sticky top-10 backdrop-blur-2xl">
-          <span className="text-xs text-gray-500">Results for</span>
-
-          <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium line-clamp-1">
-            "{urlQuery}"
-          </span>
-        </div>
-      )}
+    <div className="w-full h-full max-w-2xl space-y-3 mb-5">
       {/* LOADING */}
       {isSearching && (
         <div className="bg-white border border-gray-200 rounded-xl p-4">

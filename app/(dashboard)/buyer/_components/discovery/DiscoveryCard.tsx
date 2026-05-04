@@ -27,7 +27,7 @@ export const DiscoveryCard = ({ currentUser }: DiscoveryCardProps) => {
         {currentUser.shared_interests?.slice(0, 3).map((i: string) => (
           <span
             key={i}
-            className="text-[10px] sm:text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600"
+            className="text-xs px-2 py-0.5 bg-gray-100 rounded-md text-gray-600"
           >
             {i}
           </span>

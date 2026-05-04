@@ -89,54 +89,66 @@ const HomeDiscovery = () => {
     if (!searchValue.trim()) return;
 
     router.push(`${pathname}?q=${encodeURIComponent(searchValue.trim())}`);
+    setSearchValue("");
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50 flex flex-col items-center px-6 pt-24">
-      {!hasSearched && (
-        <div className="max-w-4xl text-center mb-10">
-          <h1 className="text-4xl font-bold text-[#1A1A1A] mb-3">
-            Find what’s happening around you
-          </h1>
-          <p className="text-sm text-gray-600">
-            Discover people, places, and experiences near you.
-          </p>
-        </div>
-      )}
+    <div className="min-h-screen bg-slate-50 flex flex-col px-6 pt-24 pb-4">
+      <div className="flex-1 w-full flex flex-col items-center">
+        {urlQuery && (
+          <div className="flex w-full max-w-2xl items-center gap-2 mb-5">
+            <span className="text-xs text-gray-500">Results for</span>
 
-      {hasSearched && (
-        <DiscoveryResults
-          currentIndex={currentIndex}
-          searchResults={searchResults}
-          setCurrentIndex={setCurrentIndex}
-          isSearching={isSearching}
-          loadingStep={loadingStep}
-          urlQuery={urlQuery}
-        />
-      )}
-      <div
-        className={`flex gap-2 max-w-2xl w-full ${
-          hasSearched
-            ? "overflow-x-auto justify-start p-2 sticky bottom-23"
-            : "flex-wrap justify-center"
-        }`}
-      >
-        {userInterests.map((tag: string, i: number) => (
-          <button
-            key={i}
-            onClick={() => {
-              setSearchValue(tag);
-              router.push(`${pathname}?q=${tag}`);
-            }}
-            className="
-              px-4 py-2 bg-white border border-gray-200
-              rounded-full text-xs whitespace-nowrap
-              hover:shadow-md transition-all duration-200
-            "
-          >
-            {tag}
-          </button>
-        ))}
+            <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium line-clamp-1">
+              "{urlQuery}"
+            </span>
+          </div>
+        )}
+        {/* HERO */}
+        {!hasSearched && (
+          <div className="max-w-4xl text-center mb-10">
+            <h1 className="text-4xl font-bold text-[#1A1A1A] mb-3">
+              Find what’s happening around you
+            </h1>
+            <p className="text-sm text-gray-600">
+              Discover people, places, and experiences near you.
+            </p>
+          </div>
+        )}
+
+        {/* INTEREST TAGS */}
+        <div
+          className={`flex gap-2 max-w-2xl w-full ${
+            hasSearched
+              ? "overflow-x-auto justify-start p-2 sticky bottom-23"
+              : "flex-wrap justify-center"
+          }`}
+        >
+          {userInterests.map((tag: string, i: number) => (
+            <button
+              key={i}
+              onClick={() => {
+                setSearchValue(tag);
+                router.push(`${pathname}?q=${tag}`);
+              }}
+              className="px-4 py-2 bg-white border-[0.83px] border-gray-200 rounded-[10px] text-xs whitespace-nowrap hover:shadow-md transition-all duration-200"
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
+        {/* RESULTS */}
+        {hasSearched && (
+          <DiscoveryResults
+            currentIndex={currentIndex}
+            searchResults={searchResults}
+            setCurrentIndex={setCurrentIndex}
+            isSearching={isSearching}
+            loadingStep={loadingStep}
+            urlQuery={urlQuery}
+          />
+        )}
       </div>
 
       <DiscoverySearchBar

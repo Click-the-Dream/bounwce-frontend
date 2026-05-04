@@ -10,9 +10,6 @@ interface DiscoverySearchBarProps {
   interests: string[];
 }
 
-/**
- * Clean typing placeholder (stable, no cut-off)
- */
 const TypingPlaceholder = ({ text }: { text: string }) => {
   const [displayed, setDisplayed] = useState("");
 
@@ -51,9 +48,6 @@ export const DiscoverySearchBar = ({
   const [index, setIndex] = useState(0);
   const [pool, setPool] = useState<string[]>([]);
 
-  /**
-   * Build INTEREST-ONLY placeholder pool
-   */
   useEffect(() => {
     if (!interests || interests.length === 0) {
       setPool([]);
@@ -70,9 +64,6 @@ export const DiscoverySearchBar = ({
     setIndex(0);
   }, [interests]);
 
-  /**
-   * Rotate ONLY when idle
-   */
   useEffect(() => {
     if (searchValue.length > 0 || pool.length === 0) return;
 
@@ -86,7 +77,7 @@ export const DiscoverySearchBar = ({
   const text = pool[index] || "";
 
   return (
-    <div className="w-full max-w-2xl sticky bottom-4">
+    <div className="w-full max-w-2xl sticky bottom-4 mx-auto">
       <div className="flex items-center bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-sm">
         <Search className="w-5 h-5 text-gray-400 ml-2" />
 
@@ -98,17 +89,18 @@ export const DiscoverySearchBar = ({
             className="w-full px-3 py-5 outline-none bg-transparent text-sm sm:text-base relative z-10"
           />
 
-          {/* ONLY INTEREST PLACEHOLDER */}
           {searchValue.length === 0 && text && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none whitespace-nowrap overflow-hidden">
-              <TypingPlaceholder text={text} />
+            <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none overflow-hidden">
+              <div className="truncate">
+                <TypingPlaceholder text={text} />
+              </div>
             </div>
           )}
         </div>
 
         <button
           onClick={handleSearch}
-          className="p-2 text-gray-400 hover:text-orange-500 transition"
+          className="cursor-pointer text-gray-400 hover:text-orange-500 transition"
         >
           <Send className="w-5 h-5" />
         </button>
