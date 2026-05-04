@@ -808,3 +808,16 @@ export const MESSAGES_DATA: Record<number, Message[]> = {
     },
   ],
 };
+
+export const loadingSteps = [
+  "Scanning nearby connections...",
+  "Matching shared interests...",
+  "Ranking best people for you...",
+];
+
+export const placeholders = [
+  "Search people near you...",
+  "Find designers, founders, creatives...",
+  "Discover matches by interest...",
+  "Explore nearby connections...",
+];

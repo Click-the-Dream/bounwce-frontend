@@ -1,7 +1,12 @@
 "use client";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 const useMatch = () => {
   const { authDetails } = useAuth();
@@ -72,24 +77,31 @@ const useMatch = () => {
     });
   };
 
-  const useSearchUsers = (
-    message: string,
-    page: number = 1,
-    page_size: number = 10,
-  ) => {
-    return useQuery({
-      queryKey: ["matches", "search", message, page, page_size],
-      queryFn: async () => {
+  const useSearchUsers = (message: string, page_size: number = 10) => {
+    return useInfiniteQuery({
+      queryKey: ["matches", "search", message, page_size],
+
+      enabled: !!message,
+
+      initialPageParam: 1,
+
+      queryFn: async ({ pageParam = 1 }) => {
         const res = await api.get("/matches/search", {
           params: {
             message,
-            page,
+            page: pageParam,
             page_size,
           },
         });
-        return res?.data?.items || res?.data || [];
+
+        return res?.data;
       },
-      enabled: !!authDetails?.access_token && !!message, // prevent empty calls
+
+      getNextPageParam: (lastPage, allPages) => {
+        const hasMore = lastPage?.items?.length === page_size;
+
+        return hasMore ? allPages.length + 1 : undefined;
+      },
     });
   };
 
