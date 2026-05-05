@@ -19,18 +19,18 @@ const ChatCard = ({ chat }: any) => {
             "0px 0px 2.03px 0.51px #00000040, 0.51px -3.05px 2.03px 1.52px #00000040 inset",
         }}
       >
-        {chat.full_name ? (
-          <div className="w-9.25 h-9.25 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-black">
-            {chat.full_name?.slice(0, 2) || "NA"}
-          </div>
-        ) : (
+        {chat.profile ? (
           <SafeImage
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.name}${chat?.id}`}
+            src={chat.profile.url}
             alt="Profile"
             width={40}
             height={40}
             className="w-9.25 h-9.25 rounded-[10px] object-cover"
           />
+        ) : (
+          <div className="w-9.25 h-9.25 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-black">
+            {chat.full_name?.slice(0, 2) || "NA"}
+          </div>
         )}
         <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-[0.83px] border-white rounded-full"></span>
       </div>

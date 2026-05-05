@@ -23,7 +23,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
       page_size: 20,
       name: search,
     }),
-    [search],
+    [],
   );
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
@@ -41,7 +41,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
-      <div className="bg-white w-md rounded-xl shadow-xl overflow-hidden">
+      <div className="bg-white w-md rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* HEADER */}
         <div className="p-5 flex justify-between items-start">
           <div>
@@ -83,16 +83,19 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                 className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2"
               >
                 <div className="size-9.25 rounded-[10px] overflow-hidden bg-gray-200">
-                  <SafeImage
-                    src={
-                      user.avatar ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.full_name}${user.id}`
-                    }
-                    alt={user.full_name}
-                    width={40}
-                    height={40}
-                    className="w-full h-full object-cover"
-                  />
+                  {user.profile ? (
+                    <SafeImage
+                      src={user.profile.url}
+                      alt={user.full_name}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover rounded-[10px]"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-[10px] bg-gray-100 flex items-center justify-center font-bold text-black">
+                      {user.full_name?.slice(0, 2) || "NA"}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -110,11 +113,14 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
         {/* FOOTER */}
         <div className="p-5 grid grid-cols-2 gap-2.25">
-          <button onClick={onClose} className="py-2 border rounded-[10px]">
+          <button
+            onClick={onClose}
+            className="cursor-pointer py-2 border rounded-[10px]"
+          >
             Cancel
           </button>
 
-          <button className="py-3 bg-[#FF4D2D] text-white rounded-[10px]">
+          <button className="cursor-pointer py-2 bg-[#FF4D2D] text-white rounded-[10px]">
             Start Chat
           </button>
         </div>

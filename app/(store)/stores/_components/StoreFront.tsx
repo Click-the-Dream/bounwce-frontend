@@ -96,7 +96,7 @@ const StoreFront = () => {
         </div>
 
         {/* TABS */}
-        <div className="flex gap-6 mt-8 border-b">
+        <div className="flex gap-6 mt-8 border-b border-gray-300">
           <button
             onClick={() => setTab("products")}
             className={`pb-3 text-sm font-medium ${

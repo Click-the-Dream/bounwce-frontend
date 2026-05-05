@@ -13,7 +13,9 @@ import { useParams } from "next/navigation";
 const MessageList = ({ selectedChat }: { selectedChat: User }) => {
   const { chatId } = useParams<any>();
   const { useGetMessages } = useChat();
-  const { data: messages } = useGetMessages({ conversationId: chatId });
+  const { data: messages, isLoading } = useGetMessages({
+    conversationId: chatId,
+  });
   const { typingUsers } = useChatUtils();
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -48,6 +50,48 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
         <p className="text-xs text-[#9C9C9C] max-w-62.5 mt-2">
           Select a conversation from the sidebar to start gisting.
         </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+        {[...Array(6)].map((_, i) => {
+          const isMe = i % 2 === 0;
+
+          return (
+            <div
+              key={i}
+              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`
+                animate-pulse rounded-2xl px-4 py-3
+                ${isMe ? "bg-gray-200" : "bg-gray-100"}
+              `}
+                style={{
+                  width: `${Math.random() * 40 + 30}%`,
+                  height: "40px",
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (chatMessages.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+        <div className="bg-gray-100 p-4 rounded-full mb-3">
+          <MessageSquareDashed className="size-6 text-gray-400" />
+        </div>
+
+        <p className="text-sm text-gray-500">No messages yet</p>
+
+        <p className="text-xs text-gray-400 mt-1">Start the conversation 👋</p>
       </div>
     );
   }

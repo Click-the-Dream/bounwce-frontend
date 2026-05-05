@@ -26,7 +26,7 @@ const useUser = () => {
       enabled,
     });
 
-  const useGetUserById = (userId: any) =>
+  const useGetUserById = (userId: string) =>
     useQuery({
       queryKey: ["user", userId],
       queryFn: async () => {
@@ -34,6 +34,7 @@ const useUser = () => {
         return res.data?.data;
       },
       enabled: !!userId,
+      staleTime: 1000 * 60 * 5,
     });
 
   const useGetUsers = (params: { page_size?: number; name?: string } = {}) =>

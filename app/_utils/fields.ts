@@ -88,8 +88,16 @@ export const socialLinks = [
 ];
 
 export const navLinks = [
-  { name: "About us", path: "/about" },
-  { name: "Privacy Policy", path: "/privacy-policy" },
-  { name: "Terms of Service", path: "/terms" },
-  { name: "Contact", path: "/contact" },
+  { name: "Stores", path: "/stores" },
+  { name: "Marketplace", path: "/marketplace" },
+];
+
+export const referralOptions = [
+  { label: "LinkedIn", value: "linkedin" },
+  { label: "Twitter (X)", value: "twitter" },
+  { label: "Instagram", value: "instagram" },
+  { label: "WhatsApp", value: "whatsapp" },
+  { label: "Friend / Referral", value: "referral" },
+  { label: "Google Search", value: "google" },
+  { label: "Other", value: "other" },
 ];
