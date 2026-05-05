@@ -1,5 +1,10 @@
 import { useContext } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AuthContext } from "../context/AuthContext";
 import api from "../services/api";
 import { extractErrorMessage } from "../_utils/formatters";
@@ -309,6 +314,34 @@ const useStore = () => {
         !!authDetails?.access_token && authDetails?.user?.role === "vendor",
     });
 
+  const useGetStores = (searchParams: { name: string; page_size: number }) =>
+    useInfiniteQuery({
+      queryKey: ["stores", searchParams],
+
+      queryFn: async ({ pageParam = 1 }) => {
+        const response = await client.get("/store", {
+          params: {
+            ...searchParams,
+            page: pageParam,
+          },
+        });
+
+        return response.data.data;
+      },
+
+      getNextPageParam: (lastPage: any) => {
+        const currentPage = lastPage.page;
+        const total = lastPage.total;
+        const pageSize = lastPage.page_size;
+
+        const hasMore = currentPage * pageSize < total;
+
+        return hasMore ? currentPage + 1 : undefined;
+      },
+
+      initialPageParam: 1,
+    });
+
   return {
     useGetStoreInfo,
     useGetMyStore,
@@ -328,6 +361,7 @@ const useStore = () => {
     updatePayout,
     deletePayout,
     useGetStoreOnboardingStatus,
+    useGetStores,
   };
 };
 

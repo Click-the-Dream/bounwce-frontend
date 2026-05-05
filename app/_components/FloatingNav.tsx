@@ -64,7 +64,7 @@ const FloatingNav = () => {
   return (
     <div
       ref={constraintsRef}
-      className="fixed inset-0 z-50 pointer-events-none"
+      className="fixed bottom-40 inset-0 z-50 pointer-events-none"
     >
       <AnimatePresence>
         {isOpen && (
@@ -142,7 +142,7 @@ const FloatingNav = () => {
 
         <motion.button
           onClick={() => !isDragging && setIsOpen(!isOpen)}
-          className={`w-full h-full flex items-center justify-center rounded-full text-white shadow-xl ${
+          className={`cursor-pointer w-full h-full flex items-center justify-center rounded-full text-white shadow-xl ${
             isOpen ? "bg-neutral-800" : "bg-[#FF4B2B]"
           }`}
         >

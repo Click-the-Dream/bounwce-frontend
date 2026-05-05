@@ -22,3 +22,12 @@ export interface Message {
   status: MessageStatus;
   isSender: boolean;
 }
+
+export interface User {
+  full_name: string;
+  id: string;
+  email: string;
+  is_active: boolean;
+  role: string;
+  username: string;
+}

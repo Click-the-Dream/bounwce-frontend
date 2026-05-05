@@ -6,17 +6,26 @@ import { MessageSquareDashed } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import ChatImageMessage from "./ChatImageMessage";
 import ImageViewer from "./ImageViewer";
+import { User } from "@/app/_utils/types/buyer";
+import useChat from "@/app/hooks/use-chat";
+import { useParams } from "next/navigation";
 
-const MessageList = () => {
-  const { selectedChat, messages, typingUsers } = useChatUtils();
+const MessageList = ({ selectedChat }: { selectedChat: User }) => {
+  const { chatId } = useParams<any>();
+  const { useGetMessages } = useChat();
+  const { data: messages, isLoading } = useGetMessages({
+    conversationId: chatId,
+  });
+  const { typingUsers } = useChatUtils();
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  const chatMessages = selectedChat ? messages[Number(selectedChat.id)] : [];
+  const chatMessages =
+    messages?.pages?.flatMap((page: any) => page.items || []) || [];
 
-  // ✅ FLATTEN IMAGES FOR VIEWER
+  // FLATTEN IMAGES FOR VIEWER
   const mediaImages =
     chatMessages
       ?.filter((m: any) => m.images?.length > 0)
@@ -45,14 +54,50 @@ const MessageList = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+        {[...Array(6)].map((_, i) => {
+          const isMe = i % 2 === 0;
+
+          return (
+            <div
+              key={i}
+              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`
+                animate-pulse rounded-2xl px-4 py-3
+                ${isMe ? "bg-gray-200" : "bg-gray-100"}
+              `}
+                style={{
+                  width: `${Math.random() * 40 + 30}%`,
+                  height: "40px",
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (chatMessages.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+        <div className="bg-gray-100 p-4 rounded-full mb-3">
+          <MessageSquareDashed className="size-6 text-gray-400" />
+        </div>
+
+        <p className="text-sm text-gray-500">No messages yet</p>
+
+        <p className="text-xs text-gray-400 mt-1">Start the conversation 👋</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
-      <div className="text-center">
-        <span className="text-[13px] text-black font-medium">
-          April 12, 2026
-        </span>
-      </div>
-
       {chatMessages?.map((msg: any) =>
         msg.images?.length > 0 ? (
           <ChatImageMessage

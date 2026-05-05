@@ -5,7 +5,6 @@ import { AuthProvider } from "./AuthContext";
 import { queryClient } from "../services/query-client";
 import { StoreProvider } from "./StoreContext";
 import { Slide, ToastContainer } from "react-toastify";
-import FloatingNav from "../_components/FloatingNav";
 
 const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -21,7 +20,6 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
             transition={Slide}
             theme="light"
           />
-          <FloatingNav />
         </StoreProvider>
       </AuthProvider>
     </QueryClientProvider>

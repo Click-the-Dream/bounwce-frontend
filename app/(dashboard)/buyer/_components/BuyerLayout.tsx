@@ -3,13 +3,14 @@ import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { ChatProvider } from "@/app/context/ChatContext";
+import InterestSelector from "./InterestSelector";
 
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <ChatProvider>
-      <div className="h-screen bg-[#FBFBFC] flex overflow-hidden">
+      <div className="h-screen w-full bg-[#FBFBFC] flex overflow-hidden">
         {/* Desktop Sidebar */}
         <Sidebar />
 
@@ -38,11 +39,13 @@ const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="w-full h-full flex-1 flex flex-col overflow-y-auto">
           <Navbar onMenuClick={() => setSidebarOpen(true)} />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="w-full h-full">{children}</main>
         </div>
       </div>
+
+      <InterestSelector />
     </ChatProvider>
   );
 };

@@ -23,3 +23,12 @@ export interface CartItemProps {
   toggleItem: (cartId: string | number) => void;
   saveForLater: (cartId: string | number) => void;
 }
+
+export interface Product {
+  id: number;
+  name: string;
+  category: string;
+  rating: number;
+  amount: number;
+  images: { url: string }[];
+}

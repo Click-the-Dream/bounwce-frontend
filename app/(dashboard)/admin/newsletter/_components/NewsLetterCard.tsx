@@ -58,7 +58,7 @@ const NewsLetterCard = ({ data, handleOpenEditor }: any) => {
 
         <div className="flex-1">
           <h3 className="font-bold text-xl text-stone-900 leading-snug mb-2 group-hover:text-[#ff3b0a] transition-colors line-clamp-2">
-            {data.subject || "Untitled Campaign"}
+            {data.name || "Untitled Campaign"}
           </h3>
           <p className="text-stone-500 text-sm line-clamp-2 mb-4 leading-relaxed">
             {data.description || "No description provided."}

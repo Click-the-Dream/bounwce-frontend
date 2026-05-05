@@ -5,14 +5,14 @@ const ViewerNav = ({ user, display, handleClose }: any) => {
     <div className="h-16 w-full flex items-center justify-between px-6 border-b border-[#0000001a]">
       <div className="flex items-center gap-3">
         <div className="relative">
-          {user?.type === "initials" ? (
+          {user?.full_name ? (
             <div className="w-9.25 h-9.25 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-black text-xs">
-              {user?.initials}
+              {user?.full_name.slice(0, 2)}
             </div>
           ) : (
             <div className="relative">
               <SafeImage
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}${user?.id}`}
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.full_name}${user?.id}`}
                 alt="Profile"
                 width={37}
                 height={37}
@@ -25,7 +25,7 @@ const ViewerNav = ({ user, display, handleClose }: any) => {
 
         <div className="flex flex-col">
           <span className="font-medium text-sm text-black leading-tight">
-            {user?.name}
+            {user?.full_name}
           </span>
           <span className="text-[13px] text-black">Today at 13:59</span>
         </div>

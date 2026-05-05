@@ -23,6 +23,14 @@ export const marketFetcher = async ({ filters }: any) => {
 
 export const productFetcher = async (id: string) => {
   const { data } = await api.get(`/store/products/${id}`);
-  // Ensure we return an array even if data is undefined
   return data?.data || {};
+};
+
+export const profileFetcher = async (userId: string) => {
+  try {
+    const { data } = await api.get(`/users/${userId}`);
+    return data?.data || null;
+  } catch (err) {
+    return null; // prevent build crash
+  }
 };

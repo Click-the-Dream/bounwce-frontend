@@ -5,7 +5,7 @@ import waitlistImg from "../../assets/waitlist-img.jpg";
 import { Controller, useForm } from "react-hook-form";
 import { LuUserRound } from "react-icons/lu";
 import { MdOutlineMailOutline } from "react-icons/md";
-import { MapPin } from "lucide-react";
+import { Globe, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useMemo } from "react";
 import navLogo from "../../assets/bouwnce-main.png";
@@ -19,6 +19,7 @@ import Dropdown from "@/app/_components/common/Dropdown";
 import Input from "@/app/_components/common/Input";
 import Button from "@/app/_components/common/Button";
 import Link from "next/link";
+import { referralOptions } from "@/app/_utils/fields";
 
 const Waitlist = () => {
   const {
@@ -26,6 +27,8 @@ const Waitlist = () => {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm({
     mode: "onTouched",
@@ -34,6 +37,8 @@ const Waitlist = () => {
       email: "",
       phone_number: "",
       location: "",
+      referral_source: "",
+      other_source: "",
     },
   });
 
@@ -64,6 +69,15 @@ const Waitlist = () => {
       animate();
     }
   }, [joinedCount]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get("utm_source");
+
+    if (source) {
+      setValue("referral_source", source);
+    }
+  }, []);
 
   const { dailyGrowth, progressPercent } = useMemo(() => {
     const EXPECTED_USERS = Math.max(joinedCount * 2, 500);
@@ -267,6 +281,35 @@ const Waitlist = () => {
                   )}
                 />
               </motion.div>
+
+              <motion.div variants={fadeUp}>
+                <Controller
+                  name="referral_source"
+                  control={control}
+                  rules={{ required: "Please tell us how you heard about us" }}
+                  render={({ field }) => (
+                    <Dropdown
+                      icon={<Globe size={15} />} // you can swap icon if you want
+                      options={referralOptions}
+                      placeholder="How did you hear about us?"
+                      error={errors.referral_source?.message}
+                      borderFocusClass=""
+                      borderClass="border border-brand-orange"
+                      bgClass="bg-white/50 backdrop-blur-md transition-colors duration-300"
+                      radiusClass="rounded-full"
+                      dropdownClass="rounded-lg border-brand-orange"
+                      {...field}
+                    />
+                  )}
+                />
+              </motion.div>
+
+              {watch("referral_source") === "other" && (
+                <Input
+                  placeholder="Please specify"
+                  {...register("other_source", { required: "Please specify" })}
+                />
+              )}
 
               <Button
                 text="Join the waitlist"
