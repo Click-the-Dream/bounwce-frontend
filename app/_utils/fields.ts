@@ -94,7 +94,7 @@ export const navLinks = [
 
 export const referralOptions = [
   { label: "LinkedIn", value: "linkedin" },
-  { label: "Twitter (X)", value: "twitter" },
+  { label: "TikTok", value: "tiktok" },
   { label: "Instagram", value: "instagram" },
   { label: "WhatsApp", value: "whatsapp" },
   { label: "Friend / Referral", value: "referral" },
