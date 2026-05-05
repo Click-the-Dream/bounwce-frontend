@@ -3,15 +3,16 @@ import { ArrowUp, Plus, Image, Camera } from "lucide-react";
 import { useRef, useState } from "react";
 import { useChatUtils } from "@/app/context/ChatContext";
 import MediaUploadModal from "./MediaUploadViewer";
+import { User } from "@/app/_utils/types/buyer";
 
-const SendMessage = () => {
+const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
   const [pendingImages, setPendingImages] = useState<string[]>([]);
 
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const { selectedChat, sendMessage } = useChatUtils();
+  const { sendMessage } = useChatUtils();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

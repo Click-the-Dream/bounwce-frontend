@@ -6,17 +6,24 @@ import { MessageSquareDashed } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import ChatImageMessage from "./ChatImageMessage";
 import ImageViewer from "./ImageViewer";
+import { User } from "@/app/_utils/types/buyer";
+import useChat from "@/app/hooks/use-chat";
+import { useParams } from "next/navigation";
 
-const MessageList = () => {
-  const { selectedChat, messages, typingUsers } = useChatUtils();
+const MessageList = ({ selectedChat }: { selectedChat: User }) => {
+  const { chatId } = useParams<any>();
+  const { useGetMessages } = useChat();
+  const { data: messages } = useGetMessages({ conversationId: chatId });
+  const { typingUsers } = useChatUtils();
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  const chatMessages = selectedChat ? messages[Number(selectedChat.id)] : [];
+  const chatMessages =
+    messages?.pages?.flatMap((page: any) => page.items || []) || [];
 
-  // ✅ FLATTEN IMAGES FOR VIEWER
+  // FLATTEN IMAGES FOR VIEWER
   const mediaImages =
     chatMessages
       ?.filter((m: any) => m.images?.length > 0)
@@ -47,12 +54,6 @@ const MessageList = () => {
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
-      <div className="text-center">
-        <span className="text-[13px] text-black font-medium">
-          April 12, 2026
-        </span>
-      </div>
-
       {chatMessages?.map((msg: any) =>
         msg.images?.length > 0 ? (
           <ChatImageMessage

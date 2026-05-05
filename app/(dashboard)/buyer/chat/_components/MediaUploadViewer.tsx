@@ -4,6 +4,7 @@ import { FiX, FiArrowUp } from "react-icons/fi";
 import { Plus, ZoomIn, Download, X } from "lucide-react";
 import Image from "next/image";
 import ViewerNav from "./ViewerNav";
+import { User } from "@/app/_utils/types/buyer";
 
 interface MediaUploadModalProps {
   images: string[];
@@ -12,13 +13,7 @@ interface MediaUploadModalProps {
   setImages: React.Dispatch<React.SetStateAction<string[]>>;
   onSend: () => void;
   onAddMore: () => void;
-  user?: {
-    id: string;
-    type: string;
-    initials: string;
-    name: string;
-    timestamp: Date;
-  };
+  user?: User;
 }
 
 const MediaUploadModal = ({

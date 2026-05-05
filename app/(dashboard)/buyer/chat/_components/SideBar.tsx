@@ -1,61 +1,144 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, PlusCircle } from "lucide-react";
 import ChatCard from "./ChatCard";
-import { CHATS } from "@/app/_utils/dummy";
 import { useParams } from "next/navigation";
 import NewChatModal from "./NewChatModal";
+import useChat from "@/app/hooks/use-chat";
+import { User } from "@/app/_utils/types/buyer";
 
-const ChatSidebar = () => {
+const ChatSidebar = ({ selectedUser }: { selectedUser: User }) => {
+  const { useGetConversations } = useChat();
   const { chatId } = useParams();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filteredChats = CHATS.filter(
-    (chat) =>
-      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.msg.toLowerCase().includes(searchQuery.toLowerCase()),
+  const params = useMemo(
+    () => ({
+      page_size: 10,
+    }),
+    [],
   );
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useGetConversations(params);
+
+  const conversations =
+    data?.pages?.flatMap((page: any) => page.items || []) || [];
+  const activeConversation = useMemo(() => {
+    if (!selectedUser) return null;
+
+    const existing = conversations.find(
+      (c: any) => c.user_id === selectedUser.id,
+    );
+
+    if (existing) return null;
+
+    return {
+      ...selectedUser,
+      id: `temp-${selectedUser.id}`,
+      user_id: selectedUser.id,
+    };
+  }, [selectedUser, conversations]);
+
+  const filteredConversations = useMemo(() => {
+    const baseList = [...conversations];
+
+    if (activeConversation) {
+      baseList.unshift(activeConversation);
+    }
+
+    if (!searchQuery) return baseList;
+
+    return baseList.filter((conversation: any) =>
+      conversation.full_name?.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+  }, [conversations, searchQuery, activeConversation]);
+
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+
+      const isBottom = scrollTop + clientHeight >= scrollHeight - 50;
+
+      if (isBottom && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
     <div
-      className={` w-80 border-r-[0.53px] border-[#00000033] flex-col bg-white h-full ${chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-0"}`}
+      className={`w-80 min-w-80 border-r-[0.53px] border-[#00000033] flex-col bg-white h-full ${
+        chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-0"
+      }`}
     >
-      <div className="p-4 flex items-center justify-between h-15.5  border-b-[0.53px] border-[#00000033]">
+      {/* HEADER */}
+      <div className="p-4 flex items-center justify-between h-15.5 border-b-[0.53px] border-[#00000033]">
         <h2 className="text-[16px] font-semibold">Chats</h2>
+
         <button
           onClick={() => setIsModalOpen(true)}
           className="cursor-pointer max-w-17.75 h-7.5 flex-1 bg-orange outline-[0.83px] outline-orange border border-[#F4F4F4] hover:bg-[#ee3d15] text-white p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all"
         >
-          <PlusCircle fill="#8a0202" className="size-4 mr-1.75" /> New
+          <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
+          New
         </button>
       </div>
 
+      {/* SEARCH */}
       <div className="relative z-20 px-2 pb-[7.73px] my-2 border-b-[0.53px] border-[#00000033]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9C9C9C] size-4" />
+
           <input
             type="text"
             placeholder="Find Anything"
-            value={searchQuery} // 4. Bind value to state
-            onChange={(e) => setSearchQuery(e.target.value)} // 5. Update state on change
-            className="w-full bg-white border-[0.53px] border-[#0000004D] rounded-[10px] py-2 pl-10 pr-4 text-sm focus:outline-none focus:rounded-b-none focus:border-0 focus:border-b focus:pb-3 placeholder:text-[#9C9C9C] transition-all duration-200"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-white border-[0.53px] border-[#0000004D] rounded-[10px] py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-b focus:pb-3 placeholder:text-[#9C9C9C]"
           />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2">
-        {/* 6. Map over filteredChats instead of CHATS */}
-        {filteredChats.length > 0 ? (
-          filteredChats.map((chat) => <ChatCard key={chat?.id} chat={chat} />)
+      {/* LIST */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-2">
+        {isLoading ? (
+          <div className="text-center mt-10 text-gray-400 text-sm">
+            Loading chats...
+          </div>
+        ) : filteredConversations.length > 0 ? (
+          filteredConversations.map((chat: any) => (
+            <ChatCard key={chat?.id} chat={chat} />
+          ))
         ) : (
           <div className="text-center mt-10 text-gray-400 text-sm">
             No chats found
           </div>
         )}
+
+        {/* LOADING MORE INDICATOR */}
+        {isFetchingNextPage && (
+          <div className="text-center text-xs text-gray-400 py-2">
+            Loading more...
+          </div>
+        )}
       </div>
 
-      {/* Render the Modal */}
+      {/* MODAL */}
       <NewChatModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

@@ -107,11 +107,12 @@ const HomeDiscovery = () => {
         {/* HERO */}
         {!hasSearched && (
           <div className="max-w-4xl text-center mb-10">
-            <h1 className="text-4xl font-bold text-[#1A1A1A] mb-3">
-              Find what’s happening around you
+            <h1 className="text-5xl font-bold text-[#1A1A1A] mb-3">
+              Find Whatever You Need
             </h1>
-            <p className="text-sm text-gray-600">
-              Discover people, places, and experiences near you.
+            <p className="text-[18px] text-gray-600 max-w-xl mx-auto">
+              Type what you're looking for — food, events, faith, or a date.
+              Bouwnce brings vendors and people near you, instantly.
             </p>
           </div>
         )}
@@ -131,7 +132,7 @@ const HomeDiscovery = () => {
                 setSearchValue(tag);
                 router.push(`${pathname}?q=${tag}`);
               }}
-              className="px-4 py-2 bg-white border-[0.83px] border-gray-200 rounded-[10px] text-xs whitespace-nowrap hover:shadow-md transition-all duration-200"
+              className="px-4 py-2 bg-white border-[0.83px] border-gray-200 rounded-[10px] text-xs whitespace-nowrap hover:shadow-md hover:bg-orange/20 transition-all duration-200"
             >
               {tag}
             </button>

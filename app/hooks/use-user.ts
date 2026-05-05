@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import api from "../services/api";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage } from "../_utils/formatters";
@@ -26,18 +31,35 @@ const useUser = () => {
       queryKey: ["user", userId],
       queryFn: async () => {
         const res = await client.get(`/users/${userId}`);
-        return res.data;
+        return res.data?.data;
       },
       enabled: !!userId,
     });
 
-  const useGetUsers = (params = {}) =>
-    useQuery({
+  const useGetUsers = (params: { page_size?: number; name?: string } = {}) =>
+    useInfiniteQuery({
       queryKey: ["users", params],
-      queryFn: async () => {
-        const res = await client.get(`/users`, { params });
-        return res.data;
+
+      queryFn: async ({ pageParam = 1 }) => {
+        const res = await client.get("/users", {
+          params: {
+            ...params,
+            page: pageParam,
+          },
+        });
+
+        return res.data?.data;
       },
+
+      getNextPageParam: (lastPage: any) => {
+        const { page, total, page_size } = lastPage;
+
+        const hasMore = page * page_size < total;
+
+        return hasMore ? page + 1 : undefined;
+      },
+
+      initialPageParam: 1,
     });
 
   const useGetVendorVerification = () =>

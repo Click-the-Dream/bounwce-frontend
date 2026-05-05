@@ -76,8 +76,6 @@ const InterestSelector = () => {
   const handleSave = async () => {
     setSubmitError(null);
 
-    console.log(selected);
-
     const payload = {
       interests: Object.values(selected).flat().filter(Boolean),
     };
@@ -108,7 +106,7 @@ const InterestSelector = () => {
   };
 
   if (isLoadingUser) {
-    return <Fallback />;
+    return null;
   }
 
   if (!hasInterests && isLoadingAvailable) {
@@ -125,28 +123,31 @@ const InterestSelector = () => {
   }
 
   if (isError) {
-    return (
-      <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div className="bg-white px-6 py-5 rounded-xl shadow-lg text-center max-w-sm">
-          <p className="text-red-500 font-semibold mb-2">
-            Failed to load interests
-          </p>
-          <p className="text-sm text-gray-500 mb-4">
-            Please check your connection and try again.
-          </p>
-          <button
-            onClick={() => {
-              refetchAvailableInterests();
-              refetchUserInterests();
-            }}
-            className="bg-orange text-white px-4 py-2 rounded-lg text-sm"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
+    return null;
   }
+  // if (isError) {
+  //   return (
+  //     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  //       <div className="bg-white px-6 py-5 rounded-xl shadow-lg text-center max-w-sm">
+  //         <p className="text-red-500 font-semibold mb-2">
+  //           Failed to load interests
+  //         </p>
+  //         <p className="text-sm text-gray-500 mb-4">
+  //           Please check your connection and try again.
+  //         </p>
+  //         <button
+  //           onClick={() => {
+  //             refetchAvailableInterests();
+  //             refetchUserInterests();
+  //           }}
+  //           className="bg-orange text-white px-4 py-2 rounded-lg text-sm"
+  //         >
+  //           Retry
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (!isOpen) return null;
 
