@@ -307,7 +307,12 @@ const Waitlist = () => {
               {watch("referral_source") === "other" && (
                 <Input
                   placeholder="Please specify"
-                  {...register("other_source", { required: "Please specify" })}
+                  {...register("other_source", {
+  validate: (value, formValues) =>
+    formValues.referral_source === "other"
+      ? value || "Please specify how you heard about us"
+      : true,
+})}
                 />
               )}
 
