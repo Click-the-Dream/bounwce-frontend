@@ -103,7 +103,7 @@ const useProduct = () => {
 
       initialPageParam: 1,
 
-      enabled: !!storeId && !!authDetails?.access_token,
+      enabled: !!storeId,
 
       getNextPageParam: (lastPage) => {
         const currentPage = lastPage.page;
