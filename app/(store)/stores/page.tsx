@@ -89,7 +89,7 @@ const Stores = () => {
         {stores.map((store: any) => (
           <motion.div
             key={store.id}
-            onClick={() => router.push(`/stores/${store.id}`)}
+            onClick={() => router.push(`/stores/${store.user_id}`)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}

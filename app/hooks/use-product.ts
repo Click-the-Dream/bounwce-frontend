@@ -91,13 +91,29 @@ const useProduct = () => {
     });
 
   const useGetStoreProducts = (storeId: any) =>
-    useQuery({
+    useInfiniteQuery({
       queryKey: ["products", "store", storeId],
-      queryFn: async () => {
-        const response = await client.get(`/store/products/store/${storeId}`);
+
+      queryFn: async ({ pageParam = 1 }) => {
+        const response = await client.get(
+          `/store/products/store/${storeId}?page=${pageParam}`,
+        );
         return response.data.data;
       },
+
+      initialPageParam: 1,
+
       enabled: !!storeId && !!authDetails?.access_token,
+
+      getNextPageParam: (lastPage) => {
+        const currentPage = lastPage.page;
+        const total = lastPage.total;
+        const pageSize = lastPage.page_size;
+
+        const totalPages = Math.ceil(total / pageSize);
+
+        return currentPage < totalPages ? currentPage + 1 : undefined;
+      },
     });
 
   const useGetProductCategories = () =>

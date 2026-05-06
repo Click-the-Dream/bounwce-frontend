@@ -34,7 +34,7 @@ const useStore = () => {
       queryKey: ["store", vendorId],
       queryFn: async () => {
         const response = await client.get(`/store/${vendorId}`);
-        return response.data.data;
+        return response.data?.data[0];
       },
       enabled: !!vendorId,
     });
