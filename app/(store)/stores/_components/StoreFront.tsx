@@ -6,60 +6,7 @@ import Image from "next/image";
 import useStore from "@/app/hooks/use-store";
 import useProduct from "@/app/hooks/use-product";
 import { Loader2, MapPin, Phone, Mail } from "lucide-react";
-
-const ProductCard = ({ product }: any) => {
-  return (
-    <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
-      <div className="relative h-44 bg-gray-100 overflow-hidden">
-        {product.images?.[0]?.url ? (
-          <Image
-            src={product.images[0].url}
-            alt={product.name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-xs text-gray-400">
-            No Image
-          </div>
-        )}
-
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-          <button className="bg-white text-xs px-3 py-1 rounded-md">
-            View
-          </button>
-        </div>
-      </div>
-
-      <div className="p-4">
-        <h3 className="text-sm font-medium line-clamp-1">{product.name}</h3>
-
-        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-          {product.description}
-        </p>
-
-        <div className="flex items-center justify-between mt-3">
-          <span className="font-semibold text-sm">
-            {new Intl.NumberFormat("en-NG", {
-              style: "currency",
-              currency: "NGN",
-            }).format(product.amount)}
-          </span>
-
-          <span
-            className={`text-xs px-2 py-1 rounded-full ${
-              product.stock > 0
-                ? "bg-green-100 text-green-600"
-                : "bg-red-100 text-red-500"
-            }`}
-          >
-            {product.stock > 0 ? "In Stock" : "Out"}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
+import ProductCard from "@/app/marketplace/_components/ProductCard";
 
 const StoreFront = () => {
   const { storeId } = useParams();
