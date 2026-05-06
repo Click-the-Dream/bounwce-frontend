@@ -98,7 +98,7 @@ const useProduct = () => {
         const response = await client.get(
           `/store/products/store/${storeId}?page=${pageParam}`,
         );
-        return response.data?.data?.products || [];
+        return response.data?.data || [];
       },
 
       initialPageParam: 1,
