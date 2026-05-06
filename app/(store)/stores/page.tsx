@@ -102,7 +102,9 @@ const Stores = () => {
                   src={store.store_banner.url}
                   alt={store.name}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  height={200}
+                  width={400}
+                  className="object-cover group-hover:scale-105 h-full w-full transition-transform duration-300"
                 />
               )}
             </div>

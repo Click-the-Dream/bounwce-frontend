@@ -7,9 +7,6 @@ import useStore from "@/app/hooks/use-store";
 import useProduct from "@/app/hooks/use-product";
 import { Loader2, MapPin, Phone, Mail } from "lucide-react";
 
-/* =========================
-   Product Card Component
-========================= */
 const ProductCard = ({ product }: any) => {
   return (
     <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
@@ -64,9 +61,6 @@ const ProductCard = ({ product }: any) => {
   );
 };
 
-/* =========================
-   Main StoreFront Page
-========================= */
 const StoreFront = () => {
   const { storeId } = useParams();
 
@@ -83,7 +77,7 @@ const StoreFront = () => {
     isFetchingNextPage,
   } = useGetStoreProducts(store?.id);
 
-  // ✅ FLATTEN PAGINATED DATA
+  // FLATTEN PAGINATED DATA
   const productList =
     products?.pages?.flatMap((page: any) => page.products) || [];
 
@@ -195,7 +189,7 @@ const StoreFront = () => {
                     ))}
                   </div>
 
-                  {/* ✅ LOAD MORE */}
+                  {/* LOAD MORE */}
                   {hasNextPage && (
                     <div className="flex justify-center mt-10">
                       <button
