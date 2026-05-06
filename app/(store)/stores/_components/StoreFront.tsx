@@ -69,7 +69,7 @@ const StoreFront = () => {
                 alt={store.name}
                 width={96}
                 height={96}
-                className="object-cover"
+                className="object-cover h-full w-full"
               />
             )}
           </div>
