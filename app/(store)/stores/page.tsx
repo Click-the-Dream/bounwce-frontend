@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import useStore from "@/app/hooks/use-store";
 import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Navbar from "@/app/_components/Navbar";
 import Footer from "@/app/_components/Footer";
+import SafeImage from "@/app/_components/SafeImage";
 
 const StoreSkeleton = () => {
   return (
@@ -98,10 +98,9 @@ const Stores = () => {
             {/* BANNER */}
             <div className="relative h-32 bg-gray-100 overflow-hidden">
               {store.store_banner?.url && (
-                <Image
+                <SafeImage
                   src={store.store_banner.url}
                   alt={store.name}
-                  fill
                   height={200}
                   width={400}
                   className="object-cover group-hover:scale-105 h-full w-full transition-transform duration-300"
@@ -114,11 +113,12 @@ const Stores = () => {
               {/* LOGO */}
               <div className="absolute -top-8 left-4 w-16 h-16 rounded-xl border-4 border-white bg-gray-50 overflow-hidden">
                 {store.store_logo?.url && (
-                  <Image
+                  <SafeImage
                     src={store.store_logo.url}
                     alt={store.name}
-                    fill
-                    className="object-cover"
+                    width={64}
+                    height={64}
+                    className="object-cover w-full h-full"
                   />
                 )}
               </div>
