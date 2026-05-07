@@ -5,6 +5,7 @@ import SafeImage from "@/app/_components/SafeImage";
 import { X, Search } from "lucide-react";
 import useUser from "@/app/hooks/use-user";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
 
 interface NewChatModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface NewChatModalProps {
 }
 
 export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
+  const { authDetails } = useAuth();
   const router = useRouter();
   const { useGetUsers } = useUser();
 
@@ -32,8 +34,10 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
   const users = data?.pages?.flatMap((page: any) => page.users || []) || [];
   const filteredUsers = useMemo(() => {
     if (!search) return users;
-    return users.filter((user: any) =>
-      user.full_name?.toLowerCase().includes(search.toLowerCase()),
+    return users.filter(
+      (user: any) =>
+        user.id !== authDetails?.user?.id &&
+        user.full_name?.toLowerCase().includes(search.toLowerCase()),
     );
   }, [users, search]);
 

@@ -4,10 +4,14 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { ChatProvider } from "@/app/context/ChatContext";
 import InterestSelector from "./InterestSelector";
+import { useSocketConnection } from "@/app/hooks/use-socket";
+import { useAuth } from "@/app/context/AuthContext";
 
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { authDetails } = useAuth();
 
+  useSocketConnection({ token: authDetails?.access_token || "" });
   return (
     <ChatProvider>
       <div className="h-screen w-full bg-[#FBFBFC] flex overflow-hidden">

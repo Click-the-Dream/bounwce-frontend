@@ -1,324 +1,248 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Loader2,
+  MapPin,
+  Phone,
+  Mail,
+  Search,
+  Filter,
+  Share2,
+  MessageCircle,
+  Package,
+  AlertCircle,
+} from "lucide-react";
+
 import useStore from "@/app/hooks/use-store";
 import useProduct from "@/app/hooks/use-product";
-import { Loader2, MapPin, Phone, Mail } from "lucide-react";
+import useUser from "@/app/hooks/use-user";
 import ProductCard from "@/app/marketplace/_components/ProductCard";
 import SafeImage from "@/app/_components/SafeImage";
-import useUser from "@/app/hooks/use-user";
 
 const StoreFront = () => {
-  const { storeId } = useParams();
+  const { storeId } = useParams<{ storeId: string }>();
 
+  const { useGetStoreInfo } = useStore();
   const { useGetUserById } = useUser();
   const { useGetStoreProducts } = useProduct();
-  const { useGetStoreInfo } = useStore();
 
-  const { data: store, isLoading } = useGetStoreInfo(storeId);
-
-  // FETCH VENDOR DETAILS
-  const { data: vendor, isLoading: vendorLoading } = useGetUserById(
-    store?.user_id,
+  const { data: store, isLoading: storeLoading } = useGetStoreInfo(storeId);
+  const { data: vendor } = useGetUserById(store?.user_id);
+  const { data: products, isLoading: productsLoading } = useGetStoreProducts(
+    store?.id,
   );
 
-  const {
-    data: products,
-    isLoading: productsLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useGetStoreProducts(store?.id);
+  const [query, setQuery] = useState("");
 
-  // FLATTEN PAGINATED DATA
-  const productList =
-    products?.pages?.flatMap((page: any) => page.products) || [];
+  const productList = useMemo(
+    () => products?.pages?.flatMap((p: any) => p?.products ?? []) ?? [],
+    [products],
+  );
 
-  const [tab, setTab] = useState<"products" | "about">("products");
+  const filteredProducts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return productList;
 
-  if (isLoading) {
+    return productList.filter((p: any) => p?.name?.toLowerCase().includes(q));
+  }, [productList, query]);
+
+  if (storeLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="animate-spin" />
+      <div className="h-screen flex items-center justify-center bg-zinc-50">
+        <Loader2 className="w-7 h-7 animate-spin text-zinc-400" />
       </div>
     );
   }
 
   if (!store) {
     return (
-      <div className="text-center py-20 text-gray-500">Store not found</div>
+      <div className="h-screen flex flex-col items-center justify-center gap-2 text-zinc-500 bg-zinc-50">
+        <AlertCircle size={32} className="text-zinc-300" />
+        <p className="text-sm font-medium">Store not found</p>
+      </div>
     );
   }
 
   return (
-    <div className="pb-20">
-      {/* HERO */}
-      <div className="relative h-56 md:h-72 w-full bg-gray-100">
-        {store.store_banner?.url && (
-          <SafeImage
-            src={store.store_banner.url}
-            alt={store.name}
-            width={1028}
-            height={288}
-            className="object-cover h-full w-full"
-          />
-        )}
+    <div className="min-h-screen bg-white text-zinc-900">
+      {/* ================= HEADER ================= */}
+      <header className="border-b border-zinc-100">
+        {/* Banner */}
+        <div className="relative h-44 md:h-72 bg-zinc-100">
+          {store?.store_banner?.url && (
+            <SafeImage
+              src={store.store_banner.url}
+              alt={store.name}
+              width={1920}
+              height={800}
+              className="w-full h-full object-cover"
+            />
+          )}
 
-        <div className="absolute inset-0 bg-black/30" />
-      </div>
+          {/* subtle overlay only */}
+          <div className="absolute inset-0 bg-black/10" />
 
-      <div className="max-w-6xl mx-auto px-6 -mt-12 relative">
-        {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col md:flex-row gap-6">
-          <div className="w-24 h-24 rounded-xl overflow-hidden border-4 border-white bg-white shadow">
-            {store.store_logo?.url && (
-              <SafeImage
-                src={store.store_logo.url}
-                alt={store.name}
-                width={96}
-                height={96}
-                className="object-cover h-full w-full"
-              />
-            )}
-          </div>
-
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold">{store.name}</h1>
-
-            <p className="text-gray-500 text-sm mt-1">
-              {store.store_description}
-            </p>
-
-            <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                <MapPin size={14} /> {store.address}
-              </span>
-
-              <span className="flex items-center gap-1">
-                <Phone size={14} /> {vendor?.phone_number || store.phone_number}
-              </span>
-
-              <span className="flex items-center gap-1">
-                <Mail size={14} /> {vendor?.email || store.email}
-              </span>
-            </div>
-
-            {/* VENDOR INFO */}
-            <div className="mt-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                {vendor?.profile_picture?.url ? (
-                  <SafeImage
-                    src={vendor.profile_picture.url}
-                    alt={vendor?.full_name || "Vendor"}
-                    width={40}
-                    height={40}
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm font-medium text-gray-500">
-                    {vendor?.full_name?.charAt(0) || "V"}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Vendor</p>
-
-                {vendorLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Loader2 size={14} className="animate-spin" />
-                    Loading vendor...
-                  </div>
-                ) : (
-                  <h3 className="font-medium text-sm">
-                    {vendor?.full_name || "Unknown Vendor"}
-                  </h3>
-                )}
-              </div>
-            </div>
+          <div className="absolute top-4 right-4">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-[11px] font-medium shadow-sm border border-zinc-200">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              Open
+            </span>
           </div>
         </div>
 
-        {/* TABS */}
-        <div className="flex gap-6 mt-8 border-b border-gray-300">
-          <button
-            onClick={() => setTab("products")}
-            className={`pb-3 text-sm ${
-              tab === "products" ? "border-b-2 border-black" : "text-gray-500"
-            }`}
-          >
-            Products
-          </button>
-
-          <button
-            onClick={() => setTab("about")}
-            className={`pb-3 text-sm ${
-              tab === "about" ? "border-b-2 border-black" : "text-gray-500"
-            }`}
-          >
-            About Store
-          </button>
-        </div>
-
-        {/* CONTENT */}
-        <div className="mt-6">
-          {tab === "products" && (
-            <>
-              {productsLoading ? (
-                <div className="flex justify-center py-16">
-                  <Loader2 className="animate-spin" />
-                </div>
-              ) : productList.length === 0 ? (
-                <div className="text-center py-16 text-gray-500">
-                  No products available
-                </div>
+        {/* STORE INFO */}
+        <div className="max-w-6xl mx-auto px-4 -mt-10 md:-mt-14 relative">
+          <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm p-5 md:p-6 flex flex-col md:flex-row gap-5">
+            {/* Logo */}
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0">
+              {store?.store_logo?.url ? (
+                <SafeImage
+                  src={store.store_logo.url}
+                  alt={store.name}
+                  width={100}
+                  height={100}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <>
-                  <div className="grid md:grid-cols-auto lg:grid-cols-4 gap-6">
-                    {productList.map((product: any) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
-
-                  {/* LOAD MORE */}
-                  {hasNextPage && (
-                    <div className="flex justify-center mt-10">
-                      <button
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
-                        className="px-6 py-2 text-sm bg-black text-white rounded-lg disabled:opacity-50"
-                      >
-                        {isFetchingNextPage ? "Loading..." : "Load More"}
-                      </button>
-                    </div>
-                  )}
-                </>
+                <div className="w-full h-full flex items-center justify-center text-zinc-400 text-xl font-semibold">
+                  {store?.name?.charAt(0)}
+                </div>
               )}
-            </>
-          )}
-
-          {tab === "about" && (
-            <div className="space-y-6">
-              {/* STORE OVERVIEW */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                <h3 className="text-base font-semibold text-black mb-3">
-                  Store Overview
-                </h3>
-
-                <p className="text-sm leading-7 text-gray-600">
-                  {store.store_description || "No store description available."}
-                </p>
-              </div>
-
-              {/* STORE DETAILS */}
-              <div className="grid md:grid-cols-2 gap-5">
-                {/* CONTACT INFO */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                  <h3 className="text-base font-semibold text-black mb-4">
-                    Contact Information
-                  </h3>
-
-                  <div className="space-y-4 text-sm">
-                    <div className="flex items-start gap-3">
-                      <MapPin size={18} className="text-gray-400 mt-0.5" />
-
-                      <div>
-                        <p className="text-gray-500">Address</p>
-                        <p className="text-black">
-                          {store.address || "Not provided"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <Phone size={18} className="text-gray-400 mt-0.5" />
-
-                      <div>
-                        <p className="text-gray-500">Phone</p>
-                        <p className="text-black">
-                          {vendor?.phone_number ||
-                            store.phone_number ||
-                            "Not provided"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <Mail size={18} className="text-gray-400 mt-0.5" />
-
-                      <div>
-                        <p className="text-gray-500">Email</p>
-                        <p className="text-black">
-                          {vendor?.email || store.email || "Not provided"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* VENDOR INFO */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                  <h3 className="text-base font-semibold text-black mb-4">
-                    Vendor Information
-                  </h3>
-
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
-                      {vendor?.profile_picture?.url ? (
-                        <SafeImage
-                          src={vendor.profile_picture.url}
-                          alt={vendor?.full_name || "Vendor"}
-                          width={64}
-                          height={64}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-lg font-semibold text-gray-500">
-                          {vendor?.full_name?.charAt(0) || "V"}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium text-black">
-                        {vendor?.full_name || "Unknown Vendor"}
-                      </h4>
-
-                      <p className="text-sm text-gray-500 mt-1">
-                        Verified marketplace vendor
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* STORE STATS */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                <h3 className="text-base font-semibold text-black mb-4">
-                  Store Statistics
-                </h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border border-gray-100 rounded-xl p-4">
-                    <p className="text-2xl font-semibold text-black">
-                      {productList.length}
-                    </p>
-
-                    <p className="text-sm text-gray-500 mt-1">Products</p>
-                  </div>
-
-                  <div className="border border-gray-100 rounded-xl p-4">
-                    <p className="text-2xl font-semibold text-black">Active</p>
-
-                    <p className="text-sm text-gray-500 mt-1">Store Status</p>
-                  </div>
-                </div>
-              </div>
             </div>
-          )}
+
+            {/* INFO */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+                {store?.name}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 mt-1">
+                <span className="flex items-center gap-1">
+                  <MapPin size={13} /> {store?.address || "No address"}
+                </span>
+                <span>•</span>
+                <span>{vendor?.name || "Vendor"}</span>
+              </div>
+
+              <p className="text-sm text-zinc-500 mt-2 line-clamp-2">
+                {store?.store_description || "No description available"}
+              </p>
+            </div>
+
+            {/* ACTIONS */}
+            <div className="flex md:flex-col gap-2 md:justify-center">
+              <button className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800 transition flex items-center justify-center gap-2">
+                <MessageCircle size={14} />
+                Message
+              </button>
+
+              <button className="px-4 py-2 rounded-lg border border-zinc-200 text-xs font-medium hover:bg-zinc-50 transition flex items-center justify-center gap-2">
+                <Share2 size={14} />
+                Share
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ================= TOOLBAR ================= */}
+      <div className="sticky top-0 z-20 bg-white border-b border-zinc-100">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex gap-3 items-center">
+          <div className="flex-1 relative">
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search products..."
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-900/10"
+            />
+          </div>
+
+          <button className="px-3 py-2 border border-zinc-200 rounded-lg text-sm flex items-center gap-2 hover:bg-zinc-50">
+            <Filter size={15} />
+            Filter
+          </button>
         </div>
       </div>
+
+      {/* ================= PRODUCTS ================= */}
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex justify-between items-end mb-6">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Package size={18} /> Products
+            </h2>
+            <p className="text-xs text-zinc-500">
+              {filteredProducts.length} items available
+            </p>
+          </div>
+        </div>
+
+        {productsLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-64 bg-zinc-100 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-16 text-zinc-500 text-sm">
+            No products found
+          </div>
+        ) : (
+          <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <AnimatePresence>
+              {filteredProducts.map((product: any) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <ProductCard product={product} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </main>
+
+      {/* ================= FOOTER ================= */}
+      <footer className="border-t border-zinc-100 mt-16">
+        <div className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-8 text-sm text-zinc-600">
+          <div>
+            <h4 className="text-xs font-medium text-zinc-400 mb-2">About</h4>
+            <p>{store?.store_description}</p>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-medium text-zinc-400 mb-2">Contact</h4>
+            <div className="space-y-2">
+              <p className="flex items-center gap-2">
+                <Phone size={14} /> {store?.phone_number}
+              </p>
+              <p className="flex items-center gap-2">
+                <Mail size={14} /> {store?.email}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-medium text-zinc-400 mb-2">Location</h4>
+            <p className="flex items-center gap-2">
+              <MapPin size={14} /> {store?.address}
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

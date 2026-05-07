@@ -27,19 +27,21 @@ const ChatSidebar = ({ selectedUser }: { selectedUser: User }) => {
 
   const conversations =
     data?.pages?.flatMap((page: any) => page.items || []) || [];
+
   const activeConversation = useMemo(() => {
     if (!selectedUser) return null;
 
     const existing = conversations.find(
-      (c: any) => c.user_id === selectedUser.id,
+      (c: any) => c.user?.id === selectedUser.id,
     );
 
     if (existing) return null;
 
     return {
-      ...selectedUser,
       id: `temp-${selectedUser.id}`,
-      user_id: selectedUser.id,
+      user: {
+        ...selectedUser,
+      },
     };
   }, [selectedUser, conversations]);
 
@@ -53,7 +55,9 @@ const ChatSidebar = ({ selectedUser }: { selectedUser: User }) => {
     if (!searchQuery) return baseList;
 
     return baseList.filter((conversation: any) =>
-      conversation.full_name?.toLowerCase().includes(searchQuery.toLowerCase()),
+      conversation.user?.full_name
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()),
     );
   }, [conversations, searchQuery, activeConversation]);
 
@@ -121,9 +125,11 @@ const ChatSidebar = ({ selectedUser }: { selectedUser: User }) => {
             Loading chats...
           </div>
         ) : filteredConversations.length > 0 ? (
-          filteredConversations.map((chat: any) => (
-            <ChatCard key={chat?.id} chat={chat} />
-          ))
+          filteredConversations.map(
+            (chat: {
+              user: { full_name: string; id: string; username: string };
+            }) => <ChatCard key={chat?.user?.id} chatUser={chat.user} />,
+          )
         ) : (
           <div className="text-center mt-10 text-gray-400 text-sm">
             No chats found

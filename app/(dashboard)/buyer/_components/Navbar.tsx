@@ -1,10 +1,4 @@
-import {
-  Bell,
-  MessageCircleReply,
-  Search,
-  Menu,
-  ShoppingCart,
-} from "lucide-react";
+import { Bell, Menu, ShoppingCart, MessageCircleMore } from "lucide-react";
 import userImg from "../../../assets/buyer/user.jpg";
 import Image from "next/image";
 import SearchComponent from "./SearchComponent";
@@ -41,11 +35,11 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
             </span>
           </div>
         </Link>
-        <Link href="/buyer/chat">
-          <MessageCircleReply
-            strokeWidth={1.5}
-            className="shrink-0 size-5 cursor-pointer"
-          />
+        <Link href="/buyer/chat" className="relative">
+          <MessageCircleMore className="shrink-0 size-5 cursor-pointer" />
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full">
+            2
+          </span>
         </Link>
 
         <div className="relative cursor-pointer">

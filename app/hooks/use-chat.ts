@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import api from "../services/api";
+import { websocket } from "../services/websocket";
 
 const useChat = () => {
   const queryClient = useQueryClient();
@@ -49,19 +50,20 @@ const useChat = () => {
 
   const useGetMessages = (
     options: {
-      conversationId?: string;
+      userId?: string;
       params?: { page?: number; page_size?: number };
     } = { params: { page_size: 20 } },
   ) =>
     useInfiniteQuery({
-      queryKey: ["messages", options.conversationId],
+      queryKey: ["messages", options.userId],
+
       queryFn: async ({ pageParam = 1 }) => {
         const res = await api.get(
-          `/chats/conversations/${options.conversationId}/messages`,
+          `/chats/conversations/with/${options.userId}`,
           {
             params: {
-              ...options.params,
               page: pageParam,
+              page_size: options.params?.page_size || 20,
             },
           },
         );
@@ -70,7 +72,7 @@ const useChat = () => {
       },
 
       getNextPageParam: (lastPage: any) => {
-        const { page, total, page_size } = lastPage;
+        const { page, total, page_size } = lastPage?.messages || {};
 
         const hasMore = page * page_size < total;
 
@@ -78,43 +80,23 @@ const useChat = () => {
       },
 
       initialPageParam: 1,
+
+      enabled: !!options.userId,
     });
 
-  const sendMessage = useMutation({
-    mutationFn: async (payload: {
-      conversation_id?: string;
-      receiver_id: string;
-      message: string;
-    }) => {
-      const res = await api.post("/chats/messages", payload);
-      return res.data.data;
-    },
-
-    onSuccess: (data, variables) => {
-      // update messages cache optimistically
-      queryClient.setQueryData(
-        ["messages", variables.conversation_id],
-        (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            messages: [...(old.messages || []), data],
-          };
-        },
-      );
-
-      // refresh conversations list (so last message updates)
-      queryClient.invalidateQueries({
-        queryKey: ["conversations"],
-      });
-    },
-  });
+  const transmitMessage = (payload: { recipient_id: string; body: string }) => {
+    websocket.emit({
+      type: "chat.send",
+      recipient_id: payload.recipient_id,
+      body: payload.body,
+    });
+  };
 
   return {
     useGetConversations,
     useGetConversation,
     useGetMessages,
-    sendMessage,
+    transmitMessage,
   };
 };
 

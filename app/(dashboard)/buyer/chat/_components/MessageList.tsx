@@ -14,7 +14,7 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
   const { chatId } = useParams<any>();
   const { useGetMessages } = useChat();
   const { data: messages, isLoading } = useGetMessages({
-    conversationId: chatId,
+    userId: chatId,
   });
   const { typingUsers } = useChatUtils();
 
@@ -23,7 +23,7 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
   const [viewerIndex, setViewerIndex] = useState(0);
 
   const chatMessages =
-    messages?.pages?.flatMap((page: any) => page.items || []) || [];
+    messages?.pages?.flatMap((page: any) => page?.messages?.items || []) || [];
 
   // FLATTEN IMAGES FOR VIEWER
   const mediaImages =

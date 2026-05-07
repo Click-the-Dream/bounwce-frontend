@@ -1,9 +1,11 @@
 "use client";
-import { ArrowUp, Plus, Image, Camera } from "lucide-react";
+import { ArrowUp, Plus, Image, Camera, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useChatUtils } from "@/app/context/ChatContext";
 import MediaUploadModal from "./MediaUploadViewer";
 import { User } from "@/app/_utils/types/buyer";
+import { websocket } from "@/app/services/websocket";
+import useChat from "@/app/hooks/use-chat";
 
 const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -12,7 +14,7 @@ const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
   const [pendingImages, setPendingImages] = useState<string[]>([]);
 
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const { sendMessage } = useChatUtils();
+  const { transmitMessage } = useChat();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -35,11 +37,24 @@ const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
 
   const handleSend = () => {
     if (!selectedChat) return;
+
     if (pendingImages.length > 0 || message.trim()) {
-      sendMessage(Number(selectedChat.id), message.trim(), pendingImages);
+      transmitMessage({
+        recipient_id: selectedChat.id,
+        body: message.trim(),
+      });
+
       setPendingImages([]);
       setMessage("");
     }
+  };
+  const handleTyping = (value: string) => {
+    setMessage(value);
+
+    websocket.emit({
+      type: "chat.typing",
+      recipient_id: selectedChat.id,
+    });
   };
 
   return (
@@ -94,7 +109,7 @@ const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
 
         <input
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => handleTyping(e.target.value)}
           type="text"
           placeholder="Message"
           onFocus={() => setIsFocused(true)}
@@ -106,7 +121,7 @@ const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
         {(isFocused || message) && (
           <button
             onClick={handleSend}
-            className="w-7.5 h-7.5 flex items-center justify-center bg-orange text-white rounded-full transition-all active:scale-90"
+            className="w-7.5 h-7.5 flex items-center justify-center bg-orange text-white rounded-full transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ArrowUp size={18} strokeWidth={1} />
           </button>

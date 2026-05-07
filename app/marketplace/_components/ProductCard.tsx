@@ -100,9 +100,9 @@ const ProductCard = ({
 
           <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-2 line-clamp-1">
             <span>{product?.category}</span>
-            <span className="flex items-center gap-1 text-yellow-500">
+            {/* <span className="flex items-center gap-1 text-yellow-500">
               <FaStar size={12} /> {(product?.rating || 3)?.toFixed(1)}
-            </span>
+            </span> */}
           </div>
 
           <p className="mb-1 text-[13px] font-semibold">

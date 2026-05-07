@@ -1,102 +1,95 @@
 "use client";
-import { createContext, useContext, useState } from "react";
-import { MESSAGES_DATA } from "@/app/_utils/dummy";
-import { MessageStatus } from "../_utils/types/buyer";
+
+import { createContext, useContext, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { websocket } from "@/app/services/websocket";
 
 export const ChatContext = createContext<any>({});
 
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedChat, setSelectedChat] = useState<any>(null);
-  const [isUserList, setIsUserList] = useState(false);
-
-  const [messages, setMessages] = useState(MESSAGES_DATA);
-
-  // typing state per chat
   const [typingUsers, setTypingUsers] = useState<Record<number, boolean>>({});
 
-  const sendMessage = (chatId: number, text?: string, images?: string[]) => {
-    if (!text?.trim() && (!images || images.length === 0)) return;
+  const queryClient = useQueryClient();
 
-    const newMessage = {
-      id: Date.now(),
-      text: text || "",
-      images: images || [],
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      isSender: true,
-      status: "sent" as MessageStatus,
-    };
+  useEffect(() => {
+    // =====================
+    // NEW MESSAGE
+    // =====================
+    websocket.on("chat.message", (payload: any) => {
+      const { conversation_id, message } = payload;
 
-    setMessages((prev: any) => ({
-      ...prev,
-      [chatId]: [...(prev[chatId] || []), newMessage],
-    }));
+      queryClient.setQueryData(["messages", conversation_id], (old: any) => {
+        if (!old) return old;
 
-    // 👇 STATUS PIPELINE (SIMULATED)
-    queueMicrotask(() => {
-      updateMessageStatus(chatId, newMessage.id, "delivered");
-
-      setTimeout(() => {
-        updateMessageStatus(chatId, newMessage.id, "read");
-      }, 1500);
+        return {
+          ...old,
+          pages: old.pages.map((page: any, i: number) =>
+            i === 0
+              ? {
+                  ...page,
+                  items: [...page.items, message],
+                }
+              : page,
+          ),
+        };
+      });
     });
 
-    // fake reply typing
-    setTypingUsers((prev) => ({ ...prev, [chatId]: true }));
+    // =====================
+    // DELIVERY UPDATE
+    // =====================
+    websocket.on("chat.message.sent", (payload: any) => {
+      const { conversation_id, message } = payload;
 
-    setTimeout(() => {
-      const replies = [
-        "😂 I hear you",
-        "No wahala, makes sense",
-        "Let me check that",
-      ];
+      queryClient.setQueryData(["messages", conversation_id], (old: any) => {
+        if (!old) return old;
 
-      const replyMessage = {
-        id: Date.now() + 1,
-        text: replies[Math.floor(Math.random() * replies.length)],
-        images: [],
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        isSender: false,
-        status: "delivered" as MessageStatus,
-      };
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((msg: any) =>
+              msg.temp_id === message.temp_id
+                ? { ...message, status: "delivered" }
+                : msg,
+            ),
+          })),
+        };
+      });
+    });
 
-      setMessages((prev: any) => ({
+    // =====================
+    // TYPING
+    // =====================
+    websocket.on("typing.started", ({ conversation_id }: any) => {
+      setTypingUsers((prev) => ({
         ...prev,
-        [chatId]: [...(prev[chatId] || []), replyMessage],
+        [conversation_id]: true,
       }));
+    });
 
-      setTypingUsers((prev) => ({ ...prev, [chatId]: false }));
-    }, 1500);
-  };
+    websocket.on("typing.stopped", ({ conversation_id }: any) => {
+      setTypingUsers((prev) => ({
+        ...prev,
+        [conversation_id]: false,
+      }));
+    });
 
-  const updateMessageStatus = (
-    chatId: number,
-    messageId: number,
-    status: MessageStatus,
-  ) => {
-    setMessages((prev: any) => ({
-      ...prev,
-      [chatId]: prev[chatId].map((msg: any) =>
-        msg.id === messageId ? { ...msg, status } : msg,
-      ),
-    }));
-  };
+    return () => {
+      websocket.off("chat.message", () => {});
+      websocket.off("chat.message.sent", () => {});
+      websocket.off("typing.started", () => {});
+      websocket.off("typing.stopped", () => {});
+    };
+  }, [queryClient]);
+
   return (
     <ChatContext.Provider
       value={{
         selectedChat,
         setSelectedChat,
-        isUserList,
-        setIsUserList,
-        messages,
-        sendMessage,
         typingUsers,
-        updateMessageStatus,
       }}
     >
       {children}
