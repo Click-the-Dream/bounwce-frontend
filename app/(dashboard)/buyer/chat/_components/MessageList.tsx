@@ -9,23 +9,52 @@ import ImageViewer from "./ImageViewer";
 import { User } from "@/app/_utils/types/buyer";
 import useChat from "@/app/hooks/use-chat";
 import { useParams } from "next/navigation";
+import { formatMessageDate } from "@/app/_utils/formatters";
+import { useAuth } from "@/app/context/AuthContext";
+import { websocket } from "@/app/services/websocket";
 
 const MessageList = ({ selectedChat }: { selectedChat: User }) => {
+  const { authDetails } = useAuth();
   const { chatId } = useParams<any>();
   const { useGetMessages } = useChat();
   const { data: messages, isLoading } = useGetMessages({
     userId: chatId,
   });
-  const { typingUsers } = useChatUtils();
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const { typingUsers } = useChatUtils();
+  const readSet = useRef<Set<string>>(new Set());
+
+  //  Scroll container ref (KEY CHANGE)
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  const chatMessages =
-    messages?.pages?.flatMap((page: any) => page?.messages?.items || []) || [];
+  const prevMessageCountRef = useRef(0);
 
-  // FLATTEN IMAGES FOR VIEWER
+  const chatMessages =
+    messages?.pages?.flatMap(
+      (page: any) =>
+        page?.messages?.items?.sort(
+          (a: any, b: any) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        ) || [],
+    ) || [];
+
+  const groupedMessages = chatMessages.reduce((groups: any[], message: any) => {
+    const label = formatMessageDate(message.created_at);
+
+    const existingGroup = groups.find((g) => g.label === label);
+
+    if (existingGroup) {
+      existingGroup.messages.push(message);
+    } else {
+      groups.push({ label, messages: [message] });
+    }
+
+    return groups;
+  }, []);
+
   const mediaImages =
     chatMessages
       ?.filter((m: any) => m.images?.length > 0)
@@ -36,9 +65,83 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
         })),
       ) || [];
 
+  const isTyping = typingUsers[chatId];
+
+  /**
+   *  Smart scroll logic
+   * - only auto-scroll if user is near bottom
+   * - avoids interrupting user reading history
+   */
+  const scrollToBottom = (smooth = true) => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: smooth ? "smooth" : "auto",
+    });
+  };
+
+  const isUserNearBottom = () => {
+    const el = containerRef.current;
+    if (!el) return true;
+
+    const threshold = 180; // px buffer
+    return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  };
+
+  /**
+   *  Auto-scroll only when:
+   * - new message arrives
+   * - AND user is already near bottom
+   */
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, typingUsers]);
+    const prev = prevMessageCountRef.current;
+    const current = chatMessages.length;
+
+    const hasNewMessage = current > prev;
+
+    if (hasNewMessage && isUserNearBottom()) {
+      requestAnimationFrame(() => {
+        scrollToBottom(true);
+      });
+    }
+
+    prevMessageCountRef.current = current;
+  }, [chatMessages.length]);
+
+  /**
+   *  Typing indicator should NOT force scroll unless user is at bottom
+   */
+  useEffect(() => {
+    if (isTyping && isUserNearBottom()) {
+      scrollToBottom(true);
+    }
+  }, [isTyping]);
+
+  // useEffect(() => {
+  //   if (!chatMessages.length) return;
+
+  //   const unread = chatMessages.filter((msg: any) => {
+  //     return (
+  //       msg.sender_id !== authDetails?.user?.id &&
+  //       !msg.read_at &&
+  //       !readSet.current.has(msg.id)
+  //     );
+  //   });
+
+  //   if (unread.length === 0) return;
+
+  //   for (const msg of unread) {
+  //     readSet.current.add(msg.id);
+
+  //     websocket.emit({
+  //       type: "chat.read",
+  //       conversation_id: chatId,
+  //       message_id: msg.id,
+  //     });
+  //   }
+  // }, [chatMessages.length, chatId]);
 
   if (!selectedChat) {
     return (
@@ -57,27 +160,22 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
   if (isLoading) {
     return (
       <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-        {[...Array(6)].map((_, i) => {
-          const isMe = i % 2 === 0;
-
-          return (
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}
+          >
             <div
-              key={i}
-              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`
-                animate-pulse rounded-2xl px-4 py-3
-                ${isMe ? "bg-gray-200" : "bg-gray-100"}
-              `}
-                style={{
-                  width: `${Math.random() * 40 + 30}%`,
-                  height: "40px",
-                }}
-              />
-            </div>
-          );
-        })}
+              className={`animate-pulse rounded-2xl px-4 py-3 ${
+                i % 2 === 0 ? "bg-gray-200" : "bg-gray-100"
+              }`}
+              style={{
+                width: `${Math.random() * 40 + 30}%`,
+                height: "40px",
+              }}
+            />
+          </div>
+        ))}
       </div>
     );
   }
@@ -88,38 +186,53 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
         <div className="bg-gray-100 p-4 rounded-full mb-3">
           <MessageSquareDashed className="size-6 text-gray-400" />
         </div>
-
         <p className="text-sm text-gray-500">No messages yet</p>
-
         <p className="text-xs text-gray-400 mt-1">Start the conversation 👋</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
-      {chatMessages?.map((msg: any) =>
-        msg.images?.length > 0 ? (
-          <ChatImageMessage
-            key={msg.id}
-            msg={msg}
-            mediaImages={mediaImages}
-            onOpen={(index: number) => {
-              setViewerIndex(index);
-              setViewerOpen(true);
-            }}
-          />
-        ) : (
-          <ChatMessage key={msg.id} msg={msg} />
-        ),
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-y-auto px-6 pb-6 pt-2 space-y-6 bg-white"
+    >
+      {groupedMessages.map((group: any) => (
+        <div key={group.label}>
+          {/* Date separator */}
+          <div className="sticky top-0 flex items-center justify-center my-6">
+            <span className="text-[13px] text-black font-medium">
+              {group.label}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {group.messages.map((msg: any) =>
+              msg.images?.length > 0 ? (
+                <ChatImageMessage
+                  key={msg.id}
+                  msg={msg}
+                  mediaImages={mediaImages}
+                  onOpen={(index: number) => {
+                    setViewerIndex(index);
+                    setViewerOpen(true);
+                  }}
+                />
+              ) : (
+                <ChatMessage key={msg.id} msg={msg} />
+              ),
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Typing indicator */}
+      {isTyping && (
+        <div className="text-sm text-gray-400 italic px-2">typing...</div>
       )}
 
-      {/* Typing */}
-      {typingUsers[selectedChat.id] && (
-        <div className="text-sm text-gray-400 italic">typing...</div>
-      )}
-
-      <div ref={bottomRef} />
+      {/* IMPORTANT: bottom anchor not needed anymore */}
+      <div className="h-1" />
 
       {viewerOpen && (
         <ImageViewer

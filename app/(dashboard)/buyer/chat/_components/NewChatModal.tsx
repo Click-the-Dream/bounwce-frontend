@@ -34,10 +34,8 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
   const users = data?.pages?.flatMap((page: any) => page.users || []) || [];
   const filteredUsers = useMemo(() => {
     if (!search) return users;
-    return users.filter(
-      (user: any) =>
-        user.id !== authDetails?.user?.id &&
-        user.full_name?.toLowerCase().includes(search.toLowerCase()),
+    return users.filter((user: any) =>
+      user.full_name?.toLowerCase().includes(search.toLowerCase()),
     );
   }, [users, search]);
 

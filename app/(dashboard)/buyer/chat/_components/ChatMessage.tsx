@@ -36,9 +36,10 @@ const ChatMessage = ({ msg }: any) => {
               hour: "2-digit",
               minute: "2-digit",
             })}
-          {isSender && msg.read_at && (
+
+          {isSender && (
             <span className="text-[10px] opacity-80">
-              {renderCheck(msg.status)}
+              {msg.read_at ? renderCheck("read") : renderCheck("sent")}
             </span>
           )}
         </span>

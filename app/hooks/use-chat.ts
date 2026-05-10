@@ -6,10 +6,12 @@ import {
 } from "@tanstack/react-query";
 import api from "../services/api";
 import { websocket } from "../services/websocket";
+import { useAuth } from "../context/AuthContext";
 
 const useChat = () => {
   const queryClient = useQueryClient();
-
+  const { authDetails } = useAuth();
+  const currentUser = authDetails?.user;
   const useGetConversations = (
     params: { page_size?: number; name?: string } = {},
   ) =>
@@ -85,6 +87,75 @@ const useChat = () => {
     });
 
   const transmitMessage = (payload: { recipient_id: string; body: string }) => {
+    if (!currentUser) return;
+
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`,
+
+      body: payload.body,
+
+      sender_id: currentUser.id,
+
+      recipient_id: payload.recipient_id,
+
+      conversation_id: null,
+
+      created_at: new Date().toISOString(),
+
+      updated_at: new Date().toISOString(),
+
+      read_at: null,
+
+      pending: true,
+
+      sender: {
+        id: currentUser.id,
+        username: currentUser.username,
+        full_name: currentUser.full_name,
+      },
+
+      recipient: {
+        id: payload.recipient_id,
+      },
+    };
+
+    queryClient.setQueryData(["messages", payload.recipient_id], (old: any) => {
+      // no cache yet
+      if (!old) {
+        return {
+          pages: [
+            {
+              messages: {
+                items: [optimisticMessage],
+                page: 1,
+                total: 1,
+                page_size: 20,
+              },
+            },
+          ],
+
+          pageParams: [1],
+        };
+      }
+
+      const updatedPages = [...old.pages];
+
+      updatedPages[0] = {
+        ...updatedPages[0],
+
+        messages: {
+          ...updatedPages[0].messages,
+
+          items: [...updatedPages[0].messages.items, optimisticMessage],
+        },
+      };
+
+      return {
+        ...old,
+        pages: updatedPages,
+      };
+    });
+
     websocket.emit({
       type: "chat.send",
       recipient_id: payload.recipient_id,

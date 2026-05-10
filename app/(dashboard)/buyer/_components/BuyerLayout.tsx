@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
-import { ChatProvider } from "@/app/context/ChatContext";
+import { ChatProvider, useChatUtils } from "@/app/context/ChatContext";
 import InterestSelector from "./InterestSelector";
 import { useSocketConnection } from "@/app/hooks/use-socket";
 import { useAuth } from "@/app/context/AuthContext";
@@ -10,8 +10,13 @@ import { useAuth } from "@/app/context/AuthContext";
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { authDetails } = useAuth();
+  const { setTypingUsers } = useChatUtils();
 
-  useSocketConnection({ token: authDetails?.access_token || "" });
+  useSocketConnection({
+    token: authDetails?.access_token || "",
+    authUserId: authDetails?.user?.id || "",
+    setTypingUsers,
+  });
   return (
     <ChatProvider>
       <div className="h-screen w-full bg-[#FBFBFC] flex overflow-hidden">
