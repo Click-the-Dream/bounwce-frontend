@@ -16,7 +16,7 @@ const Hero = () => {
       <Navbar />
       {/* Hero content goes here */}
       <div className="relative mt-14 md:mt-10 text-black w-full max-w-163.25 text-center flex flex-col items-center justify-center">
-        <h1 className="text-6xl lg:text-[60px] capitalize text-gray-900nsition-colors duration-300 font-hugePromo">
+        <h1 className="text-4xl lg:text-[55px] capitalize text-gray-900nsition-colors duration-300 font-hugePromo">
           Meet People <span className="text-brand-orange">Who</span> Share Your{" "}
           <span className="text-brand-orange">Interests.</span>
         </h1>
