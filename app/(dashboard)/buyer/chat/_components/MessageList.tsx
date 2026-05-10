@@ -31,6 +31,7 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
   const [viewerIndex, setViewerIndex] = useState(0);
 
   const prevMessageCountRef = useRef(0);
+  const hasInitialScrollRef = useRef(false);
 
   const chatMessages =
     messages?.pages?.flatMap(
@@ -67,11 +68,10 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
 
   const isTyping = typingUsers[chatId];
 
-  /**
-   *  Smart scroll logic
-   * - only auto-scroll if user is near bottom
-   * - avoids interrupting user reading history
-   */
+  useEffect(() => {
+    hasInitialScrollRef.current = false;
+  }, [chatId]);
+
   const scrollToBottom = (smooth = true) => {
     const el = containerRef.current;
     if (!el) return;
@@ -90,11 +90,19 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
     return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
   };
 
-  /**
-   *  Auto-scroll only when:
-   * - new message arrives
-   * - AND user is already near bottom
-   */
+  useEffect(() => {
+    if (!chatMessages.length) return;
+
+    // only once per chat load
+    if (hasInitialScrollRef.current) return;
+
+    hasInitialScrollRef.current = true;
+
+    requestAnimationFrame(() => {
+      scrollToBottom(false);
+    });
+  }, [chatMessages.length, chatId]);
+
   useEffect(() => {
     const prev = prevMessageCountRef.current;
     const current = chatMessages.length;
@@ -110,9 +118,6 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
     prevMessageCountRef.current = current;
   }, [chatMessages.length]);
 
-  /**
-   *  Typing indicator should NOT force scroll unless user is at bottom
-   */
   useEffect(() => {
     if (isTyping && isUserNearBottom()) {
       scrollToBottom(true);
