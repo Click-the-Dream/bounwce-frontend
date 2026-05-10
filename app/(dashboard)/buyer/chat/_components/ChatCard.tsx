@@ -1,10 +1,16 @@
 "use client";
 import SafeImage from "@/app/_components/SafeImage";
+import { useChatUtils } from "@/app/context/ChatContext";
+import { useNotifications } from "@/app/context/NotificationContext";
 import { useParams, useRouter } from "next/navigation";
 
 const ChatCard = ({ chatUser }: any) => {
   const { chatId } = useParams();
   const router = useRouter();
+  const { onlineUsers } = useChatUtils();
+  const { unreadCount } = useNotifications();
+
+  const isOnline = chatUser?.id ? !!onlineUsers?.[chatUser.id] : false;
 
   return (
     <div
@@ -32,12 +38,19 @@ const ChatCard = ({ chatUser }: any) => {
             {chatUser.full_name?.slice(0, 2) || "NA"}
           </div>
         )}
-        <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-[0.83px] border-white rounded-full"></span>
+        {isOnline && (
+          <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-[0.83px] border-white rounded-full" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline">
           <h4 className="font-medium text-sm truncate">{chatUser.full_name}</h4>
-          <span className="text-[10px] text-gray-400">{chatUser.time}</span>
+          {/* <span className="text-[10px] text-gray-400">{chatUser.time}</span> */}
+          {unreadCount[chatUser.id] > 0 && (
+            <span className="bg-red-500 text-white text-[10px] px-1 min-w-4 h-4 rounded-full flex items-center justify-center">
+              {unreadCount[chatUser.id]}
+            </span>
+          )}
         </div>
         <p className="text-[13px] text-[#A1A1A1] truncate mt-0.5">
           @{chatUser.username}

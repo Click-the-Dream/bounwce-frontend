@@ -51,8 +51,7 @@ const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
   const handleTyping = (value: string) => {
     setMessage(value);
 
-    websocket.emit({
-      type: "chat.typing",
+    websocket.emit("chat.typing", {
       recipient_id: selectedChat.id,
     });
   };

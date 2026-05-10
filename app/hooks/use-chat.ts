@@ -5,8 +5,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import api from "../services/api";
-import { websocket } from "../services/websocket";
 import { useAuth } from "../context/AuthContext";
+import { websocket } from "../services/websocket";
 
 const useChat = () => {
   const queryClient = useQueryClient();
@@ -156,8 +156,7 @@ const useChat = () => {
       };
     });
 
-    websocket.emit({
-      type: "chat.send",
+    websocket.emit("chat.send", {
       recipient_id: payload.recipient_id,
       body: payload.body,
     });

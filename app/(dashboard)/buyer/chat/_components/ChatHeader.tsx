@@ -8,6 +8,8 @@ import { useParams, useRouter } from "next/navigation";
 const ChatHeader = ({ selectedChat }: { selectedChat: User }) => {
   const router = useRouter();
   const { chatId } = useParams();
+  const { onlineUsers } = useChatUtils();
+  const isOnline = selectedChat?.id ? !!onlineUsers?.[selectedChat.id] : false;
 
   return (
     <div className="h-16 border-b border-[#00000033] flex items-center px-4 md:px-6 gap-3 shrink-0 bg-white">
@@ -42,7 +44,7 @@ const ChatHeader = ({ selectedChat }: { selectedChat: User }) => {
             )}
 
             {/* Active Status Indicator */}
-            {selectedChat?.is_active && (
+            {isOnline && (
               <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-[0.83px] border-white rounded-full"></span>
             )}
           </div>
@@ -52,7 +54,7 @@ const ChatHeader = ({ selectedChat }: { selectedChat: User }) => {
               {selectedChat?.full_name}
             </span>
             <span className="text-[10px] text-green-600 font-medium">
-              {selectedChat?.is_active ? "Online" : "Offline"}
+              {isOnline ? "Online" : "Offline"}
             </span>
           </div>
         </>

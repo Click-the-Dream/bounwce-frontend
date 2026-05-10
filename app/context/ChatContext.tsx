@@ -1,14 +1,12 @@
 "use client";
-
-import { createContext, useContext, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { websocket } from "@/app/services/websocket";
+import { createContext, useContext, useState } from "react";
 
 export const ChatContext = createContext<any>({});
 
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
+  const [onlineUsers, setOnlineUsers] = useState<Record<string, true>>({});
 
   return (
     <ChatContext.Provider
@@ -17,6 +15,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setSelectedChat,
         typingUsers,
         setTypingUsers,
+        onlineUsers,
+        setOnlineUsers,
       }}
     >
       {children}

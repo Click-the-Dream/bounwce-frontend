@@ -4,9 +4,12 @@ import Image from "next/image";
 import SearchComponent from "./SearchComponent";
 import Link from "next/link";
 import { useMarketStore } from "@/app/context/StoreContext";
+import { useNotifications } from "@/app/context/NotificationContext";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
+  const { totalUnread, unreadCount } = useNotifications();
+  console.log(totalUnread, unreadCount);
 
   return (
     <header className="h-13.75 flex items-center justify-between py-2.25 px-4 md:px-6 lg:px-8 bg-white border-b border-[#00000033] sticky top-0 z-10">
@@ -37,9 +40,11 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
         </Link>
         <Link href="/buyer/chat" className="relative">
           <MessageCircleMore className="shrink-0 size-5 cursor-pointer" />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full">
-            2
-          </span>
+          {totalUnread > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full">
+              {totalUnread}
+            </span>
+          )}
         </Link>
 
         <div className="relative cursor-pointer">

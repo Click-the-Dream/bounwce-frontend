@@ -4,6 +4,8 @@ import MessageList from "./MessageList";
 import ChatHeader from "./ChatHeader";
 import { useParams } from "next/navigation";
 import { User } from "@/app/_utils/types/buyer";
+import { useEffect } from "react";
+import { useNotifications } from "@/app/context/NotificationContext";
 
 const ChatWindow = ({
   selectedUser,
@@ -12,7 +14,13 @@ const ChatWindow = ({
   selectedUser: User;
   isConversationLoading: boolean;
 }) => {
-  const { chatId } = useParams();
+  const { chatId } = useParams<{ chatId: string }>();
+  const { resetUnread } = useNotifications();
+  useEffect(() => {
+    if (!chatId) return;
+
+    resetUnread(chatId);
+  }, [chatId]);
 
   if (chatId && isConversationLoading && !selectedUser) {
     return (

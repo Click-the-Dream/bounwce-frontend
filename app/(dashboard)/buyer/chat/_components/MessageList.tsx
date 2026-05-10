@@ -119,29 +119,28 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
     }
   }, [isTyping]);
 
-  // useEffect(() => {
-  //   if (!chatMessages.length) return;
+  useEffect(() => {
+    if (!chatMessages.length) return;
 
-  //   const unread = chatMessages.filter((msg: any) => {
-  //     return (
-  //       msg.sender_id !== authDetails?.user?.id &&
-  //       !msg.read_at &&
-  //       !readSet.current.has(msg.id)
-  //     );
-  //   });
+    const unread = chatMessages.filter((msg: any) => {
+      return (
+        msg.sender_id !== authDetails?.user?.id &&
+        !msg.read_at &&
+        !readSet.current.has(msg.id)
+      );
+    });
 
-  //   if (unread.length === 0) return;
+    if (unread.length === 0) return;
 
-  //   for (const msg of unread) {
-  //     readSet.current.add(msg.id);
+    for (const msg of unread) {
+      readSet.current.add(msg.id);
 
-  //     websocket.emit({
-  //       type: "chat.read",
-  //       conversation_id: chatId,
-  //       message_id: msg.id,
-  //     });
-  //   }
-  // }, [chatMessages.length, chatId]);
+      websocket.emit("chat.read", {
+        conversation_id: chatMessages[0]?.conversation_id,
+        message_id: msg.id,
+      });
+    }
+  }, [chatMessages.length, chatId]);
 
   if (!selectedChat) {
     return (

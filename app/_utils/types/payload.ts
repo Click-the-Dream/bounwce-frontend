@@ -17,3 +17,11 @@ export interface SuggestedCandidate {
 }
 
 export type ConnectStatus = "idle" | "pending" | "sent" | "loading";
+export type Notification = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+  read: boolean;
+};
