@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { websocket } from "../services/websocket";
 import { useNotifications } from "../context/NotificationContext";
+import { onMessageToast } from "../_utils/message-toast";
 
 export const useSocketConnection = ({
   token,
@@ -106,6 +107,13 @@ export const useSocketConnection = ({
           body: message.body,
           created_at: message.created_at,
         });
+
+        // onMessageToast({
+        //   senderName: message.sender?.full_name,
+        //   message: message.body,
+        //   avatar: message.sender?.avatar,
+        //   conversationId: message.conversation_id,
+        // });
 
         incrementUnread(otherUserId);
       }
