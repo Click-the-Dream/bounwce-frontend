@@ -6,8 +6,12 @@ import ExploreCard from "./_components/ExploreCard";
 import { ConnectStatus, SuggestedCandidate } from "@/app/_utils/types/payload";
 import ExploreCardSkeleton from "../_components/loader/ExploreCardSkeleton";
 import { onFailure, onSuccess } from "@/app/_utils/notification";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ExplorePage = () => {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { useGetSuggestedCandidates, createMatchRequest, useGetMatchRequests } =
     useMatch();
 
@@ -36,9 +40,8 @@ const ExplorePage = () => {
 
     switch (req.status) {
       case "pending":
-        return "pending";
       case "accepted":
-        return "sent";
+        return "connected";
       default:
         return "idle";
     }
@@ -61,14 +64,33 @@ const ExplorePage = () => {
       { target_user_id: userId },
       {
         onSuccess: () => {
+          
           setConnectState((prev) => ({
             ...prev,
-            [userId]: "pending",
+            [userId]: "loading",
           }));
           onSuccess({
             title: "Connection Request Sent",
             message: " Your connection request has been sent successfully.",
           });
+          
+          console.log("Redirecting to user:", userId)
+          setTimeout(() => {
+            setConnectState((prev) => ({
+              ...prev,
+              [userId]: "connected"
+            })); 
+
+            queryClient.invalidateQueries();
+            
+            setTimeout(() => {
+            router.push(`/buyer/chat/${userId}`)
+            }, 2000)
+            
+          }, 3000)
+
+          
+          
         },
         onError: () => {
           setConnectState((prev) => ({

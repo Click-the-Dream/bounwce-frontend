@@ -27,7 +27,7 @@ const ExploreCard = ({
     router.push(`/buyer/profile/${slugify(full_name)}_${user_id}`);
   };
   const isLoading = connectStatus === "loading";
-  const isSent = connectStatus === "pending";
+  const isSent = connectStatus === "connected";
   const isDisabled = isLoading || isSent;
 
   return (
@@ -60,7 +60,7 @@ const ExploreCard = ({
     }
   `}
           >
-            {isSent ? "Pending" : isLoading ? "Sending..." : "Connect"}
+            {isSent ? "Connected" : isLoading ? "Sending..." : "Connect"}
 
             {isSent ? (
               <LuClock />

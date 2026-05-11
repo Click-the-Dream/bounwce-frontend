@@ -16,7 +16,7 @@ export interface SuggestedCandidate {
   profile?: string; // URL to profile image
 }
 
-export type ConnectStatus = "idle" | "pending" | "sent" | "loading";
+export type ConnectStatus = "idle" | "connected" | "sent" | "loading";
 export type Notification = {
   id: string;
   conversation_id: string;
