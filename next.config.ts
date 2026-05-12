@@ -10,14 +10,17 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    return [
-      {
-        // This matches any request starting with /proxy-api
-        source: "/proxy-api/:path*",
-        // This redirects it to the backend WITHOUT the browser knowing
-        destination: "https://click-backend-j7yi.onrender.com/api/v1/:path*",
-      },
-    ];
+    // ONLY apply the proxy if we are running locally
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        {
+          source: "/proxy-api/:path*",
+          destination: "https://click-backend-j7yi.onrender.com/api/v1/:path*",
+        },
+      ];
+    }
+    // Return an empty array in production
+    return [];
   },
 };
 

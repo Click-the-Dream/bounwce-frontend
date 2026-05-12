@@ -6,6 +6,7 @@ import useMatch from "@/app/hooks/use-match";
 import { useRouter } from "next/navigation";
 import { LuClock } from "react-icons/lu";
 import { slugify } from "@/app/_utils/slugify";
+import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
 
 type Props = SuggestedCandidate & {
   onConnect: (id: string) => void;
@@ -53,7 +54,7 @@ const ExploreCard = ({
             className={`cursor-pointer absolute top-1.5 right-1.75 px-2 min-w-20.25 h-7.5 rounded-[50px] text-xs flex items-center justify-center gap-1 shadow-sm transition
     ${
       isSent
-        ? "bg-amber-50/70 text-amber-700 cursor-not-allowed"
+        ? "bg-green-50/70 text-green-700 cursor-not-allowed"
         : isLoading
           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
           : "bg-white hover:bg-gray-100 text-gray-800"
@@ -63,7 +64,8 @@ const ExploreCard = ({
             {isSent ? "Connected" : isLoading ? "Sending..." : "Connect"}
 
             {isSent ? (
-              <LuClock />
+              // <LuClock />
+              <IoCheckmarkDoneCircleSharp />
             ) : isLoading ? (
               <Loader2 className="shrink-0 size-2.5 animate-spin" />
             ) : (
