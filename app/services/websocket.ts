@@ -7,6 +7,7 @@ type ConnectionState =
   | "reconnecting"
   | "disconnected";
 
+
 class WebSocketService {
   private socket: ReconnectingWebSocket | null = null;
 
@@ -17,9 +18,18 @@ class WebSocketService {
 
   private token: string | null = null;
   private state: ConnectionState = "disconnected";
-
+private stateListeners: Set<(state: ConnectionState) => void> = new Set();
   // ---------------- CONNECT ----------------
 
+  onStateChange(cb: (state: ConnectionState) => void) {
+  this.stateListeners.add(cb);
+}
+
+offStateChange(cb: (state: ConnectionState) => void) {
+  this.stateListeners.delete(cb);
+}
+
+  
   connect(token: string, force = false) {
     if (!token) {
       console.warn("No token provided");
@@ -191,7 +201,8 @@ class WebSocketService {
   // ---------------- STATE ----------------
 
   private setState(state: ConnectionState) {
-    this.state = state;
+  this.state = state;
+  this.stateListeners.forEach((cb) => cb(state));
   }
 
   get connectionState() {
