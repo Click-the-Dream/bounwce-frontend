@@ -10,11 +10,11 @@ export const ConnectionStatusToast = ({
   const map = {
     connecting: {
       text: "Connecting…",
-      color: "bg-amber-500",
+      color: "bg-brand-orange",
     },
     reconnecting: {
       text: "Reconnecting…",
-      color: "bg-orange-500",
+      color: "bg-brand-orange",
     },
     connected: {
       text: "Connected",
@@ -32,17 +32,26 @@ export const ConnectionStatusToast = ({
     <AnimatePresence>
       {state !== "connected" && (
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -20, opacity: 0 }}
+          initial={{ y: 20, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: 20, opacity: 0, scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 420, damping: 30 }}
           className="
-            fixed top-2 left-1/2 -translate-x-1/2
+            fixed bottom-4 left-1/2 -translate-x-1/2
             z-[9999]
+
             px-3 py-1.5
             rounded-full
-            text-xs font-medium text-white
+
+            bg-background
+            text-foreground
+            border border-lighter-ash/40
+            dark:border-white/10
+
             shadow-lg
             flex items-center gap-2
+
+            text-xs font-medium
           "
         >
           <span className={`w-2 h-2 rounded-full ${s.color} animate-pulse`} />
