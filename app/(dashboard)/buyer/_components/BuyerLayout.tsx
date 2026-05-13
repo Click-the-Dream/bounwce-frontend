@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { ChatProvider, useChatUtils } from "@/app/context/ChatContext";
@@ -16,18 +16,7 @@ const SocketInitializer = () => {
   const { authDetails } = useAuth();
   const params = useParams<{ chatId: string }>();
   const chatId = params.chatId;
-  const [wsState, setWsState] = useState<
-    "connecting" | "connected" | "reconnecting" | "disconnected"
-  >("disconnected");
-
-  useEffect(() => {
-    const cb = (state: any) => setWsState(state);
-
-    websocket.onStateChange(cb);
-
-    return () => websocket.offStateChange(cb);
-  }, []);
-
+  
   const { setTypingUsers, setOnlineUsers } = useChatUtils();
 
   const token = authDetails?.access_token;
@@ -47,7 +36,18 @@ const SocketInitializer = () => {
 
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+const [wsState, setWsState] = useState<
+  "connecting" | "connected" | "reconnecting" | "disconnected"
+>("disconnected");
 
+  useEffect(() => {
+  const handler = (state: any) => setWsState(state);
+
+  websocket.onStateChange(handler);
+
+  return () => websocket.offStateChange(handler);
+}, []);
+  
   return (
     <NotificationProvider>
       <ChatProvider>
