@@ -9,7 +9,6 @@ import { useNotifications } from "@/app/context/NotificationContext";
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
   const { totalUnread, unreadCount } = useNotifications();
-  console.log(totalUnread, unreadCount);
 
   return (
     <header className="h-13.75 flex items-center justify-between py-2.25 px-4 md:px-6 lg:px-8 bg-white border-b border-[#00000033] sticky top-0 z-10">
