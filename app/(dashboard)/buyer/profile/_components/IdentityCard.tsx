@@ -10,15 +10,16 @@ import {
   Send,
   X,
 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import userImg from "../../../../assets/buyer/user.jpg";
 import Image from "next/image";
 import SwitchAccountCard from "./SwitchAccountCard";
 import IdentityCardSkeleton from "./IdentityCardSkeleton";
 import useMatch from "@/app/hooks/use-match";
-import { onSuccess } from "@/app/_utils/notification";
+import { onFailure, onSuccess } from "@/app/_utils/notification"; 
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query"; 
 
 type Props = {
   data: any;
@@ -28,92 +29,94 @@ type Props = {
 
 const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   const { authDetails } = useAuth();
-
-  const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
-    useMatch();
-
-  const { data: matchRequests } = useGetMatchRequests();
   const router = useRouter();
+  const queryClient = useQueryClient(); 
+
+  const [localConnectStatus, setLocalConnectStatus] = useState<"idle" | "loading" | "connected">("idle");
+
+  const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } = useMatch();
+  const { data: matchRequests } = useGetMatchRequests();
+
   if (isLoading) return <IdentityCardSkeleton />;
 
   // RELATIONSHIP CHECK (SOURCE OF TRUTH)
-  // const relation = matchRequests?.find((req: any) => {
-  //   return (
-  //     (req.requester_id === authDetails?.user?.id &&
-  //       req.target_user_id === data.id) ||
-  //     (req.requester_id === data.id &&
-  //       req.target_user_id === authDetails?.user?.id)
-  //   );
-  // });
   const relation = matchRequests?.find((req: any) => {
     return (
       req.target_user_id === data.id ||
-      (req.requester_id === data.id &&
-        req.target_user_id === authDetails?.user?.id)
+      (req.requester_id === data.id && req.target_user_id === authDetails?.user?.id)
     );
   });
 
   const status = relation?.status;
-
   const isRequester = relation?.target_user_id !== authDetails?.user?.id;
-
   const isPending = status === "pending";
-  const isConnected = status === "accepted";
-
+  const isConnected = status === "accepted" || (isPending && isRequester);
   const isIncoming = isPending && !isRequester;
   const isOutgoing = isPending && isRequester;
-
   const isSent = !!relation;
 
+  
   const handleConnect = () => {
     if (isSent || createMatchRequest.isPending) return;
+
+    setLocalConnectStatus("loading"); // Start spinner
 
     createMatchRequest.mutate(
       { target_user_id: data.id },
       {
         onSuccess: () => {
+          setLocalConnectStatus("loading"); // Keep spinner going
+          
           onSuccess({
             title: "Connection Request Sent",
             message: "Your connection request has been sent successfully.",
           });
+          
+          setTimeout(() => {
+            setLocalConnectStatus("connected");
+            
+            queryClient.invalidateQueries();
+
+            setTimeout(() => {
+              router.push(`/buyer/chat/${data.id}`);
+            }, 2000);
+            
+          }, 3000);
         },
-      },
+        onError: () => {
+          setLocalConnectStatus("idle"); // Reset on fail
+          onFailure({
+            title: "Connection Request Failed",
+            message: "Failed to send connection request. Please try again.",
+          });
+        },
+      }
     );
   };
 
   // ACCEPT
   const handleAccept = () => {
     respondToMatchRequest.mutate(
-      {
-        request_id: relation.request_id,
-        action: "accept",
-      },
+      { request_id: relation.request_id, action: "accept" },
       {
         onSuccess: () => {
-          onSuccess({
-            title: "Connected",
-            message: "You are now connected",
-          });
+          onSuccess({ title: "Connected", message: "You are now connected" });
+          queryClient.invalidateQueries(); 
         },
-      },
+      }
     );
   };
 
-  //  REJECT
+  // REJECT
   const handleReject = () => {
     respondToMatchRequest.mutate(
-      {
-        request_id: relation.request_id,
-        action: "reject",
-      },
+      { request_id: relation.request_id, action: "reject" },
       {
         onSuccess: () => {
-          onSuccess({
-            title: "Request Rejected",
-            message: "Connection request rejected",
-          });
+          onSuccess({ title: "Request Rejected", message: "Connection request rejected" });
+          queryClient.invalidateQueries();
         },
-      },
+      }
     );
   };
 
@@ -128,22 +131,15 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
           height={61}
           loading="eager"
           className="rounded-[20px] border-2 border-white bg-gray-100 object-cover w-15 h-15.25"
-          style={{
-            boxShadow:
-              "0px 0px 4px 1px #00000040, 1px -6px 4px 3px #00000040 inset",
-          }}
+          style={{ boxShadow: "0px 0px 4px 1px #00000040, 1px -6px 4px 3px #00000040 inset" }}
         />
-
         <div className="w-5 h-5 absolute -bottom-1 -right-1 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center">
           <ImageIcon size={10} />
         </div>
       </div>
 
       {/* NAME */}
-      <h2 className="text-[18px] font-medium text-black leading-tight">
-        {data.name}
-      </h2>
-
+      <h2 className="text-[18px] font-medium text-black leading-tight">{data.name}</h2>
       <p className="text-[#888888] text-[13px] mb-4">@{data.handle}</p>
 
       {/* ACTIONS */}
@@ -153,65 +149,52 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
             <Send className="size-3.5 mr-1.75" /> Share
           </button>
         ) : (
-          <>
-            {/* CONNECT BUTTON (ONLY WHEN NO RELATION) */}
-            {!relation && (
+          <>            
+            {!relation && localConnectStatus !== "connected" && (
               <button
                 onClick={handleConnect}
-                disabled={createMatchRequest.isPending}
-                className="cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all bg-orange text-white hover:bg-[#ee3d15]"
+                disabled={createMatchRequest.isPending || localConnectStatus === "loading"}
+                className={`cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all ${
+                  localConnectStatus === "loading"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed" // Gray out while loading
+                    : "bg-orange text-white hover:bg-[#ee3d15]"
+                }`}
               >
-                {createMatchRequest.isPending ? (
-                  <Loader2 className="size-4 animate-spin mr-1.75" />
+                {localConnectStatus === "loading" || createMatchRequest.isPending ? (
+                  <Loader2 className="size-4 animate-spin mr-1.75 text-current" />
                 ) : (
                   <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
                 )}
-                Connect
+                {localConnectStatus === "loading" || createMatchRequest.isPending ? "Sending..." : "Connect"}
               </button>
             )}
 
             {/* PENDING OUTGOING */}
-            {isOutgoing && (
-              <button
-                disabled
-                className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center"
-              >
+            {/* {isOutgoing && localConnectStatus !== "connected" && (
+              <button disabled className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center">
                 Pending
               </button>
-            )}
+            )} */}
 
             {/* INCOMING REQUEST */}
-            {isIncoming && (
+            {isIncoming && localConnectStatus !== "connected" && (
               <>
-                <button
-                  onClick={handleAccept}
-                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition"
-                  title="Accept"
-                >
+                <button onClick={handleAccept} className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition" title="Accept">
                   <Check className="size-4" />
                 </button>
-
-                <button
-                  onClick={handleReject}
-                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition"
-                  title="Reject"
-                >
+                <button onClick={handleReject} className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition" title="Reject">
                   <X className="size-4" />
                 </button>
               </>
             )}
 
-            {/* CONNECTED */}
-            {isConnected && (
-              <button
-                disabled
-                className="cursor-pointer max-w-22 h-7.5 flex-1 bg-green-100 text-green-700 rounded-full text-xs flex items-center justify-center"
-              >
+            
+            {(isConnected || localConnectStatus === "connected") && (
+              <button disabled className="cursor-pointer max-w-22 h-7.5 flex-1 bg-green-100 text-green-700 rounded-full text-xs flex items-center justify-center">
                 Connected
               </button>
             )}
 
-            {/* MESSAGE BUTTON (UNCHANGED, ALWAYS PRESENT) */}
             <button
               onClick={() => router.push(`/buyer/chat/${data.id}`)}
               className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
@@ -230,12 +213,8 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
       {/* STATS */}
       <div className="flex justify-between text-[13px] mb-5 text-[#888888]">
-        <span>
-          <b className="font-normal">{data.followers}</b> followers
-        </span>
-        <span>
-          <b className="font-normal">{data.badges}</b> Badges earned
-        </span>
+        <span><b className="font-normal">{data.followers}</b> followers</span>
+        <span><b className="font-normal">{data.badges}</b> Badges earned</span>
       </div>
 
       {/* BIO */}
