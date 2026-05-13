@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { ChatProvider, useChatUtils } from "@/app/context/ChatContext";
@@ -12,11 +12,15 @@ import { useParams } from "next/navigation";
 import { websocket } from "@/app/services/websocket";
 import { ConnectionStatusToast } from "@/app/_utils/ConnectionStatusToast";
 
-const SocketInitializer = () => {
+const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [wsState, setWsState] = useState<
+    "connecting" | "connected" | "reconnecting" | "disconnected"
+  >("disconnected");
   const { authDetails } = useAuth();
   const params = useParams<{ chatId: string }>();
   const chatId = params.chatId;
-  
+
   const { setTypingUsers, setOnlineUsers } = useChatUtils();
 
   const token = authDetails?.access_token;
@@ -31,69 +35,55 @@ const SocketInitializer = () => {
     activeConversationId: activeChatUserId,
   });
 
-  return null;
-};
-
-const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-const [wsState, setWsState] = useState<
-  "connecting" | "connected" | "reconnecting" | "disconnected"
->("disconnected");
-
   useEffect(() => {
-  const handler = (state: any) => setWsState(state);
+    const cb = (state: any) => setWsState(state);
 
-  websocket.onStateChange(handler);
+    websocket.onStateChange(cb);
 
-  return () => websocket.offStateChange(handler);
-}, []);
-  
+    return () => websocket.offStateChange(cb);
+  }, []);
+
   return (
-    <NotificationProvider>
-      <ChatProvider>
-        {/* SOCKET INITIALIZER INSIDE PROVIDER */}
-        <SocketInitializer />
+    <>
+      <div className="h-screen w-full bg-[#FBFBFC] flex overflow-hidden">
+        {/* Desktop Sidebar */}
+        <Sidebar />
 
-        <div className="h-screen w-full bg-[#FBFBFC] flex overflow-hidden">
-          {/* Desktop Sidebar */}
-          <Sidebar />
-
-          {/* Mobile Sidebar */}
+        {/* Mobile Sidebar */}
+        <div
+          className={`fixed inset-0 z-40 lg:hidden transition ${
+            sidebarOpen ? "visible" : "invisible"
+          }`}
+        >
+          {/* Overlay */}
           <div
-            className={`fixed inset-0 z-40 lg:hidden transition ${
-              sidebarOpen ? "visible" : "invisible"
+            className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity ${
+              sidebarOpen ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={() => setSidebarOpen(false)}
+          />
+
+          {/* Drawer */}
+          <div
+            className={`absolute left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
-            {/* Overlay */}
-            <div
-              className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity ${
-                sidebarOpen ? "opacity-100" : "opacity-0"
-              }`}
-              onClick={() => setSidebarOpen(false)}
-            />
-
-            {/* Drawer */}
-            <div
-              className={`absolute left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform ${
-                sidebarOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
-            >
-              <Sidebar isMobile onClose={() => setSidebarOpen(false)} />
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="w-full h-full flex-1 flex flex-col overflow-y-auto">
-            <Navbar onMenuClick={() => setSidebarOpen(true)} />
-
-            <main className="w-full h-full">{children}</main>
+            <Sidebar isMobile onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
 
-        <InterestSelector />
-        <ConnectionStatusToast state={wsState} />
-      </ChatProvider>
-    </NotificationProvider>
+        {/* Main Content */}
+        <div className="w-full h-full flex-1 flex flex-col overflow-y-auto">
+          <Navbar onMenuClick={() => setSidebarOpen(true)} />
+
+          <main className="w-full h-full">{children}</main>
+        </div>
+      </div>
+
+      <InterestSelector />
+      <ConnectionStatusToast state={wsState} />
+    </>
   );
 };
 
