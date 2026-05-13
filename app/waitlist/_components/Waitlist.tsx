@@ -94,10 +94,21 @@ const Waitlist = () => {
   }, [joinedCount]);
 
   const onSubmit = async (data: any) => {
-    joinWaitlist.mutate(data, {
-      onSuccess: () => reset(),
-    });
+  const normalizedReferral =
+    data.referral_source === "other"
+      ? data.other_source
+      : data.referral_source;
+
+  const payload = {
+    ...data,
+    referral_source: normalizedReferral,
   };
+
+
+  joinWaitlist.mutate(payload, {
+    onSuccess: () => reset(),
+  });
+};
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -307,12 +318,7 @@ const Waitlist = () => {
               {watch("referral_source") === "other" && (
                 <Input
                   placeholder="Please specify"
-                  {...register("other_source", {
-  validate: (value, formValues) =>
-    formValues.referral_source === "other"
-      ? value || "Please specify how you heard about us"
-      : true,
-})}
+                  {...register("other_source", { required: "Please specify" })}
                 />
               )}
 
