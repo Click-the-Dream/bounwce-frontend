@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/proxy-api`,
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}`,
   timeout: 60000,
   withCredentials: true, // REQUIRED for refresh cookies
 });
