@@ -14,11 +14,23 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
           {children}
 
           <ToastContainer
-            autoClose={2000}
-            draggable
             position="bottom-right"
-            transition={Slide}
-            theme="light"
+            stacked
+            autoClose={2000}
+            hideProgressBar
+            closeButton={false}
+            pauseOnHover
+            draggable
+            newestOnTop
+            limit={5}
+            toastStyle={{
+              marginBottom: "8px",
+            }}
+            style={{
+              bottom: "1.5rem",
+              right: "1.5rem",
+              paddingBottom: "1rem",
+            }}
           />
         </StoreProvider>
       </AuthProvider>

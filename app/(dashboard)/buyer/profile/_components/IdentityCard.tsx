@@ -18,6 +18,7 @@ import IdentityCardSkeleton from "./IdentityCardSkeleton";
 import useMatch from "@/app/hooks/use-match";
 import { onSuccess } from "@/app/_utils/notification";
 import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 type Props = {
   data: any;
@@ -32,7 +33,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
     useMatch();
 
   const { data: matchRequests } = useGetMatchRequests();
-
+  const router = useRouter();
   if (isLoading) return <IdentityCardSkeleton />;
 
   // RELATIONSHIP CHECK (SOURCE OF TRUTH)
@@ -211,7 +212,10 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
             )}
 
             {/* MESSAGE BUTTON (UNCHANGED, ALWAYS PRESENT) */}
-            <button className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all">
+            <button
+              onClick={() => router.push(`/buyer/chat/${data.id}`)}
+              className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
+            >
               <MessageCircleReply className="size-3.5 mr-1.75" />
               Message
             </button>

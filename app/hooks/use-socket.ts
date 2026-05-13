@@ -19,19 +19,32 @@ export const useSocketConnection = ({
   setOnlineUsers: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   activeConversationId?: string;
 }) => {
-  const { pushNotification, incrementUnread, decrementUnread } =
-    useNotifications();
   const queryClient = useQueryClient();
 
-  const isConnected = useRef(false);
+  const { pushNotification, incrementUnread, decrementUnread } =
+    useNotifications();
 
+  const connectedRef = useRef(false);
+
+  // latest active chat without rerender/reconnect
+  const activeChatRef = useRef<string | undefined>(activeConversationId);
+  const authUserRef = useRef(authUserId);
+
+  useEffect(() => {
+    authUserRef.current = authUserId;
+  }, [authUserId]);
+
+  useEffect(() => {
+    activeChatRef.current = activeConversationId;
+  }, [activeConversationId]);
+
+  //  SOCKET CONNECT ONLY ON TOKEN CHANGE
   useEffect(() => {
     if (!token || !authUserId) return;
 
-    // 🔐 prevent duplicate connection
-    if (!isConnected.current) {
+    if (!connectedRef.current) {
       websocket.connect(token);
-      isConnected.current = true;
+      connectedRef.current = true;
     }
 
     const handleMessage = (message: any) => {
@@ -40,19 +53,23 @@ export const useSocketConnection = ({
           ? message.recipient_id
           : message.sender_id;
 
-      const isMyMessage = message.sender_id === authUserId;
+      const isMyMessage = message.sender_id === authUserRef.current;
+      //  ALWAYS USE LATEST ACTIVE CHAT
+      const activeChatId = activeChatRef.current;
 
       const isActiveChat =
-        activeConversationId &&
-        (message.sender_id === activeConversationId ||
-          message.recipient_id === activeConversationId);
+        activeChatId &&
+        (message.sender_id === activeChatId ||
+          message.recipient_id === activeChatId);
 
-      // MESSAGES CACHE UPDATE
+      // ---------------- MESSAGES CACHE ----------------
+
       queryClient.setQueryData(["messages", otherUserId], (old: any) => {
         if (!old) return old;
 
         const pages = [...old.pages];
-        const items = pages[0].messages.items;
+
+        const items = pages[0]?.messages?.items || [];
 
         const filtered = items.filter(
           (m: any) =>
@@ -64,6 +81,7 @@ export const useSocketConnection = ({
         );
 
         const exists = filtered.some((m: any) => m.id === message.id);
+
         if (exists) return old;
 
         pages[0] = {
@@ -74,10 +92,14 @@ export const useSocketConnection = ({
           },
         };
 
-        return { ...old, pages };
+        return {
+          ...old,
+          pages,
+        };
       });
 
-      // CONVERSATIONS UPDATE
+      // ---------------- CONVERSATIONS ----------------
+
       queryClient.setQueryData(["conversations"], (old: any) => {
         if (!old) return old;
 
@@ -98,6 +120,9 @@ export const useSocketConnection = ({
         };
       });
 
+      // ---------------- NOTIFICATIONS ----------------
+
+      // no notification if currently inside chat
       if (!isMyMessage && !isActiveChat) {
         pushNotification({
           id: message.id,
@@ -108,12 +133,12 @@ export const useSocketConnection = ({
           created_at: message.created_at,
         });
 
-        // onMessageToast({
-        //   senderName: message.sender?.full_name,
-        //   message: message.body,
-        //   avatar: message.sender?.avatar,
-        //   conversationId: message.conversation_id,
-        // });
+        onMessageToast({
+          senderName: message.sender?.full_name,
+          message: message.body,
+          avatar: message.sender?.avatar,
+          conversationId: message.conversation_id,
+        });
 
         incrementUnread(otherUserId);
       }
@@ -138,16 +163,22 @@ export const useSocketConnection = ({
 
       setOnlineUsers((prev) => {
         const next = { ...prev };
-        if (online) next[user.id] = true;
-        else delete next[user.id];
+
+        if (online) {
+          next[user.id] = true;
+        } else {
+          delete next[user.id];
+        }
+
         return next;
       });
     };
 
     const handleReadUpdated = (data: any) => {
-      const { reader_id, conversation_id, message_id, read } = data;
+      const { reader_id, message_id, read } = data;
 
-      if (!conversation_id || !message_id || !reader_id) return;
+      if (!reader_id || !message_id) return;
+
       if (read) {
         decrementUnread(reader_id);
       }
@@ -176,18 +207,34 @@ export const useSocketConnection = ({
       });
     };
 
-    // SAFE SINGLE REGISTRATION
+    const handleOnlineSnapshot = (data: any) => {
+      const items = data?.items || [];
+
+      const onlineMap: Record<string, boolean> = {};
+
+      items.forEach((item: any) => {
+        if (item?.user?.id && item.online) {
+          onlineMap[item.user.id] = true;
+        }
+      });
+
+      setOnlineUsers(onlineMap);
+    };
+
+    // CLEAN BEFORE REGISTERING
 
     websocket.off("chat.message", handleMessage);
     websocket.off("chat.sent", handleMessage);
     websocket.off("chat.typing", handleTyping);
     websocket.off("user.online", handleUserOnline);
+    websocket.off("user.online.snapshot", handleOnlineSnapshot);
     websocket.off("chat.read.updated", handleReadUpdated);
 
     websocket.on("chat.message", handleMessage);
     websocket.on("chat.sent", handleMessage);
     websocket.on("chat.typing", handleTyping);
     websocket.on("user.online", handleUserOnline);
+    websocket.on("user.online.snapshot", handleOnlineSnapshot);
     websocket.on("chat.read.updated", handleReadUpdated);
 
     return () => {
@@ -195,7 +242,8 @@ export const useSocketConnection = ({
       websocket.off("chat.sent", handleMessage);
       websocket.off("chat.typing", handleTyping);
       websocket.off("user.online", handleUserOnline);
+      websocket.off("user.online.snapshot", handleOnlineSnapshot);
       websocket.off("chat.read.updated", handleReadUpdated);
     };
-  }, [token, authUserId, activeConversationId]);
+  }, [token, authUserId]);
 };

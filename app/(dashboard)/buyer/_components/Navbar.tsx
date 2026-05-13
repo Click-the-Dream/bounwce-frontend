@@ -41,7 +41,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
         <Link href="/buyer/chat" className="relative">
           <MessageCircleMore className="shrink-0 size-5 cursor-pointer" />
           {totalUnread > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full">
+            <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] px-1 py-0.5 rounded-full">
               {totalUnread}
             </span>
           )}
@@ -49,9 +49,11 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
         <div className="relative cursor-pointer">
           <Bell strokeWidth={1.5} className="size-5" />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full">
-            2
-          </span>
+          {totalUnread > 0 && (
+            <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] px-1 py-0.5 rounded-full">
+              {totalUnread}
+            </span>
+          )}
         </div>
 
         <Link href="/buyer/profile" className="w-8 h-8">
