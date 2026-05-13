@@ -89,15 +89,15 @@ const prevScrollHeightRef = useRef(0);
     });
   };
 
-const handleScroll = async () => {
+const handleScroll = () => {
   const el = containerRef.current;
   if (!el) return;
 
-  // user is near top
-  if (el.scrollTop < 80 && hasNextPage && !isFetchingNextPage) {
-    prevScrollHeightRef.current = el.scrollHeight;
+  const nearTop = el.scrollTop <= 100;
 
-    await fetchNextPage();
+  if (nearTop && hasNextPage && !isFetchingNextPage) {
+    prevScrollHeightRef.current = el.scrollHeight;
+    fetchNextPage();
   }
 };
 
@@ -173,12 +173,13 @@ useEffect(() => {
 
   if (!isFetchingNextPage) return;
 
-  const newScrollHeight = el.scrollHeight;
-  const oldScrollHeight = prevScrollHeightRef.current;
+  requestAnimationFrame(() => {
+    const newScrollHeight = el.scrollHeight;
+    const oldScrollHeight = prevScrollHeightRef.current;
 
-  // maintain position so UI doesn't jump
-  el.scrollTop = newScrollHeight - oldScrollHeight;
-}, [messages?.pages]);
+    el.scrollTop = newScrollHeight - oldScrollHeight;
+  });
+}, [isFetchingNextPage, messages?.pages]);
 
   if (!selectedChat) {
     return (
@@ -235,6 +236,13 @@ useEffect(() => {
   onScroll={handleScroll}
       className="flex-1 overflow-y-auto px-6 pb-6 pt-2 space-y-6 bg-white"
     >
+<div className="sticky top-0 z-10 flex justify-center">
+  {isFetchingNextPage && (
+    <div className="text-xs bg-white px-3 py-1 shadow rounded-full text-gray-500">
+      Loading older messages...
+    </div>
+  )}
+</div>
       {groupedMessages.map((group: any) => (
         <div key={group.label}>
           {/* Date separator */}
