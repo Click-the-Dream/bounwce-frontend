@@ -34,6 +34,16 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
   const users = data?.pages?.flatMap((page: any) => page.users || []) || [];
 
+const filteredUsers = useMemo(() => {
+  if (!search.trim()) return users;
+
+  return users.filter((user: any) =>
+    user.full_name
+      ?.toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+}, [users, search]);
+
   // Infinite scroll trigger
   const lastUserRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -94,9 +104,8 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
             </div>
           ) : users.length > 0 ? (
             <>
-              {users.map((user: any, index: number) => {
-                const isLast = index === users.length - 1;
-
+              {filteredUsers.map((user: any, index: number) => {
+                const isLast = index === filteredUsers.length - 1;
                 return (
                   <div
                     key={user.id}
