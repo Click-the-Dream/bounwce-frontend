@@ -47,13 +47,19 @@ export const useSocketConnection = ({
       connectedRef.current = true;
     }
 
-    const handleMessage = (message: any) => {
+    const handleMessage = (raw: any) => {
+      // normalize payload
+      const message = raw.message || raw;
       const otherUserId =
         message.sender_id === authUserId
           ? message.recipient_id
           : message.sender_id;
 
-      const isMyMessage = message.sender_id === authUserRef.current;
+      const isMyMessage =
+        String(message.sender_id) === String(authUserRef.current);
+
+      console.log("New message", message, isMyMessage);
+
       //  ALWAYS USE LATEST ACTIVE CHAT
       const activeChatId = activeChatRef.current;
 
