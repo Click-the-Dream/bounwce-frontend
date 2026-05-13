@@ -94,10 +94,21 @@ const Waitlist = () => {
   }, [joinedCount]);
 
   const onSubmit = async (data: any) => {
-    joinWaitlist.mutate(data, {
-      onSuccess: () => reset(),
-    });
+  const normalizedReferral =
+    data.referral_source === "other"
+      ? data.other_source
+      : data.referral_source;
+
+  const payload = {
+    ...data,
+    referral_source: normalizedReferral,
   };
+
+
+  joinWaitlist.mutate(payload, {
+    onSuccess: () => reset(),
+  });
+};
 
   return (
     <div className="flex h-screen overflow-hidden">
