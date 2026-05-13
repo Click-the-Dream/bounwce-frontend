@@ -100,9 +100,7 @@ offStateChange(cb: (state: ConnectionState) => void) {
 
       this.stopPing();
     });
-    this.socket.addEventListener("connecting", () => {
-  this.setState("connecting");
-});
+    
 
     this.socket.addEventListener("error", (event) => {
       console.error("Socket error:", {
