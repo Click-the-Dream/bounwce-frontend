@@ -17,15 +17,22 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
   const { authDetails } = useAuth();
   const { chatId } = useParams<any>();
   const { useGetMessages } = useChat();
-  const { data: messages, isLoading } = useGetMessages({
-    userId: chatId,
-  });
+  const {
+  data: messages,
+  isLoading,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+} = useGetMessages({
+  userId: chatId,
+});
 
   const { typingUsers } = useChatUtils();
   const readSet = useRef<Set<string>>(new Set());
 
   //  Scroll container ref (KEY CHANGE)
   const containerRef = useRef<HTMLDivElement | null>(null);
+const prevScrollHeightRef = useRef(0);
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -81,6 +88,18 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
       behavior: smooth ? "smooth" : "auto",
     });
   };
+
+const handleScroll = async () => {
+  const el = containerRef.current;
+  if (!el) return;
+
+  // user is near top
+  if (el.scrollTop < 80 && hasNextPage && !isFetchingNextPage) {
+    prevScrollHeightRef.current = el.scrollHeight;
+
+    await fetchNextPage();
+  }
+};
 
   const isUserNearBottom = () => {
     const el = containerRef.current;
@@ -147,6 +166,20 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
     }
   }, [chatMessages.length, chatId]);
 
+
+useEffect(() => {
+  const el = containerRef.current;
+  if (!el) return;
+
+  if (!isFetchingNextPage) return;
+
+  const newScrollHeight = el.scrollHeight;
+  const oldScrollHeight = prevScrollHeightRef.current;
+
+  // maintain position so UI doesn't jump
+  el.scrollTop = newScrollHeight - oldScrollHeight;
+}, [messages?.pages]);
+
   if (!selectedChat) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-white p-6 text-center">
@@ -199,6 +232,7 @@ const MessageList = ({ selectedChat }: { selectedChat: User }) => {
   return (
     <div
       ref={containerRef}
+  onScroll={handleScroll}
       className="flex-1 overflow-y-auto px-6 pb-6 pt-2 space-y-6 bg-white"
     >
       {groupedMessages.map((group: any) => (
