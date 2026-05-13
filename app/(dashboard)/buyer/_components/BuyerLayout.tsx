@@ -9,11 +9,24 @@ import { useSocketConnection } from "@/app/hooks/use-socket";
 import { useAuth } from "@/app/context/AuthContext";
 import { NotificationProvider } from "@/app/context/NotificationContext";
 import { useParams } from "next/navigation";
+import { websocket } from "@/app/services/websocket";
+import { ConnectionStatusToast } from "@/app/_utils/ConnectionStatusToast";
 
 const SocketInitializer = () => {
   const { authDetails } = useAuth();
   const params = useParams<{ chatId: string }>();
   const chatId = params.chatId;
+  const [wsState, setWsState] = useState<
+    "connecting" | "connected" | "reconnecting" | "disconnected"
+  >("disconnected");
+
+  useEffect(() => {
+    const cb = (state: any) => setWsState(state);
+
+    websocket.onStateChange(cb);
+
+    return () => websocket.offStateChange(cb);
+  }, []);
 
   const { setTypingUsers, setOnlineUsers } = useChatUtils();
 
@@ -78,6 +91,7 @@ const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         <InterestSelector />
+        <ConnectionStatusToast state={wsState} />
       </ChatProvider>
     </NotificationProvider>
   );
