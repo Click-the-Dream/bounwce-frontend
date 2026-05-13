@@ -23,8 +23,10 @@ private stateListeners: Set<(state: ConnectionState) => void> = new Set();
 
   onStateChange(cb: (state: ConnectionState) => void) {
   this.stateListeners.add(cb);
-}
 
+  // CRITICAL: always replay current state immediately
+  cb(this.state);
+  }
 offStateChange(cb: (state: ConnectionState) => void) {
   this.stateListeners.delete(cb);
 }
@@ -98,6 +100,9 @@ offStateChange(cb: (state: ConnectionState) => void) {
 
       this.stopPing();
     });
+    this.socket.addEventListener("connecting", () => {
+  this.setState("connecting");
+});
 
     this.socket.addEventListener("error", (event) => {
       console.error("Socket error:", {
@@ -202,9 +207,11 @@ offStateChange(cb: (state: ConnectionState) => void) {
 
   private setState(state: ConnectionState) {
   this.state = state;
-  this.stateListeners.forEach((cb) => cb(state));
-  }
 
+  queueMicrotask(() => {
+    this.stateListeners.forEach((cb) => cb(state));
+  });
+  }
   get connectionState() {
     return this.state;
   }
