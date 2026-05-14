@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Plus, Image, Camera } from "lucide-react";
+import { ArrowUp, Plus, Image, Camera, Video, File } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
@@ -190,7 +190,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             }}
             className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
-            <Camera size={12} className="text-[#FF2E74]" />
+            <Video size={12} className="text-[#FF2E74]" />
             <span>Add Videos</span>
           </button>
 
@@ -203,8 +203,17 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             }}
             className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
-            <Plus size={12} className="text-[#333]" />
+            <File size={12} className="text-[#333]" />
             <span>Files</span>
+          </button>
+
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
+          >
+            {" "}
+            <Camera size={12} className="text-[#FF2E74]" />{" "}
+            <span>Camera</span>{" "}
           </button>
         </div>
       )}
