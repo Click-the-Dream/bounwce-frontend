@@ -242,7 +242,7 @@ const useChat = () => {
     form.append("api_key", signature.api_key);
     form.append("timestamp", String(signature.timestamp));
     form.append("signature", signature.signature);
-
+    form.append("upload_preset", signature.upload_preset);
     form.append("folder", signature.folder);
     form.append("public_id", signature.public_id);
 

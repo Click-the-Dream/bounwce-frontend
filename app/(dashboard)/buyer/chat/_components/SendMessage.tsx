@@ -12,33 +12,38 @@ interface ChatHeaderProps {
   role?: "buyer" | "vendor";
 }
 
-const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
+const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const fileRef = useRef<HTMLInputElement | null>(null);
-
+  const [fileAccept, setFileAccept] = useState(
+    "image/*,video/*,.pdf,.doc,.docx,.zip",
+  );
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
 
   const {
     transmitMessage,
     useGetChatImageSignature,
+    useGetChatVideoSignature,
+    useGetChatFileSignature,
     uploadToCloudinary,
     transmitImageMessage,
+    transmitVideoMessage,
+    transmitFileMessage,
   } = useChat();
 
   const imageSignature = useGetChatImageSignature();
+  const videoSignature = useGetChatVideoSignature();
+  const fileSignature = useGetChatFileSignature();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-
     setPendingFiles((prev) => [...prev, ...files]);
-
     setShowMenu(false);
-
     e.target.value = "";
   };
 
@@ -58,7 +63,6 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
     if (!selectedChat) return;
 
-    // START TYPING
     if (!isTypingRef.current) {
       websocket.emit("chat.typing", {
         user_id: selectedChat.id,
@@ -68,12 +72,10 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
       isTypingRef.current = true;
     }
 
-    // RESET TIMER
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // STOP TYPING AFTER DELAY
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping();
     }, 1500);
@@ -83,7 +85,7 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
     if (!selectedChat) return;
 
     try {
-      // NORMAL TEXT
+      // TEXT ONLY
       if (message.trim() && pendingFiles.length === 0) {
         transmitMessage({
           recipient_id: selectedChat.id,
@@ -97,27 +99,44 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
       // MEDIA
       for (const file of pendingFiles) {
-        const signature = await imageSignature.mutateAsync();
+        const isImage = file.type.startsWith("image/");
+        const isVideo = file.type.startsWith("video/");
+        const isFile = !isImage && !isVideo;
 
-        console.log("SIGNATURE DATA:", signature);
-        console.log("FILE:", file.name);
+        const signature = isImage
+          ? await imageSignature.mutateAsync()
+          : isVideo
+            ? await videoSignature.mutateAsync()
+            : await fileSignature.mutateAsync();
 
         const uploaded = await uploadToCloudinary(file, signature);
-
         const url = uploaded.secure_url;
 
-        if (file.type.startsWith("image/")) {
-          transmitImageMessage({
+        const caption = message.trim();
+
+        if (isImage) {
+          await transmitImageMessage({
             recipient_id: selectedChat.id,
             image_url: url,
-            caption: message.trim(),
+            caption,
+          });
+        } else if (isVideo) {
+          await transmitVideoMessage({
+            recipient_id: selectedChat.id,
+            video_url: url,
+            caption,
+          });
+        } else if (isFile) {
+          await transmitFileMessage({
+            recipient_id: selectedChat.id,
+            file_url: url,
+            caption,
           });
         }
       }
 
       setPendingFiles([]);
       setMessage("");
-
       stopTyping();
     } catch (err) {
       console.error(err);
@@ -129,7 +148,6 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-
       stopTyping();
     };
   }, []);
@@ -150,20 +168,43 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
       {showMenu && (
         <div className="absolute bottom-16 left-3 md:left-6 w-48 bg-white rounded-xl shadow-lg border border-gray-100 p-1 flex flex-col gap-1 z-50">
+          {/* IMAGES */}
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={() => {
+              setFileAccept("image/*");
+              fileRef.current?.click();
+              setShowMenu(false);
+            }}
             className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
             <Image size={12} className="text-[#007BFC]" />
             <span>Add Photos</span>
           </button>
 
+          {/* VIDEOS */}
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={() => {
+              setFileAccept("video/*");
+              fileRef.current?.click();
+              setShowMenu(false);
+            }}
             className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
             <Camera size={12} className="text-[#FF2E74]" />
-            <span>Camera</span>
+            <span>Add Videos</span>
+          </button>
+
+          {/* FILES */}
+          <button
+            onClick={() => {
+              setFileAccept(".pdf,.doc,.docx,.zip");
+              fileRef.current?.click();
+              setShowMenu(false);
+            }}
+            className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
+          >
+            <Plus size={12} className="text-[#333]" />
+            <span>Files</span>
           </button>
         </div>
       )}
@@ -211,7 +252,7 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
       <input
         ref={fileRef}
         type="file"
-        accept="image/*,video/*,.pdf,.doc,.docx,.zip"
+        accept={fileAccept}
         multiple
         className="hidden"
         onChange={handleImageUpload}

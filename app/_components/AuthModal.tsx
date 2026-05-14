@@ -9,9 +9,11 @@ import EmailVerification from "../(auth)/_components/EmailVerification";
 const AuthModal = ({
   isOpen,
   onClose,
+  onSuccess,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }) => {
   const [view, setView] = useState("selection");
   const [authData, setAuthData] = useState<{ email: string } | null>(null);
@@ -51,7 +53,7 @@ const AuthModal = ({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative z-10 w-full max-w-120 max-h-[90vh] flex flex-col rounded-[2.5rem] bg-white shadow-2xl overflow-hidden"
+            className="relative z-10 w-full max-w-120 max-h-[90vh] flex flex-col rounded-lg bg-white shadow-2xl overflow-hidden"
           >
             {/* --- FIXED HEADER AREA --- */}
             <div className="relative w-full p-6 pb-0 flex items-center justify-between z-30 bg-white">
@@ -140,7 +142,10 @@ const AuthModal = ({
                     <EmailVerification
                       isModal={true}
                       email={authData?.email}
-                      onFinalSuccess={handleClose}
+                      onFinalSuccess={() => {
+                        handleClose();
+                        onSuccess?.();
+                      }}
                     />
                   </motion.div>
                 )}

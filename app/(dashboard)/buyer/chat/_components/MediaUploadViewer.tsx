@@ -52,7 +52,7 @@ const MediaUploadModal = ({
   const activeFile = previews[activeIndex];
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col z-[100] justify-between gap-2">
+    <div className="fixed inset-0 bg-white flex flex-col z-100 justify-between gap-2">
       {/* HEADER */}
       <ViewerNav user={user} display="" handleClose={() => setFiles([])} />
 

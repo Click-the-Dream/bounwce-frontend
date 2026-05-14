@@ -3,17 +3,15 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import CategoryList from "./CategoryList";
 import { useRouter } from "next/navigation";
+import AuthModal from "./AuthModal";
 const SearchBar = () => {
   const router = useRouter();
-  const [query, setQuery] = useState(""); // Track search input
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [query, setQuery] = useState("");
 
-  const handleSearch = () => {
-    router.push(`/waitlist`);
-    // if (query.trim()) {
-    //   router.push(`/marketplace?search=${encodeURIComponent(query)}`);
-    // } else {
-    //   router.push(`/marketplace`);
-    // }
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    router.push(`/buyer?q=${encodeURIComponent(query.trim())}`);
   };
 
   return (
@@ -36,7 +34,7 @@ const SearchBar = () => {
           />
 
           <button
-            onClick={handleSearch}
+            onClick={() => setShowAuthModal(true)}
             className="cursor-pointer bg-[#FF5030] hover:bg-[#e4462a] text-black font-semibold px-6 md:px-7.5 py-3 md:py-3.75 rounded-lg md:rounded-[5px] border-2 border-black transition-all active:scale-[0.98] h-13 md:h-11.5 text-[14px] md:text-[13px] flex items-center justify-center"
           >
             <Search className="block lg:hidden" />
@@ -44,6 +42,12 @@ const SearchBar = () => {
           </button>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
     </>
   );
 };
