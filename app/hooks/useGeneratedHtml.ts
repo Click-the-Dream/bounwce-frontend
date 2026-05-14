@@ -10,254 +10,87 @@ const useGeneratedHtml = (formData: any) => {
 
   return useMemo(() => {
     return `<!doctype html>
-<html lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
-  <meta charset="UTF-8">
+  <title>${debouncedData.subject || "Bouwnce Newsletter"}</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f3f4f6;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-        Roboto, Helvetica, Arial, sans-serif;
-      color: #1f2937;
-    }
-
-    .email-wrapper {
-      padding: 40px 14px;
-    }
-
-    .email-container {
-      max-width: 640px;
-      margin: 0 auto;
-      background: #ffffff;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.06);
-    }
-
-    .header {
-      background: linear-gradient(135deg, #ff3b0a, #ff6a3d);
-      padding: 26px 20px;
-      text-align: center;
-      color: #fff;
-      font-weight: 800;
-      letter-spacing: 3px;
-      font-size: 18px;
-    }
-
-    .body {
-      padding: 38px 30px;
-      font-size: 15px;
-      line-height: 1.8;
-      color: #374151;
-    }
-
-    .subject {
-      font-size: 10px;
-      letter-spacing: 1.6px;
-      text-transform: uppercase;
-      color: #9ca3af;
-      border-bottom: 1px solid #f0f0f0;
-      padding-bottom: 10px;
-      margin-bottom: 18px;
-    }
-
-    .greeting {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 18px;
-      color: #111827;
-    }
-
-    /* FIXED CONTENT WRAPPING */
-    .content {
-      font-size: 15px;
-      color: #374151;
-      line-height: 1.8;
-
-      white-space: normal;
-      word-break: normal;
-      overflow-wrap: break-word;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .content p,
-    .content span,
-    .content div {
-      margin: 0 0 16px;
-      white-space: normal;
-      word-break: normal;
-      overflow-wrap: break-word;
-    }
-
-    .content h1,
-    .content h2,
-    .content h3 {
-      margin: 20px 0 10px;
-      line-height: 1.3;
-      color: #111827;
-    }
-
-    .content a {
-      color: #ff3b0a;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .content a:hover {
-      text-decoration: underline;
-    }
-
-    .footer {
-      background: #fafafa;
-      padding: 28px 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #6b7280;
-      border-top: 1px solid #eee;
-    }
-
-    .socials {
-      margin-top: 16px;
-    }
-
-    .socials img {
-      width: 20px;
-      height: 20px;
-      margin: 0 8px;
-      opacity: 0.75;
-      transition: 0.2s ease;
-    }
-
-    .socials img:hover {
-      opacity: 1;
-      transform: translateY(-2px);
-    }
-
-    /* MOBILE */
-    @media (max-width: 600px) {
-      .body {
-        padding: 24px 18px;
-      }
-    }
-
-    /* DARK MODE */
-    @media (prefers-color-scheme: dark) {
-      body {
-        background: #0b0f19;
-        color: #e5e7eb;
-      }
-
-      .email-container {
-        background: #111827;
-        border-color: #1f2937;
-      }
-
-      .body {
-        color: #e5e7eb;
-      }
-
-      .subject {
-        color: #9ca3af;
-        border-bottom: 1px solid #1f2937;
-      }
-
-      .greeting {
-        color: #f3f4f6;
-      }
-
-      .content {
-        color: #e5e7eb;
-      }
-
-      .ql-align-center {
-  text-align: center;
-}
-
-.ql-align-right {
-  text-align: right;
-}
-
-.ql-align-justify {
-  text-align: justify;
-}
-
-      .content a {
-        color: #fb7a4a;
-      }
-
-      .footer {
-        background: #0f172a;
-        color: #9ca3af;
-        border-top: 1px solid #1f2937;
-      }
-    }
+  <style type="text/css">
+    body { margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; background-color:#f3f4f6; }
+    table, td { border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+    p { display:block; margin:0; }
+    
+    /* Email constraints defined by the backend's MJML */
+    .email-wrapper { padding: 40px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;}
+    .email-card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06); background-color:#ffffff; max-width:600px; margin: 0 auto;}
+    
+    .header { background: #ff6b35; background-image: linear-gradient(135deg, #ff3b0a, #ff6a3d); padding: 26px 20px; text-align: center; }
+    .header-text { font-weight: 800; letter-spacing: 3px; font-size: 18px; color: #ffffff; margin:0; }
+    
+    .body-section { padding: 38px 30px; background-color: #ffffff; }
+    .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 14px 0; }
+    
+    /* Strict word-wrap rules requested by backend */
+    .content { font-size: 15px; color: #374151; line-height: 1.8; word-break: keep-all !important; overflow-wrap: break-word !important; word-wrap: break-word !important; hyphens: none !important; white-space: normal !important; }
+    .content img { max-width: 100% !important; height: auto !important; }
+    
+    .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: center; padding: 28px 20px; }
+    .cta-button { display: inline-block; background-color: #ff3b0a; color: #ffffff !important; text-decoration: none !important; border-radius: 8px; font-weight: 600; font-size: 13px; padding: 12px 15px; margin-bottom: 20px;}
+    
+    .socials-table { margin: 0 auto; width: 100%; max-width: 200px;}
+    .socials-table td { padding: 16px 10px 0 10px; text-align: center; }
   </style>
 </head>
-
-<body>
+<body style="background-color:#f3f4f6;">
   <div class="email-wrapper">
-    <div class="email-container">
+    <div class="email-card">
+      
+      <!-- HEADER -->
+      <div class="header">
+        <p class="header-text">BOUWNCE</p>
+      </div>
 
-      <div class="header">BOUWNCE</div>
-
-      <div class="body">
-
-        <div class="subject">
-          SUBJECT · ${debouncedData.subject || "No Subject"}
-        </div>
-
-        <div class="greeting">
-          Hi there,
-        </div>
-
+      <!-- BODY -->
+      <div class="body-section">
+        <!-- Replaced MJML {{ user_name }} with a generic "there" for the live preview -->
+        <p class="greeting">Hi there,</p>
+        
         <div class="content">
           ${debouncedData.content || "Start typing your content..."}
         </div>
-
       </div>
 
       <div class="footer">
-        <div style="text-align:center;">
-          <a href="https://bouwnce.com"
-             style="
-              display:inline-block;
-              padding:12px 15px;
-              margin-bottom:10px;
-              background:#ff3b0a;
-              color:#fff;
-              text-decoration:none;
-              border-radius:8px;
-              font-weight:600;
-              font-size:13px;
-              letter-spacing:0.5px;
-             ">
-            Visit Bouwnce
-          </a>
-        </div>
+        <a href="https://bouwnce.com" class="cta-button">Visit Bouwnce</a>
+        <p style="margin:0 0 10px 0; line-height: 1.5;">
+          &copy; ${new Date().getFullYear()} Bouwnce. All rights reserved.<br />
+          You’re receiving this because you subscribed to our updates.
+        </p>
+        
+        <!-- SOCIALS (Converted MJML Columns to HTML Table for perfect horizontal alignment) -->
+        <table class="socials-table" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="33%">
+              <a href="https://www.instagram.com/bouwnceofficial?igsh=bjFvem92Y28wMWhl">
+                <img src="https://img.icons8.com/ios-filled/50/ff3b0a/instagram-new.png" width="20" alt="Instagram" />
+              </a>
+            </td>
+            <td width="33%">
+              <a href="https://www.tiktok.com/@bouwnceofficial?_r=1&_t=ZS-961mkz2wt4H">
+                <img src="https://img.icons8.com/ios-filled/50/ff3b0a/tiktok.png" width="20" alt="TikTok" />
+              </a>
+            </td>
+            <td width="33%">
+              <a href="https://www.linkedin.com/company/bouwnce-official/">
+                <img src="https://img.icons8.com/ios-filled/50/ff3b0a/linkedin.png" width="20" alt="LinkedIn" />
+              </a>
+            </td>
+          </tr>
+        </table>
 
-        © ${new Date().getFullYear()} Bouwnce. All rights reserved.<br/>
-        You’re receiving this because you subscribed to our updates.
-
-        <div class="socials">
-          <a href="https://www.instagram.com/bouwnceofficial?igsh=bjFvem92Y28wMWhl">
-            <img src="https://img.icons8.com/ios-filled/50/ff3b0a/instagram-new.png"/>
-          </a>
-
-          <a href="https://www.tiktok.com/@bouwnceofficial?_r=1&_t=ZS-961mkz2wt4H">
-            <img src="https://img.icons8.com/ios-filled/50/ff3b0a/tiktok.png"/>
-          </a>
-
-          <a href="https://www.linkedin.com/company/bouwnce-official/">
-            <img src="https://img.icons8.com/ios-filled/50/ff3b0a/linkedin.png"/>
-          </a>
-        </div>
       </div>
-
     </div>
   </div>
 </body>
