@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useCallback, useState } from "react";
 import SafeImage from "@/app/_components/SafeImage";
 import { X, Search } from "lucide-react";
 import useUser from "@/app/hooks/use-user";
@@ -19,7 +19,8 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
   const [search, setSearch] = useState("");
 
-  // only fetch when modal is open
+  const observer = useRef<IntersectionObserver | null>(null);
+
   const params = useMemo(
     () => ({
       page_size: 20,
@@ -32,12 +33,34 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
     useGetUsers(params);
 
   const users = data?.pages?.flatMap((page: any) => page.users || []) || [];
-  const filteredUsers = useMemo(() => {
-    if (!search) return users;
-    return users.filter((user: any) =>
-      user.full_name?.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [users, search]);
+
+const filteredUsers = useMemo(() => {
+  if (!search.trim()) return users;
+
+  return users.filter((user: any) =>
+    user.full_name
+      ?.toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+}, [users, search]);
+
+  // Infinite scroll trigger
+  const lastUserRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (isFetchingNextPage) return;
+
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasNextPage) {
+          fetchNextPage();
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage],
+  );
 
   if (!isOpen) return null;
 
@@ -48,6 +71,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
         <div className="p-5 flex justify-between items-start">
           <div>
             <h2 className="text-sm font-medium text-black">Start New Chat</h2>
+
             <p className="text-[13px] text-[#00000080]">
               Search for contacts to start a conversation
             </p>
@@ -62,6 +86,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
         <div className="px-5 space-y-2.5">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9C9C9C] size-4" />
+
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -77,35 +102,52 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
             <div className="text-center text-sm text-gray-400">
               Loading users...
             </div>
-          ) : filteredUsers.length > 0 ? (
-            filteredUsers.map((user: any) => (
-              <div
-                key={user.id}
-                onClick={() => router.push(`/buyer/chat/${user.id}`)}
-                className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2"
-              >
-                <div className="size-9.25 rounded-[10px] overflow-hidden bg-gray-200">
-                  {user.profile ? (
-                    <SafeImage
-                      src={user.profile.url}
-                      alt={user.full_name}
-                      width={40}
-                      height={40}
-                      className="w-full h-full object-cover rounded-[10px]"
-                    />
-                  ) : (
-                    <div className="w-full h-full rounded-[10px] bg-gray-100 flex items-center justify-center font-bold text-black">
-                      {user.full_name?.slice(0, 2) || "NA"}
+          ) : users.length > 0 ? (
+            <>
+              {filteredUsers.map((user: any, index: number) => {
+                const isLast = index === filteredUsers.length - 1;
+                return (
+                  <div
+                    key={user.id}
+                    ref={isLast ? lastUserRef : null}
+                    onClick={() => router.push(`/buyer/chat/${user.id}`)}
+                    className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2"
+                  >
+                    <div className="size-9.25 rounded-[10px] overflow-hidden bg-gray-200">
+                      {user.profile ? (
+                        <SafeImage
+                          src={user.profile.url}
+                          alt={user.full_name}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover rounded-[10px]"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-[10px] bg-gray-100 flex items-center justify-center font-bold text-black">
+                          {user.full_name?.slice(0, 2) || "NA"}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{user.full_name}</span>
-                  <span className="text-xs text-gray-400">{user.email}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        {user.full_name}
+                      </span>
+
+                      <span className="text-xs text-gray-400">
+                        {user.email}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {isFetchingNextPage && (
+                <div className="py-4 text-center text-sm text-gray-400">
+                  Loading more users...
                 </div>
-              </div>
-            ))
+              )}
+            </>
           ) : (
             <div className="text-center text-sm text-gray-400">
               No users found
