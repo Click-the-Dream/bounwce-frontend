@@ -7,10 +7,11 @@ import { useParams, useRouter } from "next/navigation";
 const ChatCard = ({ chatUser }: any) => {
   const { chatId } = useParams();
   const router = useRouter();
-  const { onlineUsers } = useChatUtils();
+  const { onlineUsers, typingUsers } = useChatUtils();
   const { unreadCount } = useNotifications();
 
   const isOnline = chatUser?.id ? !!onlineUsers?.[chatUser.id] : false;
+  const isTyping = chatUser?.id ? !!typingUsers?.[chatUser.id] : false;
 
   return (
     <div
@@ -52,8 +53,12 @@ const ChatCard = ({ chatUser }: any) => {
             </span>
           )}
         </div>
-        <p className="text-[13px] text-[#A1A1A1] truncate mt-0.5">
-          @{chatUser.username}
+        <p
+          className={`text-[13px] truncate mt-0.5 ${
+            isTyping ? "text-orange animate-pulse" : "text-[#A1A1A1]"
+          }`}
+        >
+          {isTyping ? "typing..." : `@${chatUser.username}`}
         </p>
       </div>
     </div>

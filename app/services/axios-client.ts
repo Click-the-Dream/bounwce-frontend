@@ -7,6 +7,8 @@ let failedQueue: {
   reject: (reason?: any) => void;
 }[] = [];
 
+let refreshPromise: Promise<any> | null = null;
+
 const processQueue = (error: null, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
@@ -58,46 +60,44 @@ export const setupInterceptors = (
 
       // Only attempt refresh on 401 and if it's not a retry
       if (error.response?.status === 401 && !originalRequest._retry) {
-        if (isRefreshing) {
-          return new Promise((resolve, reject) => {
-            failedQueue.push({
-              resolve: (token) => {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-                resolve(api(originalRequest));
-              },
-              reject,
+        originalRequest._retry = true;
+
+        if (!refreshPromise) {
+          refreshPromise = axios
+            .post(
+              `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh-token`,
+              {},
+              { withCredentials: true },
+            )
+            .then(({ data }) => {
+              const newToken = data?.data?.access_token;
+
+              const stored = sessionStorage.getItem("authUser");
+
+              if (stored && newToken) {
+                const parsed = JSON.parse(stored);
+                const updatedUser = { ...parsed, access_token: newToken };
+
+                sessionStorage.setItem("authUser", JSON.stringify(updatedUser));
+                return newToken;
+              }
+
+              throw new Error("No refresh token");
+            })
+            .finally(() => {
+              refreshPromise = null;
             });
-          });
         }
 
-        originalRequest._retry = true;
-        isRefreshing = true;
-
         try {
-          const { data } = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh-token`,
-            {},
-            { withCredentials: true },
-          );
-          const newToken = data?.data?.access_token;
-          const stored = sessionStorage.getItem("authUser");
-          let newUser;
+          const newToken = await refreshPromise;
 
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            const updatedUser = { ...parsed, access_token: newToken };
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
-            updateAuth(updatedUser);
-
-            processQueue(null, newToken);
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return api(originalRequest);
-          }
+          return api(originalRequest);
         } catch (err) {
           updateAuth(null);
           return Promise.reject(err);
-        } finally {
-          isRefreshing = false;
         }
       }
       return Promise.reject(error);
