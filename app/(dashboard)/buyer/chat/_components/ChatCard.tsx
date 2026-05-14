@@ -5,16 +5,17 @@ import { useChatUtils } from "@/app/context/ChatContext";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useParams, useRouter } from "next/navigation";
 
-const ChatCard = ({ chatUser }: any) => {
+const ChatCard = ({ chat }: any) => {
   const { chatId } = useParams();
   const router = useRouter();
   const { onlineUsers, typingUsers } = useChatUtils();
   const { unreadCount } = useNotifications();
+  const chatUser = chat?.user;
 
   const isOnline = chatUser?.id ? !!onlineUsers?.[chatUser.id] : false;
   const isTyping = chatUser?.id ? !!typingUsers?.[chatUser.id] : false;
-  const lastMessageTime = chatUser?.last_message?.created_at;
-  const lastMessage = chatUser?.last_message?.body;
+  const lastMessageTime = chat?.last_message?.created_at;
+  const lastMessage = chat?.last_message?.body;
 
   return (
     <div
@@ -63,10 +64,10 @@ const ChatCard = ({ chatUser }: any) => {
             isTyping ? "text-orange animate-pulse" : "text-[#A1A1A1]"
           }`}
         >
-          {lastMessage
-            ? lastMessage
-            : isTyping
-              ? "typing..."
+          {isTyping
+            ? "typing..."
+            : lastMessage
+              ? lastMessage
               : `@${chatUser.username}`}
         </p>
       </div>

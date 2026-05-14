@@ -16,7 +16,7 @@ const useChat = () => {
     params: { page_size?: number; name?: string } = {},
   ) =>
     useInfiniteQuery({
-      queryKey: ["conversations", params],
+      queryKey: ["conversations"],
 
       queryFn: async ({ pageParam = 1 }) => {
         const res = await api.get("/chats/conversations", {
@@ -160,11 +160,124 @@ const useChat = () => {
     });
   };
 
+  const transmitImageMessage = ({
+    recipient_id,
+    image_url,
+    caption,
+  }: {
+    recipient_id: string;
+    image_url: string;
+    caption?: string;
+  }) => {
+    websocket.emit("chat.upload_image", {
+      type: "chat.upload_image",
+      recipient_id,
+      image_url,
+      caption,
+    });
+  };
+
+  const transmitVideoMessage = ({
+    recipient_id,
+    video_url,
+    caption,
+  }: {
+    recipient_id: string;
+    video_url: string;
+    caption?: string;
+  }) => {
+    websocket.emit("chat.upload_video", {
+      type: "chat.upload_video",
+      recipient_id,
+      video_url,
+      caption,
+    });
+  };
+
+  const transmitFileMessage = ({
+    recipient_id,
+    file_url,
+    caption,
+  }: {
+    recipient_id: string;
+    file_url: string;
+    caption?: string;
+  }) => {
+    websocket.emit("chat.upload_file", {
+      type: "chat.upload_file",
+      recipient_id,
+      file_url,
+      caption,
+    });
+  };
+
+  const useGetChatImageSignature = () =>
+    useMutation({
+      mutationFn: async () => {
+        const res = await api.post("/uploads/chat-image/sign");
+        return res.data?.data;
+      },
+    });
+
+  const useGetChatVideoSignature = () =>
+    useMutation({
+      mutationFn: async () => {
+        const res = await api.post("/uploads/chat-video/sign");
+        return res.data?.data;
+      },
+    });
+
+  const useGetChatFileSignature = () =>
+    useMutation({
+      mutationFn: async () => {
+        const res = await api.post("/uploads/chat-file/sign");
+        return res.data?.data;
+      },
+    });
+
+  const uploadToCloudinary = async (file: File, signature: any) => {
+    const form = new FormData();
+
+    form.append("file", file);
+    form.append("api_key", signature.api_key);
+    form.append("timestamp", String(signature.timestamp));
+    form.append("signature", signature.signature);
+
+    form.append("folder", signature.folder);
+    form.append("public_id", signature.public_id);
+
+    const resourceType = signature.constraints.resource_type;
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${signature.cloud_name}/${resourceType}/upload`,
+      {
+        method: "POST",
+        body: form,
+      },
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(JSON.stringify(err));
+    }
+
+    return res.json();
+  };
+
   return {
     useGetConversations,
     useGetConversation,
     useGetMessages,
     transmitMessage,
+    useGetChatImageSignature,
+    useGetChatVideoSignature,
+    useGetChatFileSignature,
+
+    uploadToCloudinary,
+
+    transmitImageMessage,
+    transmitVideoMessage,
+    transmitFileMessage,
   };
 };
 

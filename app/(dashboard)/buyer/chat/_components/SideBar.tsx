@@ -136,15 +136,15 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
                 full_name: string;
                 id: string;
                 username: string;
-                last_message: {
-                  body: string;
-                  caption: string;
-                  media_type: string;
-                  media_url: string;
-                  sender_id: string;
-                };
               };
-            }) => <ChatCard key={chat?.user?.id} chatUser={chat.user} />,
+              last_message: {
+                body: string;
+                caption: string;
+                media_type: string;
+                media_url: string;
+                sender_id: string;
+              };
+            }) => <ChatCard key={chat?.user?.id} chat={chat} />,
           )
         ) : (
           <div className="text-center mt-10 text-gray-400 text-sm">

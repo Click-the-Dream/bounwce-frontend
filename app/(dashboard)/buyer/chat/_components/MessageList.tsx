@@ -11,6 +11,7 @@ import { useParams } from "next/navigation";
 import { formatMessageDate } from "@/app/_utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
 import { websocket } from "@/app/services/websocket";
+import TypingDots from "./TypingDots";
 
 interface ChatHeaderProps {
   selectedChat: User;
@@ -208,9 +209,7 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
         </div>
       ))}
 
-      {isTyping && (
-        <div className="text-sm text-gray-400 italic">typing...</div>
-      )}
+      {isTyping && <TypingDots />}
 
       <div className="h-2" />
 

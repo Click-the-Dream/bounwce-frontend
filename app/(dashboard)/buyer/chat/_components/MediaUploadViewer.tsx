@@ -1,63 +1,93 @@
 "use client";
-import { useState } from "react";
-import { FiX, FiArrowUp } from "react-icons/fi";
-import { Plus, ZoomIn, Download, X } from "lucide-react";
+
+import { useMemo, useState } from "react";
+import { FiArrowUp } from "react-icons/fi";
+import { Plus } from "lucide-react";
 import Image from "next/image";
 import ViewerNav from "./ViewerNav";
 import { User } from "@/app/_utils/types/buyer";
 
 interface MediaUploadModalProps {
-  images: string[];
+  files: File[];
   message: string;
   setMessage: (val: string) => void;
-  setImages: React.Dispatch<React.SetStateAction<string[]>>;
+  setFiles: React.Dispatch<React.SetStateAction<File[]>>;
   onSend: () => void;
   onAddMore: () => void;
   user?: User;
 }
 
 const MediaUploadModal = ({
-  images,
+  files,
   message,
   setMessage,
-  setImages,
+  setFiles,
   onSend,
   onAddMore,
   user,
 }: MediaUploadModalProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const removeImage = async (idx: number) => {
-    const updated = images.filter((_, i) => i !== idx);
-    await setImages(updated);
-    if (activeIndex >= updated.length) {
-      console.log(activeIndex, updated.length);
+  // CREATE PREVIEW URLS
+  const previews = useMemo(() => {
+    return files.map((file) => ({
+      url: URL.createObjectURL(file),
+      type: file.type,
+      name: file.name,
+    }));
+  }, [files]);
 
+  const removeFile = (idx: number) => {
+    const updated = files.filter((_, i) => i !== idx);
+
+    setFiles(updated);
+
+    if (activeIndex >= updated.length) {
       setActiveIndex(Math.max(0, updated.length - 1));
     }
   };
 
-  if (images.length === 0) return null;
+  if (files.length === 0) return null;
+
+  const activeFile = previews[activeIndex];
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col z-100 justify-between gap-2">
+    <div className="fixed inset-0 bg-white flex flex-col z-[100] justify-between gap-2">
       {/* HEADER */}
-      <ViewerNav user={user} display={""} handleClose={() => setImages([])} />
+      <ViewerNav user={user} display="" handleClose={() => setFiles([])} />
 
-      {/* MAIN VIEWPORT */}
-      <div className="flex-1 w-full h-full flex my-2 items-center justify-center overflow-hidden">
-        <Image
-          src={images[activeIndex]}
-          alt="preview"
-          width={1200}
-          height={800}
-          priority
-          className="h-full w-auto object-contain"
-        />
+      {/* MAIN VIEWER */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden px-4">
+        {activeFile.type.startsWith("image/") ? (
+          <Image
+            src={activeFile.url}
+            alt="preview"
+            width={1200}
+            height={900}
+            priority
+            className="max-h-full w-auto object-contain"
+          />
+        ) : activeFile.type.startsWith("video/") ? (
+          <video
+            src={activeFile.url}
+            controls
+            className="max-h-full max-w-full rounded-xl"
+          />
+        ) : (
+          <div className="bg-[#EFF3F4] rounded-2xl p-8 text-center max-w-md w-full">
+            <div className="text-5xl mb-4">📄</div>
+
+            <p className="font-semibold text-sm break-all">{activeFile.name}</p>
+
+            <p className="text-xs text-gray-500 mt-2">
+              {(files[activeIndex].size / 1024 / 1024).toFixed(2)} MB
+            </p>
+          </div>
+        )}
       </div>
 
-      <div className="flex h-10.75 items-center justify-center overflow-hidden my-3">
-        {/* CAPTION INPUT - Matches screenshot colors/style */}
+      {/* MESSAGE INPUT */}
+      <div className="flex items-center justify-center overflow-hidden my-3">
         <div className="w-full max-w-3xl relative px-4">
           <input
             type="text"
@@ -67,44 +97,58 @@ const MediaUploadModal = ({
             className="w-full py-4 px-6 pr-14 rounded-[10px] bg-[#EFF3F4] border-none focus:outline-none text-sm placeholder:text-[#9C9C9C]"
             onKeyDown={(e) => e.key === "Enter" && onSend()}
           />
+
           <button
             onClick={onSend}
             className="absolute right-6 top-1/2 -translate-y-1/2 w-7.75 h-7.5 bg-orange rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
           >
-            <FiArrowUp size={18} strokeWidth={1} />
+            <FiArrowUp size={18} />
           </button>
         </div>
       </div>
 
-      {/* THUMBNAIL TRAY - Styled exactly like the image */}
-      <div className="bg-white flex items-center gap-1 p-1.75 border-t-[0.53px] border-[#00000033] overflow-x-auto">
-        {images.map((img, i) => (
+      {/* THUMBNAILS */}
+      <div className="bg-white flex items-center gap-2 p-2 border-t border-[#00000033] overflow-x-auto">
+        {previews.map((file, i) => (
           <div
             key={i}
             onClick={() => setActiveIndex(i)}
-            className={`shrink-0 relative w-17 h-15 cursor-pointer transition-all border ${
+            className={`relative shrink-0 w-17 h-15 overflow-hidden cursor-pointer border ${
               i === activeIndex
                 ? "border-orange border-2"
                 : "border-transparent"
             }`}
           >
-            <img src={img} className="w-full h-full object-cover" alt="thumb" />
-            {images.length > 1 && (
-              <div className="absolute inset-0 bg-black/5 hover:bg-transparent transition-colors" />
+            {file.type.startsWith("image/") ? (
+              <img
+                src={file.url}
+                className="w-full h-full object-cover"
+                alt="thumb"
+              />
+            ) : file.type.startsWith("video/") ? (
+              <video src={file.url} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#EFF3F4] flex items-center justify-center text-xl">
+                📄
+              </div>
             )}
+
             <button
-              onClick={() => removeImage(i)}
-              className="cursor-pointer absolute top-0 right-0 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeFile(i);
+              }}
+              className="absolute top-0 right-0 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center"
             >
               ✕
             </button>
           </div>
         ))}
 
-        {/* The "+" Button from the image */}
+        {/* ADD MORE */}
         <button
           onClick={onAddMore}
-          className="bg-white shrink-0 w-17 h-15 border-[0.83px] border-[#00000033] flex items-center justify-center hover:bg-gray-50 transition-all ml-1"
+          className="bg-white shrink-0 w-17 h-15 border border-[#00000033] flex items-center justify-center hover:bg-gray-50 transition-all"
         >
           <Plus size={18} className="text-black" strokeWidth={2} />
         </button>

@@ -16,33 +16,28 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
-  const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
 
-  const { transmitMessage } = useChat();
+  const {
+    transmitMessage,
+    useGetChatImageSignature,
+    uploadToCloudinary,
+    transmitImageMessage,
+  } = useChat();
+
+  const imageSignature = useGetChatImageSignature();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+    const files = Array.from(e.target.files || []);
 
-    const readers = Array.from(files).map((file) => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader();
+    setPendingFiles((prev) => [...prev, ...files]);
 
-        reader.onload = () => resolve(reader.result as string);
-
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(readers).then((images) => {
-      setPendingImages((prev) => [...prev, ...images]);
-      setShowMenu(false);
-    });
+    setShowMenu(false);
 
     e.target.value = "";
   };
@@ -84,19 +79,48 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
     }, 1500);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedChat) return;
 
-    if (pendingImages.length > 0 || message.trim()) {
-      transmitMessage({
-        recipient_id: selectedChat.id,
-        body: message.trim(),
-      });
+    try {
+      // NORMAL TEXT
+      if (message.trim() && pendingFiles.length === 0) {
+        transmitMessage({
+          recipient_id: selectedChat.id,
+          body: message.trim(),
+        });
+
+        setMessage("");
+        stopTyping();
+        return;
+      }
+
+      // MEDIA
+      for (const file of pendingFiles) {
+        const signature = await imageSignature.mutateAsync();
+
+        console.log("SIGNATURE DATA:", signature);
+        console.log("FILE:", file.name);
+
+        const uploaded = await uploadToCloudinary(file, signature);
+
+        const url = uploaded.secure_url;
+
+        if (file.type.startsWith("image/")) {
+          transmitImageMessage({
+            recipient_id: selectedChat.id,
+            image_url: url,
+            caption: message.trim(),
+          });
+        }
+      }
+
+      setPendingFiles([]);
+      setMessage("");
 
       stopTyping();
-
-      setPendingImages([]);
-      setMessage("");
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -112,12 +136,12 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
   return (
     <div className="relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
-      {pendingImages.length > 0 && (
+      {pendingFiles.length > 0 && (
         <MediaUploadModal
-          images={pendingImages}
+          files={pendingFiles}
           message={message}
           setMessage={setMessage}
-          setImages={setPendingImages}
+          setFiles={setPendingFiles}
           onSend={handleSend}
           onAddMore={() => fileRef.current?.click()}
           user={selectedChat}
@@ -187,7 +211,7 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*,.pdf,.doc,.docx,.zip"
         multiple
         className="hidden"
         onChange={handleImageUpload}

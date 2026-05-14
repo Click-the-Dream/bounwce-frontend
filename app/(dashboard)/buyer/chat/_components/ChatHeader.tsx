@@ -13,9 +13,9 @@ interface ChatHeaderProps {
 const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
   const router = useRouter();
   const { chatId } = useParams();
-  const { onlineUsers } = useChatUtils();
+  const { onlineUsers, typingUsers } = useChatUtils();
   const isOnline = selectedChat?.id ? !!onlineUsers?.[selectedChat.id] : false;
-
+  const isTyping = selectedChat?.id ? !!typingUsers?.[selectedChat.id] : false;
   return (
     <div className="h-16 border-b border-[#00000033] flex items-center px-4 md:px-6 gap-3 shrink-0 bg-white">
       <button
@@ -58,8 +58,8 @@ const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
             <span className="font-medium text-sm text-black leading-none">
               {selectedChat?.full_name}
             </span>
-            <span className="text-[10px] text-green-600 font-medium">
-              {isOnline ? "Online" : "Offline"}
+            <span className={"text-[10px] text-green-600 font-medium"}>
+              {isTyping ? "Typing..." : isOnline ? "Online" : "Offline"}
             </span>
           </div>
         </>

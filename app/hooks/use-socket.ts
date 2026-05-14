@@ -124,8 +124,11 @@ export const useSocketConnection = ({
           // update last message
           const updated = {
             ...conversation,
-            last_message: message.body,
-            last_message_at: message.created_at,
+            last_message: {
+              body: message.body,
+              created_at: message?.created_at,
+              updated_at: message?.updated_at,
+            },
           };
 
           // remove from old position
