@@ -6,6 +6,7 @@ import { X, Search } from "lucide-react";
 import useUser from "@/app/hooks/use-user";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { useChatUtils } from "@/app/context/ChatContext";
 
 interface NewChatModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
   const { authDetails } = useAuth();
   const router = useRouter();
   const { useGetUsers } = useUser();
+  const { onlineUsers } = useChatUtils();
 
   const [search, setSearch] = useState("");
 
@@ -34,15 +36,13 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
   const users = data?.pages?.flatMap((page: any) => page.users || []) || [];
 
-const filteredUsers = useMemo(() => {
-  if (!search.trim()) return users;
+  const filteredUsers = useMemo(() => {
+    if (!search.trim()) return users;
 
-  return users.filter((user: any) =>
-    user.full_name
-      ?.toLowerCase()
-      .includes(search.toLowerCase()),
-  );
-}, [users, search]);
+    return users.filter((user: any) =>
+      user.full_name?.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [users, search]);
 
   // Infinite scroll trigger
   const lastUserRef = useCallback(
@@ -106,6 +106,8 @@ const filteredUsers = useMemo(() => {
             <>
               {filteredUsers.map((user: any, index: number) => {
                 const isLast = index === filteredUsers.length - 1;
+
+                const isOnline = user?.id ? !!onlineUsers?.[user.id] : false;
                 return (
                   <div
                     key={user.id}
@@ -113,7 +115,7 @@ const filteredUsers = useMemo(() => {
                     onClick={() => router.push(`/buyer/chat/${user.id}`)}
                     className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2"
                   >
-                    <div className="size-9.25 rounded-[10px] overflow-hidden bg-gray-200">
+                    <div className="relative size-9.25 rounded-[10px] bg-gray-200">
                       {user.profile ? (
                         <SafeImage
                           src={user.profile.url}
@@ -126,6 +128,9 @@ const filteredUsers = useMemo(() => {
                         <div className="w-full h-full rounded-[10px] bg-gray-100 flex items-center justify-center font-bold text-black">
                           {user.full_name?.slice(0, 2) || "NA"}
                         </div>
+                      )}
+                      {isOnline && (
+                        <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-[0.83px] border-white rounded-full" />
                       )}
                     </div>
 

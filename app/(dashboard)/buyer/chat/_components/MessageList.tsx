@@ -185,7 +185,7 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
       )}
       {groupedMessages.map((group: any) => (
         <div key={group.label}>
-          <div className="sticky top-0 z-50 flex justify-center my-4 text-xs text-gray-500">
+          <div className="sticky top-0 z-10 flex justify-center my-4 text-xs text-gray-500">
             {group.label}
           </div>
 
