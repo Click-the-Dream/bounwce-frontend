@@ -8,7 +8,12 @@ import NewChatModal from "./NewChatModal";
 import useChat from "@/app/hooks/use-chat";
 import { User } from "@/app/_utils/types/buyer";
 
-const ChatSidebar = ({ selectedUser }: { selectedUser: User }) => {
+interface ChatSidebarProps {
+  selectedUser: User;
+  role?: "buyer" | "vendor";
+}
+
+const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
   const { useGetConversations } = useChat();
   const { chatId } = useParams();
 

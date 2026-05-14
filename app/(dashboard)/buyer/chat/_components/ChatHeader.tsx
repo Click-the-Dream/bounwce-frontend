@@ -5,7 +5,12 @@ import { useChatUtils } from "@/app/context/ChatContext";
 import { ChevronLeft } from "lucide-react"; // Import for mobile back button
 import { useParams, useRouter } from "next/navigation";
 
-const ChatHeader = ({ selectedChat }: { selectedChat: User }) => {
+interface ChatHeaderProps {
+  selectedChat: User;
+  role?: "buyer" | "vendor";
+}
+
+const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
   const router = useRouter();
   const { chatId } = useParams();
   const { onlineUsers } = useChatUtils();
