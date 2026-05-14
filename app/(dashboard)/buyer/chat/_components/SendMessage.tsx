@@ -7,7 +7,12 @@ import { User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
 
-const SendMessage = ({ selectedChat }: { selectedChat: User }) => {
+interface ChatHeaderProps {
+  selectedChat: User;
+  role?: "buyer" | "vendor";
+}
+
+const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");

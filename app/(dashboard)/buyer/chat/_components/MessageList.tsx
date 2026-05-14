@@ -13,7 +13,12 @@ import { formatMessageDate } from "@/app/_utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
 import { websocket } from "@/app/services/websocket";
 
-const MessageList = ({ selectedChat }: { selectedChat: User }) => {
+interface ChatHeaderProps {
+  selectedChat: User;
+  role?: "buyer" | "vendor";
+}
+
+const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
   const { authDetails } = useAuth();
   const { chatId } = useParams<any>();
   const { useGetMessages } = useChat();
