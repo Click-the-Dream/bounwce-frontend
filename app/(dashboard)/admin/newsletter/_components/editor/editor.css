@@ -94,3 +94,15 @@
 .quill .ql-editor::-webkit-scrollbar-thumb:hover {
   background: #d6d3d1;
 }
+
+.content .ql-align-center {
+  text-align: center;
+}
+
+.content .ql-align-right {
+  text-align: right;
+}
+
+.content .ql-align-justify {
+  text-align: justify;
+}

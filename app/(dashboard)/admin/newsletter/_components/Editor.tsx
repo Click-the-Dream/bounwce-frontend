@@ -27,6 +27,8 @@ const Editor = ({ setIsEditorOpen, formData, setFormData, editingId }: any) => {
 
   const generatedHtml = useGeneratedHtml(formData);
 
+  console.log(formData);
+
   const handleBroadcast = () => {
     const action = editingId ? updateNewsletter : createNewsletter;
 

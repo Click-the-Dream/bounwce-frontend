@@ -20,6 +20,17 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline", "strike"],
+      [{ align: [] }],
+      [{ list: "ordered" }, { list: "bullet" }],
+      ["link", "image"],
+      ["clean"],
+    ],
+  };
+
   return (
     <>
       {isFullscreen && (
@@ -45,6 +56,7 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
               value={formData.content}
               onChange={(value) => setFormData({ ...formData, content: value })}
               className="h-full"
+              modules={modules}
             />
           </div>
         </div>

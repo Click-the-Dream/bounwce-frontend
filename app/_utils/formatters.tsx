@@ -190,3 +190,14 @@ export const formatMessageDate = (dateString: string) => {
     year: "numeric",
   });
 };
+
+export const formatTime = (dateString?: string) => {
+  if (!dateString) return "";
+
+  return new Date(dateString).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Africa/Lagos",
+  });
+};
