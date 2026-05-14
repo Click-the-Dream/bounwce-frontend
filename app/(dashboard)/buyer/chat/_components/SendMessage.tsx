@@ -1,11 +1,11 @@
 "use client";
-import { ArrowUp, Plus, Image, Camera, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
-import { useChatUtils } from "@/app/context/ChatContext";
-import MediaUploadModal from "./MediaUploadViewer";
+
+import { ArrowUp, Plus, Image, Camera } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
+import MediaUploadModal from "./MediaUploadViewer";
 
 interface ChatHeaderProps {
   selectedChat: User;
@@ -19,6 +19,10 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
   const [pendingImages, setPendingImages] = useState<string[]>([]);
 
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
+
   const { transmitMessage } = useChat();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,7 +32,9 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
     const readers = Array.from(files).map((file) => {
       return new Promise<string>((resolve) => {
         const reader = new FileReader();
+
         reader.onload = () => resolve(reader.result as string);
+
         reader.readAsDataURL(file);
       });
     });
@@ -37,7 +43,45 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
       setPendingImages((prev) => [...prev, ...images]);
       setShowMenu(false);
     });
+
     e.target.value = "";
+  };
+
+  const stopTyping = () => {
+    if (!selectedChat || !isTypingRef.current) return;
+
+    websocket.emit("chat.typing", {
+      user_id: selectedChat.id,
+      is_typing: false,
+    });
+
+    isTypingRef.current = false;
+  };
+
+  const handleTyping = (value: string) => {
+    setMessage(value);
+
+    if (!selectedChat) return;
+
+    // START TYPING
+    if (!isTypingRef.current) {
+      websocket.emit("chat.typing", {
+        user_id: selectedChat.id,
+        is_typing: true,
+      });
+
+      isTypingRef.current = true;
+    }
+
+    // RESET TIMER
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // STOP TYPING AFTER DELAY
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+    }, 1500);
   };
 
   const handleSend = () => {
@@ -49,21 +93,25 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
         body: message.trim(),
       });
 
+      stopTyping();
+
       setPendingImages([]);
       setMessage("");
     }
   };
-  const handleTyping = (value: string) => {
-    setMessage(value);
 
-    websocket.emit("chat.typing", {
-      recipient_id: selectedChat.id,
-    });
-  };
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      stopTyping();
+    };
+  }, []);
 
   return (
     <div className="relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
-      {/* 1. Fullscreen Preview Logic */}
       {pendingImages.length > 0 && (
         <MediaUploadModal
           images={pendingImages}
@@ -76,7 +124,6 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
         />
       )}
 
-      {/* 2. Upload Menu */}
       {showMenu && (
         <div className="absolute bottom-16 left-3 md:left-6 w-48 bg-white rounded-xl shadow-lg border border-gray-100 p-1 flex flex-col gap-1 z-50">
           <button
@@ -86,6 +133,7 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
             <Image size={12} className="text-[#007BFC]" />
             <span>Add Photos</span>
           </button>
+
           <button
             onClick={() => fileRef.current?.click()}
             className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
@@ -96,7 +144,6 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
         </div>
       )}
 
-      {/* 3. Normal Input Bar */}
       <div className="flex items-center gap-3 bg-[#EFF3F4] border-[0.5px] border-orange rounded-[50px] px-1.5 py-2 shadow-sm">
         <button
           onClick={() => setShowMenu(!showMenu)}
@@ -107,7 +154,9 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
           <Plus
             size={18}
             strokeWidth={1}
-            className={`${showMenu ? "rotate-45" : "rotate-0"} transition-transform`}
+            className={`${
+              showMenu ? "rotate-45" : "rotate-0"
+            } transition-transform`}
           />
         </button>
 
@@ -117,7 +166,10 @@ const SendMessage = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
           type="text"
           placeholder="Message"
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onBlur={() => {
+            setIsFocused(false);
+            stopTyping();
+          }}
           className="flex-1 bg-transparent text-sm focus:outline-none"
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
         />

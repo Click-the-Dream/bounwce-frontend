@@ -15,11 +15,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem("authUser");
+
     if (storedUser) {
       setAuthDetails(JSON.parse(storedUser));
     }
 
-    // Initialize interceptors
     setupInterceptors(
       () => {
         const stored = sessionStorage.getItem("authUser");
@@ -28,7 +28,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       (newUser) => updateAuth(newUser),
     );
 
-    setIsLoading(false); // 🔹 done loading
+    // small delay ensures hydration stability
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 50);
   }, []);
 
   const updateAuth = (newUser: any) => {

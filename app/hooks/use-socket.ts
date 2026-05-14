@@ -20,6 +20,7 @@ export const useSocketConnection = ({
   activeConversationId?: string;
 }) => {
   const queryClient = useQueryClient();
+  const typingTimeouts = new Map<string, NodeJS.Timeout>();
 
   const { pushNotification, incrementUnread, decrementUnread } =
     useNotifications();
@@ -109,20 +110,39 @@ export const useSocketConnection = ({
       queryClient.setQueryData(["conversations"], (old: any) => {
         if (!old) return old;
 
+        const pages = old.pages.map((page: any) => {
+          const items = [...page.items];
+
+          const index = items.findIndex(
+            (c: any) => c.user?.id === otherUserId || c.id === otherUserId,
+          );
+
+          if (index === -1) return page;
+
+          const conversation = items[index];
+
+          // update last message
+          const updated = {
+            ...conversation,
+            last_message: message.body,
+            last_message_at: message.created_at,
+          };
+
+          // remove from old position
+          items.splice(index, 1);
+
+          // move to top
+          items.unshift(updated);
+
+          return {
+            ...page,
+            items,
+          };
+        });
+
         return {
           ...old,
-          pages: old.pages.map((page: any) => ({
-            ...page,
-            items: page.items.map((c: any) =>
-              c.id === otherUserId
-                ? {
-                    ...c,
-                    last_message: message.body,
-                    last_message_at: message.created_at,
-                  }
-                : c,
-            ),
-          })),
+          pages,
         };
       });
 
@@ -150,18 +170,17 @@ export const useSocketConnection = ({
       }
     };
 
-    const handleTyping = ({ recipient_id }: any) => {
+    const handleTyping = (raw: any) => {
+      const data = raw.data || raw;
+
+      const userId = data?.user?.id;
+
+      if (!userId) return;
+
       setTypingUsers((prev) => ({
         ...prev,
-        [recipient_id]: true,
+        [userId]: data.is_typing,
       }));
-
-      setTimeout(() => {
-        setTypingUsers((prev) => ({
-          ...prev,
-          [recipient_id]: false,
-        }));
-      }, 2000);
     };
 
     const handleUserOnline = ({ user, online }: any) => {

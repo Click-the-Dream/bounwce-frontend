@@ -132,7 +132,18 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
         ) : filteredConversations.length > 0 ? (
           filteredConversations.map(
             (chat: {
-              user: { full_name: string; id: string; username: string };
+              user: {
+                full_name: string;
+                id: string;
+                username: string;
+                last_message: {
+                  body: string;
+                  caption: string;
+                  media_type: string;
+                  media_url: string;
+                  sender_id: string;
+                };
+              };
             }) => <ChatCard key={chat?.user?.id} chatUser={chat.user} />,
           )
         ) : (

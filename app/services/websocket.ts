@@ -7,7 +7,6 @@ type ConnectionState =
   | "reconnecting"
   | "disconnected";
 
-
 class WebSocketService {
   private socket: ReconnectingWebSocket | null = null;
 
@@ -17,35 +16,33 @@ class WebSocketService {
   private refreshTimer?: NodeJS.Timeout;
 
   private token: string | null = null;
+
   private state: ConnectionState = "disconnected";
-private stateListeners: Set<(state: ConnectionState) => void> = new Set();
+  private stateListeners: Set<(state: ConnectionState) => void> = new Set();
+
+  // 🔥 IMPORTANT: prevents UI flicker during token refresh reconnect
+  private isManualReconnect = false;
+
   // ---------------- CONNECT ----------------
 
   onStateChange(cb: (state: ConnectionState) => void) {
-  this.stateListeners.add(cb);
+    this.stateListeners.add(cb);
 
-  // CRITICAL: always replay current state immediately
-  cb(this.state);
+    // immediately sync state
+    cb(this.state);
   }
-offStateChange(cb: (state: ConnectionState) => void) {
-  this.stateListeners.delete(cb);
-}
 
-  
+  offStateChange(cb: (state: ConnectionState) => void) {
+    this.stateListeners.delete(cb);
+  }
+
   connect(token: string, force = false) {
-    if (!token) {
-      console.warn("No token provided");
-      return;
-    }
+    if (!token) return;
 
     const url = process.env.NEXT_PUBLIC_WS_URL;
+    if (!url) return;
 
-    if (!url) {
-      console.error("WS URL is missing");
-      return;
-    }
-
-    // prevent duplicate active socket
+    // avoid duplicate connection
     if (
       !force &&
       this.socket &&
@@ -57,7 +54,9 @@ offStateChange(cb: (state: ConnectionState) => void) {
 
     this.token = token;
 
-    // close previous socket before creating new one
+    // mark intentional reconnect (token refresh etc.)
+    this.isManualReconnect = force;
+
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -74,8 +73,6 @@ offStateChange(cb: (state: ConnectionState) => void) {
     });
 
     this.registerEvents();
-
-    // schedule token refresh
     this.scheduleRefresh(token);
   }
 
@@ -87,37 +84,37 @@ offStateChange(cb: (state: ConnectionState) => void) {
     this.socket.addEventListener("open", () => {
       console.log("Socket connected");
 
+      this.isManualReconnect = false;
+
       this.setState("connected");
 
-      // start heartbeat
       this.startPing();
     });
 
     this.socket.addEventListener("close", () => {
-      console.log("Socket disconnected");
-
-      this.setState("reconnecting");
+      console.log("Socket closed");
 
       this.stopPing();
+
+      // 🔥 FIX: prevent fake "reconnecting" state during intentional reconnects
+      if (this.isManualReconnect) {
+        this.setState("connecting");
+        this.isManualReconnect = false;
+        return;
+      }
+
+      this.setState("reconnecting");
     });
-    
 
     this.socket.addEventListener("error", (event) => {
-      console.error("Socket error:", {
-        type: event.type,
-        readyState: this.socket?.readyState,
-        url: (event.target as WebSocket)?.url,
-      });
+      console.error("Socket error:", event);
     });
 
     this.socket.addEventListener("message", (event) => {
       try {
         const parsed = JSON.parse(event.data);
 
-        // ignore pong
-        if (parsed.type === "pong") {
-          return;
-        }
+        if (parsed.type === "pong") return;
 
         const handlers = this.listeners[parsed.type] || [];
 
@@ -153,14 +150,12 @@ offStateChange(cb: (state: ConnectionState) => void) {
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh-token`,
         {},
-        {
-          withCredentials: true,
-        },
+        { withCredentials: true },
       );
 
       return data?.data?.access_token || null;
-    } catch (error) {
-      console.error("Refresh token failed", error);
+    } catch (err) {
+      console.error("Refresh failed", err);
       return null;
     }
   }
@@ -168,7 +163,6 @@ offStateChange(cb: (state: ConnectionState) => void) {
   private getTokenExp(token: string): number | null {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
-
       return payload?.exp ? payload.exp * 1000 : null;
     } catch {
       return null;
@@ -181,10 +175,8 @@ offStateChange(cb: (state: ConnectionState) => void) {
     }
 
     const exp = this.getTokenExp(token);
-
     if (!exp) return;
 
-    // refresh 1 min before expiry
     const delay = exp - Date.now() - 60000;
 
     this.refreshTimer = setTimeout(
@@ -204,12 +196,13 @@ offStateChange(cb: (state: ConnectionState) => void) {
   // ---------------- STATE ----------------
 
   private setState(state: ConnectionState) {
-  this.state = state;
+    this.state = state;
 
-  queueMicrotask(() => {
-    this.stateListeners.forEach((cb) => cb(state));
-  });
+    queueMicrotask(() => {
+      this.stateListeners.forEach((cb) => cb(state));
+    });
   }
+
   get connectionState() {
     return this.state;
   }
@@ -232,10 +225,7 @@ offStateChange(cb: (state: ConnectionState) => void) {
   // ---------------- SEND ----------------
 
   emit(type: string, payload: any = {}) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.warn("Socket not open");
-      return;
-    }
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
     this.socket.send(
       JSON.stringify({
@@ -255,7 +245,6 @@ offStateChange(cb: (state: ConnectionState) => void) {
     }
 
     this.socket?.close();
-
     this.socket = null;
 
     this.setState("disconnected");

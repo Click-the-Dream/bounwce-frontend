@@ -54,7 +54,7 @@ const useChat = () => {
     options: {
       userId?: string;
       params?: { page?: number; page_size?: number };
-    } = { params: { page_size: 20 } },
+    } = { params: { page_size: 10 } },
   ) =>
     useInfiniteQuery({
       queryKey: ["messages", options.userId],
@@ -77,12 +77,10 @@ const useChat = () => {
         const { page, total, page_size } = lastPage?.messages || {};
 
         const hasMore = page * page_size < total;
-
         return hasMore ? page + 1 : undefined;
       },
 
       initialPageParam: 1,
-
       enabled: !!options.userId,
     });
 

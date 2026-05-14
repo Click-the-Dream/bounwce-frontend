@@ -1,5 +1,6 @@
 "use client";
 import SafeImage from "@/app/_components/SafeImage";
+import { formatTime } from "@/app/_utils/formatters";
 import { useChatUtils } from "@/app/context/ChatContext";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useParams, useRouter } from "next/navigation";
@@ -7,10 +8,13 @@ import { useParams, useRouter } from "next/navigation";
 const ChatCard = ({ chatUser }: any) => {
   const { chatId } = useParams();
   const router = useRouter();
-  const { onlineUsers } = useChatUtils();
+  const { onlineUsers, typingUsers } = useChatUtils();
   const { unreadCount } = useNotifications();
 
   const isOnline = chatUser?.id ? !!onlineUsers?.[chatUser.id] : false;
+  const isTyping = chatUser?.id ? !!typingUsers?.[chatUser.id] : false;
+  const lastMessageTime = chatUser?.last_message?.created_at;
+  const lastMessage = chatUser?.last_message?.body;
 
   return (
     <div
@@ -45,15 +49,25 @@ const ChatCard = ({ chatUser }: any) => {
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline">
           <h4 className="font-medium text-sm truncate">{chatUser.full_name}</h4>
-          {/* <span className="text-[10px] text-gray-400">{chatUser.time}</span> */}
+          <span className="text-[10px] text-gray-400">
+            {formatTime(lastMessageTime)}
+          </span>
           {unreadCount[chatUser.id] > 0 && (
             <span className="bg-red-500 text-white text-[10px] px-1 min-w-4 h-4 rounded-full flex items-center justify-center">
               {unreadCount[chatUser.id]}
             </span>
           )}
         </div>
-        <p className="text-[13px] text-[#A1A1A1] truncate mt-0.5">
-          @{chatUser.username}
+        <p
+          className={`text-[13px] truncate mt-0.5 ${
+            isTyping ? "text-orange animate-pulse" : "text-[#A1A1A1]"
+          }`}
+        >
+          {lastMessage
+            ? lastMessage
+            : isTyping
+              ? "typing..."
+              : `@${chatUser.username}`}
         </p>
       </div>
     </div>

@@ -62,7 +62,6 @@ const useGeneratedHtml = (formData: any) => {
         </div>
       </div>
 
-      <!-- FOOTER -->
       <div class="footer">
         <a href="https://bouwnce.com" class="cta-button">Visit Bouwnce</a>
         <p style="margin:0 0 10px 0; line-height: 1.5;">
