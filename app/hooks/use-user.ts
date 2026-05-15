@@ -241,6 +241,62 @@ const useUser = () => {
       }),
   });
 
+const uploadProfilePicture = useMutation({
+  mutationFn: async (file: File) => {
+    const formData = new FormData();
+    formData.append("picture", file);
+
+    const res = await client.put(
+      "/users/profile-picture",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    return res.data;
+  },
+
+  onSuccess: () => {
+    onSuccess({
+      title: "Profile Picture Updated",
+      message: "Your profile picture has been updated successfully.",
+    });
+
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+  },
+
+  onError: (error: any) =>
+    onFailure({
+      title: "Upload Failed",
+      message: extractErrorMessage(error),
+    }),
+});
+
+const deleteProfilePicture = useMutation({
+  mutationFn: async () => {
+    const res = await client.delete("/users/profile-picture");
+    return res.data;
+  },
+
+  onSuccess: () => {
+    onSuccess({
+      title: "Profile Picture Removed",
+      message: "Your profile picture has been deleted.",
+    });
+
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+  },
+
+  onError: (error: any) =>
+    onFailure({
+      title: "Delete Failed",
+      message: extractErrorMessage(error),
+    }),
+});
+
   return {
     useGetCurrentUser,
     updateCurrentUser,
@@ -255,6 +311,8 @@ const useUser = () => {
     useGetVendorVerification,
     updateVendorVerification,
     createVendorVerification,
+uploadProfilePicture,
+  deleteProfilePicture,
   };
 };
 
