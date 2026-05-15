@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { useRef } from "react";
 import useAuthServices from "@/app/hooks/use-authservices";
 import Image from "next/image";
+import { ArrowLeftRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const VendorHeader = ({
   storeName,
@@ -26,6 +28,7 @@ const VendorHeader = ({
   const { logout } = useAuthServices();
   const [showSettings, setShowSettings] = useState(false);
   const dropdownRef = useRef<any>(null);
+const router = useRouter();
   useEffect(() => {
     const handleClickOutside = (event: any) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -124,6 +127,13 @@ const VendorHeader = ({
                   <IoLogOutOutline size={18} />
                   <span className="font-medium">Logout</span>
                 </button>
+<button
+  onClick={() => router.push("/app")}
+  className="w-full flex items-center gap-2 p-3 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+>
+  <ArrowLeftRight className="size-4" />
+  Switch to App
+</button>
               </div>
             )}
           </div>
