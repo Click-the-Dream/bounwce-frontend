@@ -109,7 +109,7 @@ const VerifyAccount = ({
   if (user?.role === "admin") {
     router.replace("/admin/newsletter");
   } else {
-    router.replace("/buyer");
+    router.replace("/app");
   }
 
   if (onFinalSuccess) onFinalSuccess();
@@ -120,7 +120,7 @@ const VerifyAccount = ({
             if (user?.role === "admin") {
   router.replace("/admin/newsletter");
 } else {
-  router.replace("/buyer");
+  router.replace("/app");
 }
           },
         },
