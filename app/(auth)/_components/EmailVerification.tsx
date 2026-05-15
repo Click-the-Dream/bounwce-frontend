@@ -106,25 +106,22 @@ const VerifyAccount = ({
 
             // Handle Redirection Logic
             if (isModal) {
-              if (user?.role === "vendor") {
-                const path =
-                  user?.is_store_owner === false ? "/vendor/setup" : "/vendor";
-                router.replace(path);
-              } else {
-                if (onFinalSuccess) onFinalSuccess();
-              }
-              return;
-            }
+  if (user?.role === "admin") {
+    router.replace("/admin/newsletter");
+  } else {
+    router.replace("/buyer");
+  }
+
+  if (onFinalSuccess) onFinalSuccess();
+  return;
+}
+
 
             if (user?.role === "admin") {
-              router.replace("/admin/newsletter");
-            } else if (user?.role === "vendor") {
-              const path =
-                user?.is_store_owner === false ? "/vendor/setup" : "/vendor";
-              router.replace(path);
-            } else {
-              router.replace("/buyer");
-            }
+  router.replace("/admin/newsletter");
+} else {
+  router.replace("/buyer");
+}
           },
         },
       );
