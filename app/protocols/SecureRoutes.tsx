@@ -17,11 +17,19 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
   const isVendorRoute = pathname.startsWith("/vendor");
   const isAdminRoute = pathname.startsWith("/admin");
 
+  // Only fetch onboarding status on vendor routes
   const { data: onboardingStatus, isLoading: statusLoading } =
-    useGetStoreOnboardingStatus(userId);
+    useGetStoreOnboardingStatus(userId, {
+      enabled: !!userId && isVendorRoute && user?.role === "vendor",
+    });
 
-  // Wait for auth + vendor onboarding status
-  if (authLoading || (user?.role === "vendor" && statusLoading)) {
+  // Wait for auth
+  if (authLoading) {
+    return <Fallback />;
+  }
+
+  // Wait for onboarding check only on vendor routes
+  if (isVendorRoute && user?.role === "vendor" && statusLoading) {
     return <Fallback />;
   }
 
@@ -48,10 +56,12 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
     }
 
     // Vendor onboarding enforcement
-    if (onboardingStatus && !onboardingStatus.is_onboarded) {
-      if (pathname !== "/vendor/setup") {
-        return <Redirect to="/vendor/setup" replace />;
-      }
+    if (
+      onboardingStatus &&
+      !onboardingStatus.is_onboarded &&
+      pathname !== "/vendor/setup"
+    ) {
+      return <Redirect to="/vendor/setup" replace />;
     }
   }
 
