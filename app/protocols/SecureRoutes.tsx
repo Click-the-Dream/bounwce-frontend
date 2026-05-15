@@ -20,56 +20,42 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
   const { data: onboardingStatus, isLoading: statusLoading } =
     useGetStoreOnboardingStatus(userId);
 
-  // 🔹 Wait for auth + onboarding
+  // Wait for auth + vendor onboarding status
   if (authLoading || (user?.role === "vendor" && statusLoading)) {
     return <Fallback />;
   }
 
-  // 🔹 Not logged in
+  // Not logged in
   if (!user) {
     return <Redirect to="/login" />;
   }
 
-  // 🔹 Inactive account
+  // Inactive account
   if (!user.is_active) {
     return <Redirect to="/login" />;
   }
 
-  // 🔹 ROLE-BASED ACCESS CONTROL
-  switch (user.role) {
-    case "admin":
-      // Only allow admin routes
-      if (!isAdminRoute) {
-        return <Redirect to="/admin/newsletter" replace />;
-      }
-      return <>{children}</>;
+  // ADMIN ROUTE PROTECTION
+  if (isAdminRoute && user.role !== "admin") {
+    return <Redirect to="/buyer" replace />;
+  }
 
-    case "vendor":
-      // Block vendor from admin
-      if (isAdminRoute) {
-        return <Redirect to="/vendor" replace />;
-      }
+  // VENDOR ROUTE PROTECTION
+  if (isVendorRoute) {
+    // Only vendors can access vendor routes
+    if (user.role !== "vendor") {
+      return <Redirect to="/buyer" replace />;
+    }
 
-      // Enforce onboarding
-      if (onboardingStatus && !onboardingStatus.is_onboarded) {
-        if (pathname === "/vendor/setup") {
-          return <>{children}</>;
-        }
+    // Vendor onboarding enforcement
+    if (onboardingStatus && !onboardingStatus.is_onboarded) {
+      if (pathname !== "/vendor/setup") {
         return <Redirect to="/vendor/setup" replace />;
       }
-
-      return <>{children}</>;
-
-    case "user":
-      // Block user from admin/vendor
-      if (isAdminRoute || isVendorRoute) {
-        return <Redirect to="/" replace />;
-      }
-      return <>{children}</>;
-
-    default:
-      return <Redirect to="/login" />;
+    }
   }
+
+  return <>{children}</>;
 };
 
 export default SecureRoute;
