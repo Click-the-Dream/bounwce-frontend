@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Home, X } from "lucide-react";
+import { Compass, Home, X, Briefcase } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,7 +36,7 @@ const { authDetails } = useAuth();
         {
           name: "Business Hub",
           href: "/vendor",
-          icon: PiDotsNineBold,
+          icon: Briefcase,
         },
       ]
     : []),
