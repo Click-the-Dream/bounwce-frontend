@@ -10,6 +10,7 @@ import { LuSquareUserRound } from "react-icons/lu";
 import { PiDotsNineBold } from "react-icons/pi";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/app/context/AuthContext";
 
 const Sidebar = ({
   isMobile,
@@ -19,17 +20,27 @@ const Sidebar = ({
   onClose?: () => void;
 }) => {
   const pathname = usePathname();
+const { authDetails } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
   const isActive = (path: string) => pathname === path;
   const onToggleCollapse = () => setCollapsed(!collapsed);
 
   const navItems = [
-    { name: "Home", href: "/buyer", icon: Home },
-    { name: "Explore", href: "/buyer/explore", icon: Compass },
-    { name: "Profile", href: "/buyer/profile", icon: LuSquareUserRound },
-  ];
+  { name: "Home", href: "/buyer", icon: Home },
+  { name: "Explore", href: "/buyer/explore", icon: Compass },
+  { name: "Profile", href: "/buyer/profile", icon: LuSquareUserRound },
 
+  ...(authDetails?.user?.role === "vendor"
+    ? [
+        {
+          name: "Business Hub",
+          href: "/vendor",
+          icon: PiDotsNineBold,
+        },
+      ]
+    : []),
+];
   return (
     <motion.aside
       initial={false}
