@@ -303,16 +303,21 @@ const useStore = () => {
     ) => handleFailure("Payout Deletion", error),
   });
 
-  const useGetStoreOnboardingStatus = (id: any) =>
-    useQuery({
-      queryKey: ["store", "onboarding-status"],
-      queryFn: async () => {
-        const response = await client.get("/store/onboarding-status");
-        return response?.data?.data;
-      },
-      enabled:
-        !!authDetails?.access_token && authDetails?.user?.role === "vendor",
-    });
+  const useGetStoreOnboardingStatus = (
+  id: any,
+  options?: { enabled?: boolean }
+) =>
+  useQuery({
+    queryKey: ["store", "onboarding-status"],
+    queryFn: async () => {
+      const response = await client.get("/store/onboarding-status");
+      return response?.data?.data;
+    },
+    enabled:
+      !!authDetails?.access_token &&
+      authDetails?.user?.role === "vendor" &&
+      options?.enabled,
+  });
 
   const useGetStores = (searchParams: { name: string; page_size: number }) =>
     useInfiniteQuery({
