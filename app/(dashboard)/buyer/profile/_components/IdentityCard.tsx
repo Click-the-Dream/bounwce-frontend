@@ -165,7 +165,7 @@ const IdentityCard: React.FC<Props> = ({
       setUploading(true);
 
       const canvas = document.createElement("canvas");
-      const image = new Image();
+const image = new window.Image();
       image.src = imageSrc;
 
       await new Promise((resolve) => (image.onload = resolve));
