@@ -45,14 +45,14 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
 
   // ADMIN ROUTE PROTECTION
   if (isAdminRoute && user.role !== "admin") {
-    return <Redirect to="/buyer" replace />;
+    return <Redirect to="/app" replace />;
   }
 
   // VENDOR ROUTE PROTECTION
   if (isVendorRoute) {
     // Only vendors can access vendor routes
     if (user.role !== "vendor") {
-      return <Redirect to="/buyer" replace />;
+      return <Redirect to="/app" replace />;
     }
 
     // Vendor onboarding enforcement
