@@ -11,7 +11,7 @@ const SearchBar = () => {
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
-    router.push(`/buyer?q=${encodeURIComponent(query.trim())}`);
+    router.push(`/app?q=${encodeURIComponent(query.trim())}`);
   };
 
   return (
