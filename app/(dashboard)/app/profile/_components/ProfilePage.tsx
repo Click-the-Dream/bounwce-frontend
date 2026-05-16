@@ -64,6 +64,7 @@ export default function ProfilePage() {
     followers: user?.followers_count ?? 0,
     badges: user?.badges_count ?? 0,
     tags,
+profile_pic: user?.profile_pic,
   };
 
   return (
