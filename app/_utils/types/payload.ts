@@ -13,7 +13,7 @@ export interface SuggestedCandidate {
   distance_km?: number;
   shared_interests: string[];
   shared_traits?: string[];
-  profile?: string; // URL to profile image
+  profile_pic?: {url: string}; // URL to profile image
 }
 
 export type ConnectStatus = "idle" | "connected" | "sent" | "loading";
