@@ -19,6 +19,7 @@ const ExploreCard = ({
   user_id,
   shared_interests,
   score,
+  profile_pic,
   onConnect,
   connectStatus = "idle",
 }: Props) => {
@@ -78,7 +79,7 @@ const ExploreCard = ({
         <div className="px-2.5">
           <div className="relative -mt-[30.5px] mb-2">
             <Image
-              src={userImg.src}
+              src={profile_pic?.url || userImg.src}
               alt="Profile"
               width={60}
               height={61}
