@@ -10,7 +10,7 @@ import { extractErrorMessage } from "../_utils/formatters";
 import { useAuth } from "../context/AuthContext";
 
 const useUser = () => {
-  const { authDetails } = useAuth();
+  const {updateAuth, authDetails } = useAuth();
   const client = api;
   const queryClient = useQueryClient();
 
@@ -259,13 +259,22 @@ const uploadProfilePicture = useMutation({
     return res.data;
   },
 
-  onSuccess: () => {
-    onSuccess({
-      title: "Profile Picture Updated",
-      message: "Your profile picture has been updated successfully.",
-    });
+  onSuccess: (response: any) => {
+    const updatedUser = response?.data;
 
-    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    // Update auth context immediately
+    updateAuth((prev: any) => ({
+      ...prev,
+      user: updatedUser,
+    }));
+
+    // Update query cache
+    queryClient.setQueryData(["currentUser"], response);
+
+    onSuccess({
+      title: "Profile Updated",
+      message: "Your profile has been updated successfully.",
+    });
   },
 
   onError: (error: any) =>
