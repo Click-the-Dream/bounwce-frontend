@@ -55,7 +55,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           )}
         </div>
 
-        <Link href="/buyer/profile" className="w-8 h-8">
+        <Link href="/app/profile" className="w-8 h-8">
           <Image
             src={userImg}
             alt="Profile"
