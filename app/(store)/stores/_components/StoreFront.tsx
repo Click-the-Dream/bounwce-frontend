@@ -198,7 +198,7 @@ const StoreFront = () => {
             No products found
           </div>
         ) : (
-          <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <motion.div className="grid grid-cols-auto gap-4">
             <AnimatePresence>
               {filteredProducts.map((product: any) => (
                 <motion.div
