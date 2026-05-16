@@ -216,100 +216,132 @@ const StoreFront = () => {
       </main>
 
 {/* ================= LOCATION ================= */}
-<section className="max-w-6xl mx-auto px-4 pt-8">
-  <div className="overflow-hidden rounded-3xl border border-zinc-100 bg-[#f7f4ef]">
-    <div className="grid lg:grid-cols-2">
-      {/* LEFT MAP PREVIEW */}
-      <div className="relative min-h-[260px] bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:40px_40px] flex items-center justify-center">
-        {/* map cross */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-full h-px bg-black/5 absolute" />
-          <div className="h-full w-px bg-black/5 absolute" />
-        </div>
+<section className="max-w-7xl mx-auto px-4 py-16">
+  <div className="grid lg:grid-cols-[1.15fr_.85fr] gap-6 items-stretch">
+    {/* MAP SIDE */}
+    <div className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-[#f7f4ef] min-h-[320px] lg:min-h-[460px]">
+      {/* soft grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:42px_42px]" />
 
-        {/* pin */}
+      {/* cross lines */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute w-full h-px bg-black/5" />
+        <div className="absolute h-full w-px bg-black/5" />
+      </div>
+
+      {/* animated pin */}
+      <div className="absolute inset-0 flex items-center justify-center">
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.85, opacity: 0 }}
           whileInView={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.4 }}
           className="relative"
         >
           <div className="absolute inset-0 rounded-full bg-orange-500/20 animate-ping" />
 
-          <div className="relative w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center shadow-lg">
-            <MapPin size={22} className="text-white" />
+          <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-orange-500 shadow-[0_10px_40px_rgba(249,115,22,0.35)]">
+            <MapPin className="text-white" size={26} />
           </div>
         </motion.div>
       </div>
 
-      {/* RIGHT INFO */}
-      <div className="p-6 md:p-8 flex flex-col justify-center">
-        <span className="text-[11px] tracking-[0.25em] uppercase text-orange-500 font-medium">
+      {/* floating distance card */}
+      <div className="absolute left-4 right-4 bottom-4 md:left-6 md:right-auto md:w-[280px]">
+        <div className="backdrop-blur-xl bg-white/85 border border-white/40 rounded-2xl p-4 shadow-lg">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-orange-500 font-medium">
+            Distance
+          </p>
+
+          <h3 className="mt-2 text-3xl font-semibold tracking-tight">
+            0.7km away.
+          </h3>
+
+          <p className="mt-2 text-sm text-zinc-500">
+            Fast delivery and easy pickup available from your location.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    {/* INFO SIDE */}
+    <div className="flex flex-col justify-between rounded-[2rem] border border-zinc-200 bg-white p-6 md:p-8">
+      <div>
+        <span className="text-[11px] uppercase tracking-[0.25em] text-orange-500 font-medium">
           Find Us
         </span>
 
-        <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mt-2">
-          {store?.address || "Store location"}
+        <h2 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
+          Visit our store location anytime.
         </h2>
 
-        <div className="mt-6 space-y-3">
-          <div className="rounded-2xl bg-white border border-black/5 p-4 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-              <MapPin size={18} className="text-orange-500" />
-            </div>
+        <p className="mt-4 text-sm md:text-base text-zinc-500 leading-relaxed">
+          {store?.address ||
+            "Visit our physical location for pickup, inquiries, and in-store purchases."}
+        </p>
+      </div>
 
-            <div>
-              <p className="text-sm font-medium text-zinc-900">
-                {store?.address}
-              </p>
-
-              <p className="text-xs text-zinc-500 mt-1">
-                Approximately 0.7km from your location
-              </p>
-            </div>
+      <div className="mt-8 space-y-4">
+        {/* address */}
+        <div className="flex gap-4 rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
+          <div className="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+            <MapPin size={18} className="text-orange-500" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-white border border-black/5 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                Mon - Fri
-              </p>
+          <div>
+            <p className="font-medium text-sm">
+              {store?.address || "Store address"}
+            </p>
 
-              <p className="mt-1 text-sm font-medium">
-                8AM – 10PM
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white border border-black/5 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                Saturday
-              </p>
-
-              <p className="mt-1 text-sm font-medium">
-                9AM – 11PM
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white border border-black/5 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                Sunday
-              </p>
-
-              <p className="mt-1 text-sm font-medium">
-                10AM – 8PM
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white border border-black/5 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                Delivery
-              </p>
-
-              <p className="mt-1 text-sm font-medium">
-                20–30 mins
-              </p>
-            </div>
+            <p className="text-xs text-zinc-500 mt-1">
+              Open navigation or contact vendor for precise directions.
+            </p>
           </div>
+        </div>
+
+        {/* timing cards */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            {
+              label: "Mon - Fri",
+              value: "8AM – 10PM",
+            },
+            {
+              label: "Saturday",
+              value: "9AM – 11PM",
+            },
+            {
+              label: "Sunday",
+              value: "10AM – 8PM",
+            },
+            {
+              label: "Delivery",
+              value: "20 – 30 mins",
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4"
+            >
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                {item.label}
+              </p>
+
+              <p className="mt-1 text-sm font-semibold">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* actions */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <button className="flex-1 h-11 rounded-xl bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-800 transition">
+            Open Directions
+          </button>
+
+          <button className="flex-1 h-11 rounded-xl border border-zinc-200 text-sm font-medium hover:bg-zinc-50 transition">
+            Contact Store
+          </button>
         </div>
       </div>
     </div>
@@ -317,33 +349,125 @@ const StoreFront = () => {
 </section>
 
       {/* ================= FOOTER ================= */}
-      <footer className="border-t border-zinc-100 mt-16">
-        <div className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-8 text-sm text-zinc-600">
-          <div>
-            <h4 className="text-xs font-medium text-zinc-400 mb-2">About</h4>
-            <p>{store?.store_description}</p>
+<footer className="mt-24 border-t border-zinc-100 bg-zinc-50">
+  <div className="max-w-7xl mx-auto px-4 py-16">
+    <div className="grid gap-12 lg:grid-cols-[1.3fr_.7fr_.7fr_.8fr]">
+      {/* BRAND */}
+      <div>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl overflow-hidden bg-zinc-200">
+            {store?.store_logo?.url ? (
+              <SafeImage
+                src={store.store_logo.url}
+                alt={store.name}
+                width={60}
+                height={60}
+                className="w-full h-full object-cover"
+              />
+            ) : null}
           </div>
 
           <div>
-            <h4 className="text-xs font-medium text-zinc-400 mb-2">Contact</h4>
-            <div className="space-y-2">
-              <p className="flex items-center gap-2">
-                <Phone size={14} /> {store?.phone_number}
-              </p>
-              <p className="flex items-center gap-2">
-                <Mail size={14} /> {store?.email}
-              </p>
-            </div>
-          </div>
+            <h3 className="font-semibold text-lg tracking-tight">
+              {store?.name}
+            </h3>
 
-          <div>
-            <h4 className="text-xs font-medium text-zinc-400 mb-2">Location</h4>
-            <p className="flex items-center gap-2">
-              <MapPin size={14} /> {store?.address}
+            <p className="text-sm text-zinc-500">
+              Trusted marketplace vendor
             </p>
           </div>
         </div>
-      </footer>
+
+        <p className="mt-5 text-sm leading-relaxed text-zinc-600 max-w-md">
+          {store?.store_description ||
+            "Quality products, reliable delivery, and a modern shopping experience."}
+        </p>
+
+        <div className="flex gap-3 mt-6">
+          <button className="h-11 px-5 rounded-xl bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-800 transition">
+            Message Vendor
+          </button>
+
+          <button className="h-11 px-5 rounded-xl border border-zinc-200 text-sm font-medium hover:bg-white transition">
+            Share Store
+          </button>
+        </div>
+      </div>
+
+      {/* CONTACT */}
+      <div>
+        <h4 className="text-sm font-semibold mb-5">Contact</h4>
+
+        <div className="space-y-4 text-sm text-zinc-600">
+          <div>
+            <p className="text-zinc-400 text-xs mb-1">Phone</p>
+            <p>{store?.phone_number || "Not available"}</p>
+          </div>
+
+          <div>
+            <p className="text-zinc-400 text-xs mb-1">Email</p>
+            <p>{store?.email || "Not available"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* STORE */}
+      <div>
+        <h4 className="text-sm font-semibold mb-5">Store</h4>
+
+        <div className="space-y-3 text-sm text-zinc-600">
+          <p>All Products</p>
+          <p>New Arrivals</p>
+          <p>Popular Items</p>
+          <p>Store Reviews</p>
+        </div>
+      </div>
+
+      {/* NEWSLETTER */}
+      <div>
+        <h4 className="text-sm font-semibold mb-5">
+          Stay updated
+        </h4>
+
+        <p className="text-sm text-zinc-500 leading-relaxed">
+          Get notified about new arrivals and exclusive offers.
+        </p>
+
+        <div className="mt-5 flex flex-col gap-3">
+          <input
+            placeholder="Enter your email"
+            className="h-11 px-4 rounded-xl border border-zinc-200 bg-white text-sm outline-none focus:ring-2 focus:ring-zinc-900/5"
+          />
+
+          <button className="h-11 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition">
+            Subscribe
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* bottom */}
+    <div className="mt-14 pt-6 border-t border-zinc-200 flex flex-col md:flex-row gap-4 items-center justify-between text-xs text-zinc-500">
+      <p>
+        © {new Date().getFullYear()} {store?.name}. All rights reserved.
+      </p>
+
+      <div className="flex items-center gap-5">
+        <button className="hover:text-zinc-900 transition">
+          Privacy
+        </button>
+
+        <button className="hover:text-zinc-900 transition">
+          Terms
+        </button>
+
+        <button className="hover:text-zinc-900 transition">
+          Support
+        </button>
+      </div>
+    </div>
+  </div>
+</footer>
     </div>
   );
 };
