@@ -27,9 +27,9 @@ const { authDetails } = useAuth();
   const onToggleCollapse = () => setCollapsed(!collapsed);
 
   const navItems = [
-  { name: "Home", href: "/buyer", icon: Home },
-  { name: "Explore", href: "/buyer/explore", icon: Compass },
-  { name: "Profile", href: "/buyer/profile", icon: LuSquareUserRound },
+  { name: "Home", href: "/app", icon: Home },
+  { name: "Explore", href: "/app/explore", icon: Compass },
+  { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
 
   ...(authDetails?.user?.role === "vendor"
     ? [
