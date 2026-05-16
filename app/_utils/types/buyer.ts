@@ -30,4 +30,5 @@ export interface User {
   is_active: boolean;
   role: string;
   username: string;
+profile_pic?:{url: string};
 }
