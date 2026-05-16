@@ -32,7 +32,7 @@ const ChatCard = ({ chat }: any) => {
       >
         {chatUser.profile ? (
           <SafeImage
-            src={chatUser.profile.url}
+            src={chatUser.profile_pic.url}
             alt="Profile"
             width={40}
             height={40}
