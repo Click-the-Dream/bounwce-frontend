@@ -136,7 +136,7 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
                 full_name: string;
                 id: string;
                 username: string;
-                profile_pic:{url:string}
+                profile_pic?:{url:string}
               };
               last_message: {
                 body: string;
