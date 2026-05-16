@@ -5,10 +5,13 @@ import SearchComponent from "./SearchComponent";
 import Link from "next/link";
 import { useMarketStore } from "@/app/context/StoreContext";
 import { useNotifications } from "@/app/context/NotificationContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
   const { totalUnread, unreadCount } = useNotifications();
+const { authDetails } = useAuth();
+
 
   return (
     <header className="h-13.75 flex items-center justify-between py-2.25 px-4 md:px-6 lg:px-8 bg-white border-b border-[#00000033] sticky top-0 z-10">
@@ -57,7 +60,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
         <Link href="/app/profile" className="w-8 h-8">
           <Image
-            src={userImg}
+            src={authDetails?.user?.profile_pic?.url || userImg}
             alt="Profile"
             width={32}
             height={32}
