@@ -215,6 +215,107 @@ const StoreFront = () => {
         )}
       </main>
 
+{/* ================= LOCATION ================= */}
+<section className="max-w-6xl mx-auto px-4 pt-8">
+  <div className="overflow-hidden rounded-3xl border border-zinc-100 bg-[#f7f4ef]">
+    <div className="grid lg:grid-cols-2">
+      {/* LEFT MAP PREVIEW */}
+      <div className="relative min-h-[260px] bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:40px_40px] flex items-center justify-center">
+        {/* map cross */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-full h-px bg-black/5 absolute" />
+          <div className="h-full w-px bg-black/5 absolute" />
+        </div>
+
+        {/* pin */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          whileInView={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="relative"
+        >
+          <div className="absolute inset-0 rounded-full bg-orange-500/20 animate-ping" />
+
+          <div className="relative w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center shadow-lg">
+            <MapPin size={22} className="text-white" />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* RIGHT INFO */}
+      <div className="p-6 md:p-8 flex flex-col justify-center">
+        <span className="text-[11px] tracking-[0.25em] uppercase text-orange-500 font-medium">
+          Find Us
+        </span>
+
+        <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mt-2">
+          {store?.address || "Store location"}
+        </h2>
+
+        <div className="mt-6 space-y-3">
+          <div className="rounded-2xl bg-white border border-black/5 p-4 flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+              <MapPin size={18} className="text-orange-500" />
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-zinc-900">
+                {store?.address}
+              </p>
+
+              <p className="text-xs text-zinc-500 mt-1">
+                Approximately 0.7km from your location
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-white border border-black/5 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                Mon - Fri
+              </p>
+
+              <p className="mt-1 text-sm font-medium">
+                8AM – 10PM
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white border border-black/5 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                Saturday
+              </p>
+
+              <p className="mt-1 text-sm font-medium">
+                9AM – 11PM
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white border border-black/5 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                Sunday
+              </p>
+
+              <p className="mt-1 text-sm font-medium">
+                10AM – 8PM
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white border border-black/5 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                Delivery
+              </p>
+
+              <p className="mt-1 text-sm font-medium">
+                20–30 mins
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
       {/* ================= FOOTER ================= */}
       <footer className="border-t border-zinc-100 mt-16">
         <div className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-8 text-sm text-zinc-600">
