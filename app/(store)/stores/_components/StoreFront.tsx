@@ -185,7 +185,7 @@ const StoreFront = () => {
         </div>
 
         {productsLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-store gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
@@ -198,7 +198,7 @@ const StoreFront = () => {
             No products found
           </div>
         ) : (
-          <motion.div className="grid grid-cols-auto gap-4">
+          <motion.div className="grid grid-cols-store gap-4">
             <AnimatePresence>
               {filteredProducts.map((product: any) => (
                 <motion.div
