@@ -14,9 +14,9 @@ const SearchUser = ({ item }: { item: SuggestedCandidate }) => {
       className="flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer transition-colors rounded-xl group"
     >
       <div className="relative w-10 h-10 shrink-0">
-        {item?.profile ? (
+        {item?.profile_pic?.url ? (
           <SafeImage
-            src={item.profile}
+            src={item?.profile_pic?.url}
             alt="Profile"
             width={40}
             height={40}
