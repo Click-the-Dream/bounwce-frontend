@@ -1,8 +1,9 @@
 import { ChevronRight } from "lucide-react"; // Optional: using lucide for the icon
 import Image from "next/image";
 import userImg from "../../../../assets/buyer/user.jpg";
-
+import { useAuth } from "../../../../context/AuthContext";
 const SwitchAccountCard = () => {
+const { authDetails } = useAuth();
   return (
     <div className="max-w-sm p-2.5 bg-white border border-gray-100 rounded-xl shadow-sm">
       {/* Header Label */}
@@ -15,7 +16,7 @@ const SwitchAccountCard = () => {
         {/* Avatar */}
         <div className="w-8 h-8 relative shrink-0">
           <Image
-            src={userImg}
+            src={authDetails?.user?.profile_pic?.url || userImg}
             alt="Profile"
             width={32}
             height={32}
