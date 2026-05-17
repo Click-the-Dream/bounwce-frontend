@@ -26,7 +26,7 @@ function Fallback({
         className="flex flex-col items-center space-y-6 z-10 text-center"
       >
         {/* Logo */}
-        <Logo size={90} />
+        <Logo size={150} />
 
         {/* Text */}
         <div className="space-y-1">
