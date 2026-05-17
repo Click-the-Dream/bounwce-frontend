@@ -27,8 +27,8 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
               marginTop: "8px",
             }}
             style={{
-              top: "1.5rem",
-              right: "1rem",
+              bottom: "1.5rem",
+              right: "0.5rem",
               paddingTop: "1rem",
             }}
           />
