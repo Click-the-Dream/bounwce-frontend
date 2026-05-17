@@ -139,6 +139,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
   // IMAGE PICK
   const handlePickImage = (e: any) => {
+if (!isOwnProfile) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -239,12 +240,14 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
           className="rounded-[20px] border-2 border-white object-cover w-15 h-15.25"
         />
 
-        <div
-          onClick={() => fileRef.current?.click()}
-          className="w-5 h-5 absolute -bottom-1 -right-1 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center cursor-pointer"
-        >
-          <ImageIcon size={10} />
-        </div>
+{isOwnProfile && (
+  <div
+    onClick={() => fileRef.current?.click()}
+    className="w-5 h-5 absolute -bottom-1 -right-1 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center cursor-pointer"
+  >
+    <ImageIcon size={10} />
+  </div>
+)}
       </div>
 
       {/* NAME */}
@@ -363,7 +366,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
       {isOwnProfile && <SwitchAccountCard />}
 
       {/* CROPPER MODAL */}
-      {openCrop && (
+      {isOwnProfile && openCrop && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-white w-[90%] max-w-md p-4 rounded-lg">
             <div className="relative w-full h-72 bg-gray-100">
