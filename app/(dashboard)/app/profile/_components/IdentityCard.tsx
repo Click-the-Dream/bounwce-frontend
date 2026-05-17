@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
 import SafeImage from "@/app/_components/SafeImage";
 import { shareProfile } from "@/app/_utils/share";
+import { slugify } from "@/app/_utils/slugify";
 
 type Props = {
   data: any;
@@ -212,7 +213,8 @@ if (!isOwnProfile) return;
   };
 
   const handleShareProfile = async () => {
-    const profileUrl = `${window.location.origin}/app/profile/${data.id}`;
+   
+    const profileUrl = `${window.location.origin}/app/profile/${slugify(data?.name)}_${data?.id}`;
     await shareProfile({
       title: `${data.name}'s Profile`,
       text: `Check out ${data.name}'s profile on Bouwnce`,
