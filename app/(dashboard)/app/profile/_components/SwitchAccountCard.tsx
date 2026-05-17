@@ -1,9 +1,12 @@
 import { ChevronRight } from "lucide-react";
 import userImg from "../../../../assets/buyer/user.jpg";
 import { useAuth } from "../../../../context/AuthContext";
+import { useRouter } from "next/navigation";
 import SafeImage from "@/app/_components/SafeImage";
+
 const SwitchAccountCard = () => {
   const { authDetails } = useAuth();
+const router = useRouter();
   return (
     <div className="max-w-sm p-2.5 bg-white border border-gray-100 rounded-xl shadow-sm">
       {/* Header Label */}
@@ -12,7 +15,10 @@ const SwitchAccountCard = () => {
       </h2>
 
       {/* Account Button/Link */}
-      <button className="flex items-center w-full gap-3 p-1 transition-colors group hover:bg-gray-50 rounded-xl">
+     <button
+  onClick={() => router.push("/vendor/setup")}
+  className="flex items-center w-full gap-3 p-1 transition-colors group hover:bg-gray-50 rounded-xl"
+>
         {/* Avatar */}
         <div className="w-8 h-8 relative shrink-0">
           <SafeImage
