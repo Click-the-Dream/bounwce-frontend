@@ -3,85 +3,91 @@ import { MdCancel, MdCheckCircle } from "react-icons/md";
 import { IoInformationCircle } from "react-icons/io5";
 import { motion } from "framer-motion";
 
+interface BaseToastProps {
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: string;
+  badgeBg: string;
+  borderColor: string;
+  title: string;
+  message?: string;
+}
+
 const BaseToast = ({
   icon: Icon,
   iconColor,
-  bgColor,
+  badgeBg,
   borderColor,
-  shadowColor,
   title,
   message,
-}: any) => (
+}: BaseToastProps) => (
   <motion.div
-    initial={{ opacity: 0, y: -20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{ duration: 0.5 }}
-    className={`flex items-center gap-4 p-4 min-w-70 bg-linear-to-r ${bgColor} shadow-2xl rounded-2xl border ${borderColor} hover:shadow-${shadowColor}`}
+    initial={{ opacity: 0, scale: 0.96, y: -8 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    exit={{ opacity: 0, scale: 0.96, y: -4 }}
+    transition={{ duration: 0.25, ease: "easeInOut" }}
+    className={`flex items-start gap-3 p-3 min-w-[260px] max-w-[320px] bg-white dark:bg-zinc-950 border ${borderColor} rounded-xl shadow-xl`}
   >
-    <motion.div
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-    >
-      <Icon className={`${iconColor} text-3xl`} />
-    </motion.div>
+    {/* Compact Icon Wrapper */}
+    <div className={`p-1.5 rounded-lg ${badgeBg} shrink-0 grid place-items-center`}>
+      <Icon className={`${iconColor} text-lg`} />
+    </div>
 
-    <div className="flex flex-col">
-      <strong className="text-gray-900 font-semibold text-sm capitalize">
+    {/* Content Area */}
+    <div className="flex flex-col min-w-0 pt-0.5">
+      <span className="text-zinc-900 dark:text-zinc-100 font-semibold text-xs tracking-tight truncate">
         {title}
-      </strong>
-      {message && <p className="text-gray-600 text-xs mt-1">{message}</p>}
+      </span>
+      {message && (
+        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] mt-0.5 leading-normal break-words font-normal">
+          {message}
+        </p>
+      )}
     </div>
   </motion.div>
 );
 
 // --- Exported Helper Functions ---
 
-export const onFailure = (error: { title: any; message: any }) => {
+interface ToastPayload {
+  title?: string;
+  message?: string;
+}
+
+export const onFailure = (error?: ToastPayload) => {
   toast(
     <BaseToast
       icon={MdCancel}
-      iconColor="text-red-600"
-      bgColor="from-red-100 to-red-50"
-      borderColor="border-red-300"
-      shadowColor="red-400/40"
-      title={error?.title || "Error"}
+      iconColor="text-red-600 dark:text-red-400"
+      badgeBg="bg-red-50 dark:bg-red-950/50"
+      borderColor="border-red-100 dark:border-red-900/40"
+      title={error?.title || "Action Failed"}
       message={error?.message}
-    />,
+    />
   );
 };
 
-export const onSuccess = (success: { title: any; message: any }) => {
+export const onSuccess = (success?: ToastPayload) => {
   toast(
     <BaseToast
       icon={MdCheckCircle}
-      iconColor="text-green-600"
-      bgColor="from-green-200 to-green-50"
-      borderColor="border-green-300"
-      shadowColor="green-400/40"
+      iconColor="text-emerald-600 dark:text-emerald-400"
+      badgeBg="bg-emerald-50 dark:bg-emerald-950/50"
+      borderColor="border-emerald-100 dark:border-emerald-900/40"
       title={success?.title || "Success"}
       message={success?.message}
-    />,
+    />
   );
 };
 
-export const onPrompt = ({
-  title = "Prompt",
-  message,
-}: {
-  title: string;
-  message: string;
-}) => {
+export const onPrompt = (prompt?: ToastPayload) => {
   toast(
     <BaseToast
       icon={IoInformationCircle}
-      iconColor="text-gray-600"
-      bgColor="from-gray-100 to-gray-50"
-      borderColor="border-gray-300"
-      shadowColor="gray-400/30"
-      title={title}
-      message={message}
-    />,
+      iconColor="text-blue-600 dark:text-blue-400"
+      badgeBg="bg-blue-50 dark:bg-blue-950/50"
+      borderColor="border-blue-100 dark:border-blue-900/40"
+      title={prompt?.title || "Update"}
+      message={prompt?.message}
+    />
   );
 };
