@@ -6,6 +6,7 @@ interface DiscoveryCardProps {
     score: number;
     distance_km: number;
     shared_interests: string[];
+    profile_pic: {url:string}
   };
 }
 export const DiscoveryCard = ({ currentUser }: DiscoveryCardProps) => {
