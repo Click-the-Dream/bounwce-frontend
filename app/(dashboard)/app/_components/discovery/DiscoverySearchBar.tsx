@@ -77,7 +77,7 @@ export const DiscoverySearchBar = ({
   const text = pool[index] || "";
 
   return (
-    <div className="w-full max-w-2xl sticky bottom-4 mx-auto">
+    <div className="w-[90%] max-w-2xl fixed left-0 right-0 md:sticky bottom-4 mx-auto">
       <div className="flex items-center bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-sm">
         <Search className="w-5 h-5 text-gray-400 ml-2" />
 

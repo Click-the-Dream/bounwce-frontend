@@ -22,6 +22,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
+import SafeImage from "@/app/_components/SafeImage";
+import { shareProfile } from "@/app/_utils/share";
 
 type Props = {
   data: any;
@@ -29,11 +31,7 @@ type Props = {
   isLoading?: boolean;
 };
 
-const IdentityCard: React.FC<Props> = ({
-  data,
-  isOwnProfile,
-  isLoading,
-}) => {
+const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   const { authDetails } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -69,11 +67,9 @@ const IdentityCard: React.FC<Props> = ({
   });
 
   const status = relation?.status;
-  const isRequester =
-    relation?.target_user_id !== authDetails?.user?.id;
+  const isRequester = relation?.target_user_id !== authDetails?.user?.id;
   const isPending = status === "pending";
-  const isConnected =
-    status === "accepted" || (isPending && isRequester);
+  const isConnected = status === "accepted" || (isPending && isRequester);
   const isIncoming = isPending && !isRequester;
 
   const handleConnect = () => {
@@ -101,7 +97,7 @@ const IdentityCard: React.FC<Props> = ({
             message: "Could not send request.",
           });
         },
-      }
+      },
     );
   };
 
@@ -119,7 +115,7 @@ const IdentityCard: React.FC<Props> = ({
           });
           queryClient.invalidateQueries();
         },
-      }
+      },
     );
   };
 
@@ -137,7 +133,7 @@ const IdentityCard: React.FC<Props> = ({
           });
           queryClient.invalidateQueries();
         },
-      }
+      },
     );
   };
 
@@ -165,7 +161,7 @@ const IdentityCard: React.FC<Props> = ({
       setUploading(true);
 
       const canvas = document.createElement("canvas");
-const image = new window.Image();
+      const image = new window.Image();
       image.src = imageSrc;
 
       await new Promise((resolve) => (image.onload = resolve));
@@ -184,11 +180,11 @@ const image = new window.Image();
         0,
         0,
         croppedAreaPixels.width,
-        croppedAreaPixels.height
+        croppedAreaPixels.height,
       );
 
       const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b as Blob), "image/jpeg")
+        canvas.toBlob((b) => resolve(b as Blob), "image/jpeg"),
       );
 
       const file = new File([blob], "profile.jpg", {
@@ -214,6 +210,14 @@ const image = new window.Image();
     }
   };
 
+  const handleShareProfile = async () => {
+    const profileUrl = `${window.location.origin}/app/profile/${data.id}`;
+    await shareProfile({
+      title: `${data.name}'s Profile`,
+      text: `Check out ${data.name}'s profile on Bouwnce`,
+      url: profileUrl,
+    });
+  };
   return (
     <div className="bg-[#F7F7F7] p-3.75 w-full h-full">
       {/* HIDDEN INPUT */}
@@ -227,7 +231,7 @@ const image = new window.Image();
 
       {/* PROFILE IMAGE */}
       <div className="relative w-15.75 h-15.25 mb-3.25">
-        <Image
+        <SafeImage
           src={data.profile_pic?.url || userImg.src}
           alt="Profile"
           width={60}
@@ -244,9 +248,113 @@ const image = new window.Image();
       </div>
 
       {/* NAME */}
-      <h2 className="text-[18px] font-medium">{data.name}</h2>
-      <p className="text-[#888888] text-[13px] mb-4">
-        @{data.handle}
+      <h2 className="text-[18px] font-medium text-black leading-tight">
+        {data.name}
+      </h2>
+      <p className="text-[#888888] text-[13px] mb-4">@{data.handle}</p>
+
+      {/* ACTIONS */}
+      <div className="flex gap-2 mb-5.5 items-center">
+        {isOwnProfile ? (
+          <button
+            onClick={handleShareProfile}
+            className="cursor-pointer max-w-17.5 h-6.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
+          >
+            <Send className="size-3.5 mr-1.75" /> Share
+          </button>
+        ) : (
+          <>
+            {!relation && localConnectStatus !== "connected" && (
+              <button
+                onClick={handleConnect}
+                disabled={
+                  createMatchRequest.isPending ||
+                  localConnectStatus === "loading"
+                }
+                className={`cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all ${
+                  localConnectStatus === "loading"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed" // Gray out while loading
+                    : "bg-orange text-white hover:bg-[#ee3d15]"
+                }`}
+              >
+                {localConnectStatus === "loading" ||
+                createMatchRequest.isPending ? (
+                  <Loader2 className="size-4 animate-spin mr-1.75 text-current" />
+                ) : (
+                  <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
+                )}
+                {localConnectStatus === "loading" ||
+                createMatchRequest.isPending
+                  ? "Sending..."
+                  : "Connect"}
+              </button>
+            )}
+
+            {/* PENDING OUTGOING */}
+            {/* {isOutgoing && localConnectStatus !== "connected" && (
+              <button disabled className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center">
+                Pending
+              </button>
+            )} */}
+
+            {/* INCOMING REQUEST */}
+            {isIncoming && localConnectStatus !== "connected" && (
+              <>
+                <button
+                  onClick={handleAccept}
+                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition"
+                  title="Accept"
+                >
+                  <Check className="size-4" />
+                </button>
+                <button
+                  onClick={handleReject}
+                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition"
+                  title="Reject"
+                >
+                  <X className="size-4" />
+                </button>
+              </>
+            )}
+
+            {(isConnected || localConnectStatus === "connected") && (
+              <button
+                disabled
+                className="cursor-pointer max-w-22 h-7.5 flex-1 bg-green-100 text-green-700 rounded-full text-xs flex items-center justify-center"
+              >
+                Connected
+              </button>
+            )}
+
+            <button
+              onClick={() => router.push(`/buyer/chat/${data.id}`)}
+              className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
+            >
+              <MessageCircleReply className="size-3.5 mr-1.75" />
+              Message
+            </button>
+
+            {/* MORE BUTTON */}
+            <button className="cursor-pointer ml-auto bg-[#D9D9D9] flex items-center justify-center text-black rounded-full hover:bg-[#c6c4c4] transition-colors w-6 h-6">
+              <MoreHorizontal className="size-3" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* STATS */}
+      <div className="flex justify-between text-[13px] mb-5 text-[#888888]">
+        <span>
+          <b className="font-normal">{data.followers}</b> Connections
+        </span>
+        <span>
+          <b className="font-normal">{data.badges}</b> Profile Views
+        </span>
+      </div>
+
+      {/* BIO */}
+      <p className="text-[13px] text-black leading-4.5 w-[90%] border-b-[0.53px] border-[#00000033] pb-2.75 mb-11.5">
+        {data.bio}
       </p>
 
       {/* ACTIONS (UNCHANGED) */}
@@ -261,9 +369,7 @@ const image = new window.Image();
             </button>
 
             <button
-              onClick={() =>
-                router.push(`/buyer/chat/${data.id}`)
-              }
+              onClick={() => router.push(`/buyer/chat/${data.id}`)}
               className="bg-gray-300 px-3 py-1 rounded-full text-xs"
             >
               Message
@@ -292,10 +398,7 @@ const image = new window.Image();
             </div>
 
             <div className="mt-3 flex gap-2 justify-end">
-              <button
-                onClick={() => setOpenCrop(false)}
-                className="text-sm"
-              >
+              <button onClick={() => setOpenCrop(false)} className="text-sm">
                 Cancel
               </button>
 

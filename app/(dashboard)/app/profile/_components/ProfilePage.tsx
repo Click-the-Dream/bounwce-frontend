@@ -64,7 +64,7 @@ export default function ProfilePage() {
     followers: user?.followers_count ?? 0,
     badges: user?.badges_count ?? 0,
     tags,
-profile_pic: user?.profile_pic,
+    profile_pic: user?.profile_pic,
   };
 
   return (
@@ -143,7 +143,7 @@ profile_pic: user?.profile_pic,
             </div>
 
             {/* TABS */}
-            <div className="flex items-center gap-2.75 border-y-[0.53px] border-[#00000033] py-4.75">
+            {/* <div className="flex items-center gap-2.75 border-y-[0.53px] border-[#00000033] py-4.75">
               {["Posts", "Replies", "Likes"].map((tab) => (
                 <button
                   key={tab}
@@ -157,7 +157,8 @@ profile_pic: user?.profile_pic,
                   {tab}
                 </button>
               ))}
-            </div>
+            </div> */}
+            <h2 className="text-sm font-semibold">Events</h2>
 
             {/* FEED */}
             <div className="py-7.75 flex flex-col items-center justify-center">

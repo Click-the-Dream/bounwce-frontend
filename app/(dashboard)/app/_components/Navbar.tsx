@@ -1,17 +1,16 @@
 import { Bell, Menu, ShoppingCart, MessageCircleMore } from "lucide-react";
 import userImg from "../../../assets/buyer/user.jpg";
-import Image from "next/image";
 import SearchComponent from "./SearchComponent";
 import Link from "next/link";
 import { useMarketStore } from "@/app/context/StoreContext";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useAuth } from "@/app/context/AuthContext";
+import SafeImage from "@/app/_components/SafeImage";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
   const { totalUnread, unreadCount } = useNotifications();
-const { authDetails } = useAuth();
-
+  const { authDetails } = useAuth();
 
   return (
     <header className="h-13.75 flex items-center justify-between py-2.25 px-4 md:px-6 lg:px-8 bg-white border-b border-[#00000033] sticky top-0 z-10">
@@ -59,12 +58,12 @@ const { authDetails } = useAuth();
         </div>
 
         <Link href="/app/profile" className="w-8 h-8">
-          <Image
+          <SafeImage
             src={authDetails?.user?.profile_pic?.url || userImg}
             alt="Profile"
             width={32}
             height={32}
-            className="rounded-md w-full h-full"
+            className="rounded-md w-full h-full bg-gray-100"
           />
         </Link>
       </div>
