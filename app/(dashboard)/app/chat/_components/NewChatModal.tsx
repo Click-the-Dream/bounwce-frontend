@@ -112,7 +112,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                   <div
                     key={user.id}
                     ref={isLast ? lastUserRef : null}
-                    onClick={() => router.push(`/buyer/chat/${user.id}`)}
+                    onClick={() => router.push(`/app/chat/${user.id}`)}
                     className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2"
                   >
                     <div className="relative size-9.25 rounded-[10px] bg-gray-200">
