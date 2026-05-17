@@ -26,7 +26,7 @@ const ExploreCard = ({
   const router = useRouter();
 
   const goToProfile = () => {
-    router.push(`/buyer/profile/${slugify(full_name)}_${user_id}`);
+    router.push(`/app/profile/${slugify(full_name)}_${user_id}`);
   };
   const isLoading = connectStatus === "loading";
   const isSent = connectStatus === "connected";
