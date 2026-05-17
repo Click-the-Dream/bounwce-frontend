@@ -84,7 +84,7 @@ const ExplorePage = () => {
             queryClient.invalidateQueries();
             
             setTimeout(() => {
-            router.push(`/buyer/chat/${userId}`)
+            router.push(`/app/chat/${userId}`)
             }, 2000)
             
           }, 3000)
