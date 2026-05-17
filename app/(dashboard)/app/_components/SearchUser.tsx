@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 const SearchUser = ({ item }: { item: SuggestedCandidate }) => {
   const router = useRouter();
   const goToProfile = () => {
-    router.push(`/buyer/profile/${slugify(item?.full_name)}_${item?.user_id}`);
+    router.push(`/app/profile/${slugify(item?.full_name)}_${item?.user_id}`);
   };
   return (
     <div
