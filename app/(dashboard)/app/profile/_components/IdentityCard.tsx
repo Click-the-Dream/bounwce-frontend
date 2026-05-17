@@ -42,7 +42,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [localConnectStatus, setLocalConnectStatus] = useState<
-    "idle" | "loading" | "connected"
+    "idle" | "loading" | "connected", "pending"
   >("idle");
 const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(null);
 
