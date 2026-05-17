@@ -215,7 +215,7 @@ const useChat = () => {
     useMutation({
       mutationFn: async () => {
         const res = await api.post("/uploads/chat-image/sign");
-        return res.data?.data;
+        return res.data?.data?.fields;
       },
     });
 
@@ -231,7 +231,7 @@ const useChat = () => {
     useMutation({
       mutationFn: async () => {
         const res = await api.post("/uploads/chat-file/sign");
-        return res.data?.data;
+        return res.data?.data?.fields;
       },
     });
 
