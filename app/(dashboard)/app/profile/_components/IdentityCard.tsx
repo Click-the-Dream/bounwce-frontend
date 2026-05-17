@@ -44,6 +44,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   const [localConnectStatus, setLocalConnectStatus] = useState<
     "idle" | "loading" | "connected"
   >("idle");
+const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(null);
 
   const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
     useMatch();
@@ -82,14 +83,14 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
       { target_user_id: data.id },
       {
         onSuccess: () => {
-          setLocalConnectStatus("connected");
+          setLocalConnectStatus("pending");
           onSuccess({
             title: "Connection Request Sent",
             message: "Request sent successfully.",
           });
 
           queryClient.invalidateQueries();
-          router.push(`/buyer/chat/${data.id}`);
+          router.push(`/app/chat/${data.id}`);
         },
         onError: () => {
           setLocalConnectStatus("idle");
@@ -103,41 +104,62 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   };
 
   const handleAccept = () => {
-    respondToMatchRequest.mutate(
-      {
-        request_id: relation.request_id,
-        action: "accept",
+  setActionLoading("accept");
+
+  respondToMatchRequest.mutate(
+    {
+      request_id: relation.request_id,
+      action: "accept",
+    },
+    {
+      onSuccess: () => {
+        onSuccess({
+          title: "Connected",
+          message: "You are now connected",
+        });
+        queryClient.invalidateQueries();
       },
-      {
-        onSuccess: () => {
-          onSuccess({
-            title: "Connected",
-            message: "You are now connected",
-          });
-          queryClient.invalidateQueries();
-        },
+      onError: () => {
+        onFailure({
+          title: "Failed",
+          message: "Try again",
+        });
       },
-    );
-  };
+      onSettled: () => {
+        setActionLoading(null);
+      },
+    },
+  );
+};
 
   const handleReject = () => {
-    respondToMatchRequest.mutate(
-      {
-        request_id: relation.request_id,
-        action: "reject",
-      },
-      {
-        onSuccess: () => {
-          onSuccess({
-            title: "Rejected",
-            message: "Request rejected",
-          });
-          queryClient.invalidateQueries();
-        },
-      },
-    );
-  };
+  setActionLoading("reject");
 
+  respondToMatchRequest.mutate(
+    {
+      request_id: relation.request_id,
+      action: "reject",
+    },
+    {
+      onSuccess: () => {
+        onSuccess({
+          title: "Rejected",
+          message: "Request rejected",
+        });
+        queryClient.invalidateQueries();
+      },
+      onError: () => {
+        onFailure({
+          title: "Failed",
+          message: "Try again",
+        });
+      },
+      onSettled: () => {
+        setActionLoading(null);
+      },
+    },
+  );
+};
   // IMAGE PICK
   const handlePickImage = (e: any) => {
 if (!isOwnProfile) return;
@@ -305,20 +327,30 @@ if (!isOwnProfile) return;
             {/* INCOMING REQUEST */}
             {isIncoming && localConnectStatus !== "connected" && (
               <>
-                <button
-                  onClick={handleAccept}
-                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition"
-                  title="Accept"
-                >
-                  <Check className="size-4" />
-                </button>
-                <button
-                  onClick={handleReject}
-                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition"
-                  title="Reject"
-                >
-                  <X className="size-4" />
-                </button>
+               <button
+  onClick={handleAccept}
+  disabled={actionLoading !== null}
+  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition disabled:opacity-60"
+  title="Accept"
+>
+  {actionLoading === "accept" ? (
+    <Loader2 className="size-4 animate-spin" />
+  ) : (
+    <Check className="size-4" />
+  )}
+</button>
+               <button
+  onClick={handleReject}
+  disabled={actionLoading !== null}
+  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition disabled:opacity-60"
+  title="Reject"
+>
+  {actionLoading === "reject" ? (
+    <Loader2 className="size-4 animate-spin" />
+  ) : (
+    <X className="size-4" />
+  )}
+</button>
               </>
             )}
 
@@ -332,7 +364,7 @@ if (!isOwnProfile) return;
             )}
 
             <button
-              onClick={() => router.push(`/buyer/chat/${data.id}`)}
+              onClick={() => router.push(`/app/chat/${data.id}`)}
               className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
             >
               <MessageCircleReply className="size-3.5 mr-1.75" />
