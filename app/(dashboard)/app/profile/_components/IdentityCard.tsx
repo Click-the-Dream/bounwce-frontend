@@ -357,26 +357,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
         {data.bio}
       </p>
 
-      {/* ACTIONS (UNCHANGED) */}
-      <div className="flex gap-2 mb-5.5 items-center">
-        {!isOwnProfile && (
-          <>
-            <button
-              onClick={handleConnect}
-              className="bg-orange text-white px-3 py-1 rounded-full text-xs"
-            >
-              Connect
-            </button>
-
-            <button
-              onClick={() => router.push(`/buyer/chat/${data.id}`)}
-              className="bg-gray-300 px-3 py-1 rounded-full text-xs"
-            >
-              Message
-            </button>
-          </>
-        )}
-      </div>
+   
 
       {/* SWITCH ACCOUNT */}
       {isOwnProfile && <SwitchAccountCard />}
