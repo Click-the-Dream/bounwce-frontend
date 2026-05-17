@@ -22,14 +22,16 @@ const useMatch = () => {
       enabled: !!authDetails?.access_token,
     });
   };
-  const useGetMatchRequests = () => {
+  const useGetMatchRequests = ({
+    enabled = true,
+  }: { enabled?: boolean } = {}) => {
     return useQuery({
       queryKey: ["matches", "requests"],
       queryFn: async () => {
         const res = await api.get("/matches/requests");
         return res?.data?.items || res?.data;
       },
-      enabled: !!authDetails?.access_token,
+      enabled: !!authDetails?.access_token && enabled,
     });
   };
 
@@ -54,9 +56,12 @@ const useMatch = () => {
       request_id: string;
       action: "accept" | "reject";
     }) => {
-      const res = await api.post(`/matches/requests/${payload.request_id}`, {
-        action: payload.action,
-      });
+      const res = await api.post(
+        `/matches/requests/${payload.request_id}/respond`,
+        {
+          accepted: payload.action === "accept" ? true : false,
+        },
+      );
       return res.data;
     },
     onSuccess: () => {

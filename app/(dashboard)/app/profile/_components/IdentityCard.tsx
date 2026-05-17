@@ -50,9 +50,9 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
   const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
     useMatch();
-  const { data: matchRequests } = useGetMatchRequests();
-
-  console.log(matchRequests);
+  const { data: matchRequests } = useGetMatchRequests({
+    enabled: !isOwnProfile,
+  });
 
   // CROPPER STATES
   const [imageSrc, setImageSrc] = useState<string | null>(null);
