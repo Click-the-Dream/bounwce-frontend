@@ -8,9 +8,17 @@ interface UserImageProps {
     profile_pic?: { url?: string };
   };
   size?: number;
+  style?: any;
 }
 
-const UserImage = ({ user, size = 36 }: UserImageProps) => {
+const UserImage = ({
+  user,
+  size = 36,
+  style = {
+    boxShadow:
+      "0px 0px 2.03px 0.51px #00000040, 0.51px -3.05px 2.03px 1.52px #00000040 inset",
+  },
+}: UserImageProps) => {
   const { onlineUsers } = useChatUtils();
 
   const isOnline = !!user?.id && !!onlineUsers?.[user.id];
@@ -19,11 +27,8 @@ const UserImage = ({ user, size = 36 }: UserImageProps) => {
 
   return (
     <div
-      className="relative shrink-0 rounded-[12px] border border-white"
-      style={{
-        boxShadow:
-          "0px 0px 2.03px 0.51px #00000040, 0.51px -3.05px 2.03px 1.52px #00000040 inset",
-      }}
+      className="relative shrink-0 rounded-xl border border-white"
+      style={style}
     >
       {user.profile_pic?.url ? (
         <SafeImage
@@ -31,11 +36,11 @@ const UserImage = ({ user, size = 36 }: UserImageProps) => {
           alt={user.full_name}
           width={size}
           height={size}
-          className="rounded-[12px] object-cover"
+          className="rounded-xl object-cover"
         />
       ) : (
         <div
-          className="flex items-center justify-center bg-gray-100 font-semibold text-black rounded-[12px]"
+          className="flex items-center justify-center bg-gray-100 font-semibold text-black rounded-xl"
           style={{ width: size, height: size }}
         >
           {initials}

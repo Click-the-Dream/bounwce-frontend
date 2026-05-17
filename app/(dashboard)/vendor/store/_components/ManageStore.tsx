@@ -128,7 +128,7 @@ const ManageStore = () => {
         {/* Tabs */}
         <div className="bg-[#ECECF0] rounded-[20px] border border-[#0000001A] p-1 inline-flex gap-3 text-[13px]">
           <button
-            className={`py-2 px-2 rounded-2xl transition-colors duration-500  ${
+            className={`cursor-pointer py-2 px-2 rounded-2xl transition-colors duration-500  ${
               activeTab === "product" ? "bg-orange text-white" : ""
             }`}
             onClick={() => setActiveTab("product")}
@@ -137,7 +137,7 @@ const ManageStore = () => {
           </button>
 
           <button
-            className={`py-2 px-2 rounded-2xl transition-colors duration-500 ${
+            className={`cursor-pointer py-2 px-2 rounded-2xl transition-colors duration-500 ${
               activeTab === "drafts" ? "bg-orange text-white" : ""
             }`}
             onClick={() => setActiveTab("drafts")}

@@ -25,20 +25,22 @@ const BaseToast = ({
     animate={{ opacity: 1, scale: 1, y: 0 }}
     exit={{ opacity: 0, scale: 0.96, y: -4 }}
     transition={{ duration: 0.25, ease: "easeInOut" }}
-    className={`flex items-start gap-3 p-3 min-w-[260px] max-w-[320px] bg-white dark:bg-zinc-950 border ${borderColor} rounded-xl shadow-xl`}
+    className={`flex items-start gap-3 p-3 min-w-65 max-w-[320px] bg-white  border ${borderColor} rounded-xl shadow-xl`}
   >
     {/* Compact Icon Wrapper */}
-    <div className={`p-1.5 rounded-lg ${badgeBg} shrink-0 grid place-items-center`}>
+    <div
+      className={`p-1.5 rounded-lg ${badgeBg} shrink-0 grid place-items-center`}
+    >
       <Icon className={`${iconColor} text-lg`} />
     </div>
 
     {/* Content Area */}
     <div className="flex flex-col min-w-0 pt-0.5">
-      <span className="text-zinc-900 dark:text-zinc-100 font-semibold text-xs tracking-tight truncate">
+      <span className="text-zinc-900 font-semibold text-xs tracking-tight truncate">
         {title}
       </span>
       {message && (
-        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] mt-0.5 leading-normal break-words font-normal">
+        <p className="text-zinc-500  text-[11px] mt-0.5 leading-normal wrap-break-word font-normal">
           {message}
         </p>
       )}
@@ -57,12 +59,12 @@ export const onFailure = (error?: ToastPayload) => {
   toast(
     <BaseToast
       icon={MdCancel}
-      iconColor="text-red-600 dark:text-red-400"
-      badgeBg="bg-red-50 dark:bg-red-950/50"
-      borderColor="border-red-100 dark:border-red-900/40"
+      iconColor="text-red-600"
+      badgeBg="bg-red-50"
+      borderColor="border-red-100"
       title={error?.title || "Action Failed"}
       message={error?.message}
-    />
+    />,
   );
 };
 
@@ -70,12 +72,12 @@ export const onSuccess = (success?: ToastPayload) => {
   toast(
     <BaseToast
       icon={MdCheckCircle}
-      iconColor="text-emerald-600 dark:text-emerald-400"
-      badgeBg="bg-emerald-50 dark:bg-emerald-950/50"
-      borderColor="border-emerald-100 dark:border-emerald-900/40"
+      iconColor="text-emerald-600"
+      badgeBg="bg-emerald-50"
+      borderColor="border-emerald-100"
       title={success?.title || "Success"}
       message={success?.message}
-    />
+    />,
   );
 };
 
@@ -83,11 +85,11 @@ export const onPrompt = (prompt?: ToastPayload) => {
   toast(
     <BaseToast
       icon={IoInformationCircle}
-      iconColor="text-blue-600 dark:text-blue-400"
-      badgeBg="bg-blue-50 dark:bg-blue-950/50"
-      borderColor="border-blue-100 dark:border-blue-900/40"
+      iconColor="text-blue-600"
+      badgeBg="bg-blue-50"
+      borderColor="border-blue-100"
       title={prompt?.title || "Update"}
       message={prompt?.message}
-    />
+    />,
   );
 };

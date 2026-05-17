@@ -5,17 +5,21 @@ import { useChatUtils } from "@/app/context/ChatContext";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useParams, useRouter } from "next/navigation";
 import UserImage from "../../_components/UserImage";
+import { useAuth } from "@/app/context/AuthContext";
 
 const ChatCard = ({ chat }: any) => {
   const { chatId } = useParams();
   const router = useRouter();
+  const { authDetails } = useAuth();
   const { typingUsers } = useChatUtils();
   const { unreadCount } = useNotifications();
   const chatUser = chat?.user;
+  const currentUserId = authDetails?.user?.id;
 
   const isTyping = chatUser?.id ? !!typingUsers?.[chatUser.id] : false;
   const lastMessageTime = chat?.last_message?.created_at;
-  const lastMessage = chat?.last_message?.body;
+  const lastMessage = chat?.last_message;
+  const isMine = lastMessage?.sender_id === currentUserId;
 
   return (
     <div
@@ -41,11 +45,16 @@ const ChatCard = ({ chat }: any) => {
             isTyping ? "text-orange animate-pulse" : "text-[#A1A1A1]"
           }`}
         >
-          {isTyping
-            ? "typing..."
-            : lastMessage
-              ? lastMessage
-              : `@${chatUser.username}`}
+          {isTyping ? (
+            "typing..."
+          ) : lastMessage ? (
+            <span>
+              {isMine && <span className="text-gray-600">You: </span>}
+              {lastMessage.body}
+            </span>
+          ) : (
+            `@${chatUser.username}`
+          )}
         </p>
       </div>
     </div>

@@ -82,7 +82,7 @@ const useProduct = () => {
 
   const useGetMyProducts = () =>
     useQuery({
-      queryKey: ["products", "my-products"],
+      queryKey: ["my-products"],
       queryFn: async () => {
         const response = await client.get("/store/products/me");
         return response.data.data;
@@ -177,17 +177,40 @@ const useProduct = () => {
   });
 
   const toggleProductState = useMutation({
-    mutationFn: async (id) => {
+    mutationFn: async (id: string) => {
       const response = await client.patch(`/store/products/${id}/toggle-state`);
       return response.data.data;
     },
-    onSuccess: (_, id) => {
+
+    onSuccess: (_, id: string) => {
+      queryClient.setQueryData(["my-products"], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          products: old.products.map((p: any) =>
+            p.id === id
+              ? { ...p, state: p.state === "draft" ? "live" : "draft" }
+              : p,
+          ),
+        };
+      });
+
+      // // optional: sync single product cache if used elsewhere
+      // queryClient.setQueryData(["product", id], (old: any) =>
+      //   old
+      //     ? {
+      //         ...old,
+      //         state: old.state === "draft" ? "live" : "draft",
+      //       }
+      //     : old,
+      // );
+
       handleSuccess(
         "Toggle Product State",
         "Product state updated successfully!",
       );
-      queryClient.invalidateQueries({ queryKey: ["my-products"] });
     },
+
     onError: (error) => handleFailure("Toggle Product State", error),
   });
 

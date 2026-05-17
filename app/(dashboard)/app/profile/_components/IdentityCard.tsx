@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import React, { useState, useRef } from "react";
 import userImg from "../../../../assets/buyer/user.jpg";
-import Image from "next/image";
 import SwitchAccountCard from "./SwitchAccountCard";
 import IdentityCardSkeleton from "./IdentityCardSkeleton";
 import useMatch from "@/app/hooks/use-match";
@@ -25,6 +24,7 @@ import Cropper from "react-easy-crop";
 import SafeImage from "@/app/_components/SafeImage";
 import { shareProfile } from "@/app/_utils/share";
 import { slugify } from "@/app/_utils/slugify";
+import UserImage from "../../_components/UserImage";
 
 type Props = {
   data: any;
@@ -42,13 +42,17 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [localConnectStatus, setLocalConnectStatus] = useState<
-    "idle" | "loading" | "connected", "pending"
+    "idle" | "loading" | "pending" | "connected"
   >("idle");
-const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(null);
+  const [actionLoading, setActionLoading] = useState<
+    "accept" | "reject" | null
+  >(null);
 
   const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
     useMatch();
   const { data: matchRequests } = useGetMatchRequests();
+
+  console.log(matchRequests);
 
   // CROPPER STATES
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -62,17 +66,24 @@ const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(n
 
   const relation = matchRequests?.find((req: any) => {
     return (
-      req.target_user_id === data.id ||
+      (req.target_user_id === data.id &&
+        req.requester_id === authDetails?.user?.id) ||
       (req.requester_id === data.id &&
         req.target_user_id === authDetails?.user?.id)
     );
   });
 
   const status = relation?.status;
-  const isRequester = relation?.target_user_id !== authDetails?.user?.id;
+
+  const isRequester = relation?.requester_id === authDetails?.user?.id;
+
   const isPending = status === "pending";
-  const isConnected = status === "accepted" || (isPending && isRequester);
+
   const isIncoming = isPending && !isRequester;
+
+  const isOutgoing = isPending && isRequester;
+
+  const isConnected = status === "accepted";
 
   const handleConnect = () => {
     if (relation || createMatchRequest.isPending) return;
@@ -104,65 +115,65 @@ const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(n
   };
 
   const handleAccept = () => {
-  setActionLoading("accept");
+    setActionLoading("accept");
 
-  respondToMatchRequest.mutate(
-    {
-      request_id: relation.request_id,
-      action: "accept",
-    },
-    {
-      onSuccess: () => {
-        onSuccess({
-          title: "Connected",
-          message: "You are now connected",
-        });
-        queryClient.invalidateQueries();
+    respondToMatchRequest.mutate(
+      {
+        request_id: relation.request_id,
+        action: "accept",
       },
-      onError: () => {
-        onFailure({
-          title: "Failed",
-          message: "Try again",
-        });
+      {
+        onSuccess: () => {
+          onSuccess({
+            title: "Connected",
+            message: "You are now connected",
+          });
+          queryClient.invalidateQueries();
+        },
+        onError: () => {
+          onFailure({
+            title: "Failed",
+            message: "Try again",
+          });
+        },
+        onSettled: () => {
+          setActionLoading(null);
+        },
       },
-      onSettled: () => {
-        setActionLoading(null);
-      },
-    },
-  );
-};
+    );
+  };
 
   const handleReject = () => {
-  setActionLoading("reject");
+    setActionLoading("reject");
 
-  respondToMatchRequest.mutate(
-    {
-      request_id: relation.request_id,
-      action: "reject",
-    },
-    {
-      onSuccess: () => {
-        onSuccess({
-          title: "Rejected",
-          message: "Request rejected",
-        });
-        queryClient.invalidateQueries();
+    respondToMatchRequest.mutate(
+      {
+        request_id: relation.request_id,
+        action: "reject",
       },
-      onError: () => {
-        onFailure({
-          title: "Failed",
-          message: "Try again",
-        });
+      {
+        onSuccess: () => {
+          onSuccess({
+            title: "Rejected",
+            message: "Request rejected",
+          });
+          queryClient.invalidateQueries();
+        },
+        onError: () => {
+          onFailure({
+            title: "Failed",
+            message: "Try again",
+          });
+        },
+        onSettled: () => {
+          setActionLoading(null);
+        },
       },
-      onSettled: () => {
-        setActionLoading(null);
-      },
-    },
-  );
-};
+    );
+  };
   // IMAGE PICK
   const handlePickImage = (e: any) => {
-if (!isOwnProfile) return;
+    if (!isOwnProfile) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -235,7 +246,6 @@ if (!isOwnProfile) return;
   };
 
   const handleShareProfile = async () => {
-   
     const profileUrl = `${window.location.origin}/app/profile/${slugify(data?.name)}_${data?.id}`;
     await shareProfile({
       title: `${data.name}'s Profile`,
@@ -256,22 +266,23 @@ if (!isOwnProfile) return;
 
       {/* PROFILE IMAGE */}
       <div className="relative w-15.75 h-15.25 mb-3.25">
-        <SafeImage
-          src={data.profile_pic?.url || userImg.src}
-          alt="Profile"
-          width={60}
-          height={61}
-          className="rounded-[20px] border-2 border-white object-cover w-15 h-15.25"
+        <UserImage
+          user={{
+            id: data.id,
+            full_name: data?.name,
+            profile_pic: data?.profile_pic,
+          }}
+          size={63}
         />
 
-{isOwnProfile && (
-  <div
-    onClick={() => fileRef.current?.click()}
-    className="w-5 h-5 absolute -bottom-1 -right-1 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center cursor-pointer"
-  >
-    <ImageIcon size={10} />
-  </div>
-)}
+        {isOwnProfile && (
+          <div
+            onClick={() => fileRef.current?.click()}
+            className="w-5 h-5 absolute -bottom-1 -right-1 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center cursor-pointer"
+          >
+            <ImageIcon size={10} />
+          </div>
+        )}
       </div>
 
       {/* NAME */}
@@ -291,69 +302,72 @@ if (!isOwnProfile) return;
           </button>
         ) : (
           <>
-            {!relation && localConnectStatus !== "connected" && (
+            {/* CONNECT BUTTON */}
+            {!relation &&
+              localConnectStatus !== "pending" &&
+              localConnectStatus !== "connected" && (
+                <button
+                  onClick={handleConnect}
+                  disabled={
+                    createMatchRequest.isPending ||
+                    localConnectStatus === "loading"
+                  }
+                  className={`cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all ${
+                    localConnectStatus === "loading"
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-orange text-white hover:bg-[#ee3d15]"
+                  }`}
+                >
+                  {localConnectStatus === "loading" ? (
+                    <Loader2 className="size-4 animate-spin mr-1.75 text-current" />
+                  ) : (
+                    <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
+                  )}
+
+                  {localConnectStatus === "loading" ? "Sending..." : "Connect"}
+                </button>
+              )}
+
+            {/* OUTGOING PENDING */}
+            {(isOutgoing || localConnectStatus === "pending") && (
               <button
-                onClick={handleConnect}
-                disabled={
-                  createMatchRequest.isPending ||
-                  localConnectStatus === "loading"
-                }
-                className={`cursor-pointer max-w-22 h-7.5 flex-1 border border-[#F4F4F4] outline-[0.83px] p-2 rounded-full text-xs font-medium flex items-center justify-center transition-all ${
-                  localConnectStatus === "loading"
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed" // Gray out while loading
-                    : "bg-orange text-white hover:bg-[#ee3d15]"
-                }`}
+                disabled
+                className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center"
               >
-                {localConnectStatus === "loading" ||
-                createMatchRequest.isPending ? (
-                  <Loader2 className="size-4 animate-spin mr-1.75 text-current" />
-                ) : (
-                  <PlusCircle fill="#8a0202" className="size-4 mr-1.75" />
-                )}
-                {localConnectStatus === "loading" ||
-                createMatchRequest.isPending
-                  ? "Sending..."
-                  : "Connect"}
+                Pending
               </button>
             )}
 
-            {/* PENDING OUTGOING */}
-            {/* {isOutgoing && localConnectStatus !== "connected" && (
-              <button disabled className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center">
-                Pending
-              </button>
-            )} */}
-
-            {/* INCOMING REQUEST */}
-            {isIncoming && localConnectStatus !== "connected" && (
+            {/* INCOMING */}
+            {isIncoming && (
               <>
-               <button
-  onClick={handleAccept}
-  disabled={actionLoading !== null}
-  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition disabled:opacity-60"
-  title="Accept"
->
-  {actionLoading === "accept" ? (
-    <Loader2 className="size-4 animate-spin" />
-  ) : (
-    <Check className="size-4" />
-  )}
-</button>
-               <button
-  onClick={handleReject}
-  disabled={actionLoading !== null}
-  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition disabled:opacity-60"
-  title="Reject"
->
-  {actionLoading === "reject" ? (
-    <Loader2 className="size-4 animate-spin" />
-  ) : (
-    <X className="size-4" />
-  )}
-</button>
+                <button
+                  onClick={handleAccept}
+                  disabled={actionLoading !== null}
+                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition disabled:opacity-60"
+                >
+                  {actionLoading === "accept" ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Check className="size-4" />
+                  )}
+                </button>
+
+                <button
+                  onClick={handleReject}
+                  disabled={actionLoading !== null}
+                  className="cursor-pointer w-9 h-9 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition disabled:opacity-60"
+                >
+                  {actionLoading === "reject" ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <X className="size-4" />
+                  )}
+                </button>
               </>
             )}
 
+            {/* CONNECTED */}
             {(isConnected || localConnectStatus === "connected") && (
               <button
                 disabled
@@ -393,8 +407,6 @@ if (!isOwnProfile) return;
       <p className="text-[13px] text-black leading-4.5 w-[90%] border-b-[0.53px] border-[#00000033] pb-2.75 mb-11.5">
         {data.bio}
       </p>
-
-   
 
       {/* SWITCH ACCOUNT */}
       {isOwnProfile && <SwitchAccountCard />}

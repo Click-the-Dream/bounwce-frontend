@@ -15,17 +15,17 @@ const ProductCard = ({ product, status }: any) => {
   };
 
   return (
-    <div className="w-full border rounded-lg overflow-hidden shadow-sm">
-      <div className="h-62.5">
+    <div className="w-full border-[0.83px] border-[#0000001A] rounded-lg overflow-hidden shadow-sm flex flex-col">
+      <div className="flex-1 h-full">
         <ProductImageDisplay
-          height="h-full"
+          height="max-h-62.2"
           images={product?.images}
           showThumbnails={false}
         />
       </div>
 
       {/* PRODUCT DETAILS */}
-      <div className="border-t px-5 py-4 bg-white">
+      <div className="flex-1 h-full border-t-[0.83px] border-[#0000001A] px-5 py-4 bg-white flex flex-col justify-between">
         <div className="space-y-2 mb-3">
           <div className="flex justify-between items-center">
             <h1 className="uppercase text-[12px] font-medium">
@@ -42,7 +42,9 @@ const ProductCard = ({ product, status }: any) => {
             </p>
           </div>
 
-          <p className="text-[#000000] text-[11px]">{product?.description}</p>
+          <p className="text-[#000000] text-[11px] line-clamp-2">
+            {product?.description}
+          </p>
           <p className="text-[11px] flex justify-between">
             <span className="font-medium">Category:</span>
             <span>{product?.category}</span>
@@ -60,14 +62,14 @@ const ProductCard = ({ product, status }: any) => {
         {/* ACTION BUTTONS */}
         <div className="flex gap-2 justify-between flex-wrap">
           <div className="flex gap-3">
-            <button className="text-[10px] font-semibold border rounded-[6.75px] border-[#00000036] px-2 py-1 flex gap-1 items-center">
+            <button className="cursor-pointer text-[10px] font-semibold border rounded-[6.75px] border-[#00000036] px-2 py-1 flex gap-1 items-center">
               <TbEdit /> Edit
             </button>
 
             <button
               onClick={handleProductState}
               disabled={toggleProductState.isPending}
-              className={`text-[10px] font-semibold border rounded-[6.75px] border-[#00000036] px-2 py-1 ${
+              className={`cursor-pointer text-[10px] font-semibold border rounded-[6.75px] border-[#00000036] px-2 py-1 ${
                 product?.state === "draft"
                   ? "bg-green-500 text-white"
                   : "bg-red-500 text-white"
@@ -81,7 +83,7 @@ const ProductCard = ({ product, status }: any) => {
             </button>
           </div>
 
-          <button className="text-[10px] font-semibold border rounded-[6.75px] border-[#00000036] px-2 py-1">
+          <button className="cursor-pointer text-[10px] font-semibold border rounded-[6.75px] border-[#00000036] px-2 py-1">
             <RiDeleteBin6Line />
           </button>
         </div>

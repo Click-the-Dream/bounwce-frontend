@@ -14,7 +14,6 @@ const SwitchAccountCard = () => {
   const isVendor = role === "vendor";
 
   const handleClick = () => {
-    // ONE-WAY RULE: vendor never goes back
     if (isVendor) {
       router.push("/vendor");
       return;
@@ -31,7 +30,7 @@ const SwitchAccountCard = () => {
 
       <button
         onClick={handleClick}
-        className="flex items-center w-full gap-3 p-1 transition-colors group hover:bg-gray-50 rounded-xl"
+        className="cursor-pointer flex items-center w-full gap-3 p-1 transition-colors group hover:bg-gray-50 rounded-xl"
       >
         <div className="w-8 h-8 relative shrink-0">
           <SafeImage

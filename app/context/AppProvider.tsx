@@ -14,7 +14,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
           {children}
 
           <ToastContainer
-            position="top-right"
+            position="bottom-right"
             stacked
             autoClose={2000}
             hideProgressBar
@@ -26,6 +26,9 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
             toastStyle={{
               marginTop: "8px",
             }}
+            toastClassName={() =>
+              "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible"
+            }
             style={{
               bottom: "1.5rem",
               right: "0.5rem",

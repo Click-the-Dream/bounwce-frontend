@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { LuClock } from "react-icons/lu";
 import { slugify } from "@/app/_utils/slugify";
 import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
+import UserImage from "../../_components/UserImage";
 
 type Props = SuggestedCandidate & {
   onConnect: (id: string) => void;
@@ -77,13 +78,14 @@ const ExploreCard = ({
 
         {/* Profile Info */}
         <div className="px-2.5">
-          <div className="relative -mt-[30.5px] mb-2">
-            <Image
-              src={profile_pic?.url || userImg.src}
-              alt="Profile"
-              width={60}
-              height={61}
-              className="w-15.75 h-15.25 rounded-[20px] border-2 border-white bg-gray-100 object-cover"
+          <div className="relative -mt-[30.5px] mb-2 w-max">
+            <UserImage
+              user={{
+                id: user_id,
+                full_name,
+                profile_pic,
+              }}
+              size={61}
               style={{
                 boxShadow:
                   "0px 0px 4px 1px #00000040, 1px -6px 4px 3px #00000040 inset",
