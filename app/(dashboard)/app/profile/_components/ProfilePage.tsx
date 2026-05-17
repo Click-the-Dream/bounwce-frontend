@@ -90,9 +90,11 @@ export default function ProfilePage() {
               height={130}
               className="w-full h-31.25 object-cover"
             />
+{isOwnProfile&&
             <div className="w-5 h-5 absolute top-1.25 right-2 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center">
               <ImageIcon size={10} className="text-black" />
             </div>
+}
           </div>
 
           {/* CONTENT */}
