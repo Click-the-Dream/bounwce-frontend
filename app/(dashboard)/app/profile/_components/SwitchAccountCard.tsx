@@ -45,7 +45,7 @@ const SwitchAccountCard = () => {
 
         <div className="flex flex-col grow text-left">
           <span className="text-xs font-medium text-black">
-            {isVendor ? "Go to Vendor Dashboard" : "Become a Vendor"}
+            {isVendor ? "Business Hub" : "Become a Vendor"}
           </span>
           <span className="text-xs text-[#888888]">
             {authDetails?.user?.full_name}
