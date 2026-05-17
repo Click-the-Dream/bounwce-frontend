@@ -4,6 +4,7 @@ import { User } from "@/app/_utils/types/buyer";
 import { useChatUtils } from "@/app/context/ChatContext";
 import { ChevronLeft } from "lucide-react"; // Import for mobile back button
 import { useParams, useRouter } from "next/navigation";
+import UserImage from "../../_components/UserImage";
 
 interface ChatHeaderProps {
   selectedChat: User;
@@ -27,32 +28,14 @@ const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
       {chatId && selectedChat && (
         <>
-          <div
-            className="relative shrink-0 rounded-[10px] border border-white"
+          <UserImage
+            user={selectedChat}
+            size={37}
             style={{
               boxShadow:
                 "0px 0px 2.03px 0.51px #00000040, 0.51px -3.05px 2.03px 1.52px #00000040 inset",
             }}
-          >
-            {selectedChat?.full_name ? (
-              <div className="w-9.25 h-9.25 uppercase rounded-[10px] bg-gray-100 flex items-center justify-center font-bold text-black text-xs">
-                {selectedChat?.full_name.slice(0, 2)}
-              </div>
-            ) : (
-              <SafeImage
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedChat?.full_name}${selectedChat?.id}`}
-                alt="Profile"
-                width={40}
-                height={40}
-                className="w-9.25 h-9.25 rounded-[10px] object-cover"
-              />
-            )}
-
-            {/* Active Status Indicator */}
-            {isOnline && (
-              <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-[0.83px] border-white rounded-full"></span>
-            )}
-          </div>
+          />
 
           <div className="flex flex-col">
             <span className="font-medium text-sm text-black leading-none">

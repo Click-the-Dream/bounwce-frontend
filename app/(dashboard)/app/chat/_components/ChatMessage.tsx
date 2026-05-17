@@ -1,5 +1,6 @@
 import { getMessageLayout, renderCheck } from "@/app/_utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
+import { LuClock } from "react-icons/lu";
 
 interface ChatMessageProps {
   msg: {
@@ -18,6 +19,13 @@ const ChatMessage = ({ msg }: any) => {
   const { authDetails } = useAuth();
   const isSender = msg.sender_id === authDetails?.user?.id;
   const styles = getMessageLayout(isSender);
+
+  const renderStatus = () => {
+    if (!isSender) return null;
+    if (msg.pending) return <LuClock size={10} className="opacity-50" />;
+    if (msg.read_at) return renderCheck("read");
+    return renderCheck("sent");
+  };
   return (
     <div className={styles.container}>
       <div
@@ -38,9 +46,7 @@ const ChatMessage = ({ msg }: any) => {
             })}
 
           {isSender && (
-            <span className="text-[10px] opacity-80">
-              {msg.read_at ? renderCheck("read") : renderCheck("sent")}
-            </span>
+            <span className="text-[10px] opacity-80">{renderStatus()}</span>
           )}
         </span>
       </div>

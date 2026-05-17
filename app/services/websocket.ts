@@ -23,6 +23,7 @@ class WebSocketService {
 
   // prevents UI flicker during token refresh reconnect
   private isManualReconnect = false;
+  private pendingQueue: Array<{ type: string; payload: any }> = [];
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -146,6 +147,7 @@ class WebSocketService {
       this.setState("connected");
 
       this.startPing();
+      this.flushQueue();
     });
 
     this.socket.addEventListener("close", (event) => {
@@ -293,18 +295,28 @@ class WebSocketService {
   // ---------------- SEND ----------------
 
   emit(type: string, payload: any = {}) {
-    if (!this.socket) return;
-
-    if (this.socket.readyState !== WebSocket.OPEN) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      if (type !== "ping") {
+        // don't queue heartbeats
+        this.pendingQueue.push({ type, payload });
+      }
       return;
     }
 
-    this.socket.send(
-      JSON.stringify({
-        type,
-        ...payload,
-      }),
-    );
+    this.socket.send(JSON.stringify({ type, ...payload }));
+  }
+
+  private flushQueue() {
+    if (this.pendingQueue.length === 0) return;
+
+    console.log(`Flushing ${this.pendingQueue.length} queued messages`);
+
+    const queue = [...this.pendingQueue];
+    this.pendingQueue = [];
+
+    for (const { type, payload } of queue) {
+      this.socket?.send(JSON.stringify({ type, ...payload }));
+    }
   }
 
   // ---------------- DISCONNECT ----------------
