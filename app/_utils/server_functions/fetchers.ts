@@ -34,3 +34,30 @@ export const profileFetcher = async (userId: string) => {
     return null; // prevent build crash
   }
 };
+
+export const allUsersFetcher = async () => {
+  try {
+    let page = 1;
+    let allUsers: any[] = [];
+
+    while (true) {
+      const { data } = await api.get("/users", {
+        params: { page, page_size: 100 },
+        timeout: 10000,
+      });
+
+      const result = data?.data;
+      const users = result?.users || result?.items || [];
+      allUsers = [...allUsers, ...users];
+
+      const hasMore = result?.page * result?.page_size < result?.total;
+      if (!hasMore || users.length === 0) break;
+
+      page++;
+    }
+
+    return allUsers;
+  } catch (error) {
+    return [];
+  }
+};

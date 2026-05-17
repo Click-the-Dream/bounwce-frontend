@@ -1,25 +1,21 @@
-import { MetadataRoute } from 'next';
+import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://bouwnce.com"; 
+  const baseUrl = "https://www.bouwnce.com";
 
   return {
     rules: [
       {
-        userAgent: '*',
-        allow: [
-          '/',            // Allow homepage
-          '/marketplace', // Allow marketplace
-          '/waitlist',    // Allow waitlist
-          '/login',   
-          '/register', 
-        ],
+        userAgent: "*",
+        allow: ["/", "/marketplace", "/waitlist", "/app/profile/"],
         disallow: [
-          '/api/',        // Hide backend routes
-          '/admin/',      // Hide admin panels
-          '/buyer/',  // Hide user private areas
-          '/vendor/',  // Hide user private areas
-          '/*?*',         // prevent indexing of internal search/filter URLs
+          "/api/",
+          "/admin/",
+          "/app/",
+          "/vendor/",
+          "/login",
+          "/register",
+          "/*?*",
         ],
       },
     ],

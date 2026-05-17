@@ -35,11 +35,11 @@ const ExplorePage = () => {
 
   const getStatus = (userId: string): ConnectStatus => {
     const req = requestMap[userId];
-
     if (!req) return "idle";
 
     switch (req.status) {
       case "pending":
+        return "pending";
       case "accepted":
         return "connected";
       default:
@@ -64,7 +64,6 @@ const ExplorePage = () => {
       { target_user_id: userId },
       {
         onSuccess: () => {
-          
           setConnectState((prev) => ({
             ...prev,
             [userId]: "loading",
@@ -73,24 +72,20 @@ const ExplorePage = () => {
             title: "Connection Request Sent",
             message: " Your connection request has been sent successfully.",
           });
-          
-          console.log("Redirecting to user:", userId)
+
+          console.log("Redirecting to user:", userId);
           setTimeout(() => {
             setConnectState((prev) => ({
               ...prev,
-              [userId]: "connected"
-            })); 
+              [userId]: "connected",
+            }));
 
             queryClient.invalidateQueries();
-            
-            setTimeout(() => {
-            router.push(`/app/chat/${userId}`)
-            }, 2000)
-            
-          }, 3000)
 
-          
-          
+            setTimeout(() => {
+              router.push(`/app/chat/${userId}`);
+            }, 2000);
+          }, 3000);
         },
         onError: () => {
           setConnectState((prev) => ({

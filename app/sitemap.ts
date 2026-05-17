@@ -1,13 +1,11 @@
 import { MetadataRoute } from "next";
 import { marketFetcher } from "./_utils/server_functions/fetchers";
-export const dynamic = "force-dynamic";
-// This ensures the sitemap is generated fresh
-export const revalidate = 3600;
+
+export const revalidate = 0;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.bouwnce.com";
 
-  // 1. Static Routes
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/`,
@@ -27,27 +25,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
-    {
-      url: `${baseUrl}/login`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/register`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
   ];
 
   try {
-    // 2. Dynamic Products
     const response = await marketFetcher({ filters: { per_page: 50 } });
-    console.log(
-      "API Response in Sitemap:",
-      JSON.stringify(response).slice(0, 100),
-    );
     const products = response?.products || response?.data || [];
 
     if (Array.isArray(products) && products.length > 0) {
@@ -60,12 +41,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       }));
 
+      /* This part of the code is fetching all users using the `allUsersFetcher` function and then
+     mapping over each user to create profile routes for the sitemap. */
+      // const users = await allUsersFetcher();
+      // const profileRoutes: MetadataRoute.Sitemap = users.map((user: any) => ({
+      //   url: `${baseUrl}/app/profile/${slugify(user.full_name)}_${user.id}`,
+      //   lastModified: user.updated_at ? new Date(user.updated_at) : new Date(),
+      //   changeFrequency: "weekly" as const,
+      //   priority: 0.6,
+      // }));
+
       return [...staticRoutes, ...dynamicRoutes];
     }
   } catch (error) {
     console.error("Sitemap fetch error:", error);
   }
 
-  // Fallback so the file at least exists
   return staticRoutes;
 }

@@ -30,8 +30,10 @@ const ExploreCard = ({
     router.push(`/app/profile/${slugify(full_name)}_${user_id}`);
   };
   const isLoading = connectStatus === "loading";
-  const isSent = connectStatus === "connected";
-  const isDisabled = isLoading || isSent;
+  const isConnected = connectStatus === "connected";
+  const isPending = connectStatus === "pending";
+
+  const isDisabled = isLoading || isConnected || isPending;
 
   return (
     <div
@@ -53,21 +55,27 @@ const ExploreCard = ({
               e.stopPropagation();
               if (!isDisabled) onConnect(user_id);
             }}
-            className={`cursor-pointer absolute top-1.5 right-1.75 px-2 min-w-20.25 h-7.5 rounded-[50px] text-xs flex items-center justify-center gap-1 shadow-sm transition
-    ${
-      isSent
-        ? "bg-green-50/70 text-green-700 cursor-not-allowed"
-        : isLoading
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-          : "bg-white hover:bg-gray-100 text-gray-800"
-    }
+            className={`cursor-pointer absolute top-1.5 right-1.75 px-2 min-w-20.25 h-7.5 rounded-[50px] text-xs flex items-center justify-center gap-1 shadow-sm transition disabled:cursor-not-allowed ${
+              isConnected
+                ? "bg-green-50/70 text-green-700 cursor-not-allowed"
+                : isPending
+                  ? "bg-yellow-50 text-yellow-700 cursor-not-allowed"
+                  : "bg-white hover:bg-gray-100 text-gray-800"
+            }
   `}
           >
-            {isSent ? "Connected" : isLoading ? "Sending..." : "Connect"}
+            {isConnected
+              ? "Connected"
+              : isLoading
+                ? "Sending..."
+                : isPending
+                  ? "Pending"
+                  : "Connect"}
 
-            {isSent ? (
-              // <LuClock />
+            {isConnected ? (
               <IoCheckmarkDoneCircleSharp />
+            ) : isPending ? (
+              <LuClock className="shrink-0 size-2.5" />
             ) : isLoading ? (
               <Loader2 className="shrink-0 size-2.5 animate-spin" />
             ) : (

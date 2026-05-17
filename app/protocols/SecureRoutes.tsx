@@ -11,6 +11,8 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const { useGetStoreOnboardingStatus } = useStore();
 
+  const isPublicRoute = pathname.startsWith("/app/profile/");
+
   const user = authDetails?.user;
   const userId = user?.id;
 
@@ -34,12 +36,12 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // Not logged in
-  if (!user) {
+  if (!user && !isPublicRoute) {
     return <Redirect to="/login" />;
   }
 
   // Inactive account
-  if (!user.is_active) {
+  if (user && !user.is_active) {
     return <Redirect to="/login" />;
   }
 
