@@ -31,14 +31,7 @@ const DiscoveryResults = ({
   const [viewMode, setViewMode] = useState<"single" | "grid">("single");
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnimating = useRef(false);
-  const dragDirection = useRef<null | 1 | -1>(null);
-  const dragOrigin = useRef(0);
   const trackX = useMotionValue(0);
-
-  const [staged, setStaged] = useState<{
-    left: number;
-    right: number | null;
-  }>({ left: currentIndex, right: null });
 
   const currentUser = searchResults?.[currentIndex];
   const hasNext = currentIndex < searchResults.length - 1;
@@ -50,111 +43,74 @@ const DiscoveryResults = ({
     router.push(`/app/profile/${slugify(user.full_name)}_${user.user_id}`);
   };
 
-  const resetToCurrentOnly = (idx: number) => {
-    setStaged({ left: idx, right: null });
-    trackX.set(0);
-    dragDirection.current = null;
-    dragOrigin.current = 0;
-  };
-
-  const triggerChange = (dir: 1 | -1, alreadyStaged = false) => {
+  const triggerChange = (dir: 1 | -1) => {
     if (isAnimating.current) return;
     if (dir === 1 && !hasNext) return;
     if (dir === -1 && !hasPrev) return;
 
     const width = getWidth();
-    const nextIndex = currentIndex + dir;
     isAnimating.current = true;
 
-    if (dir === 1) {
-      if (!alreadyStaged) {
-        setStaged({ left: currentIndex, right: nextIndex });
+    animate(trackX, dir === 1 ? -width : width, {
+      type: "spring",
+      stiffness: 380,
+      damping: 36,
+      restDelta: 0.5,
+      onComplete: () => {
+        setCurrentIndex(currentIndex + dir);
         trackX.set(0);
-      }
-      animate(trackX, -width, {
-        type: "spring",
-        stiffness: 380,
-        damping: 36,
-        restDelta: 0.5,
-        onComplete: () => {
-          setCurrentIndex(nextIndex);
-          resetToCurrentOnly(nextIndex);
-          isAnimating.current = false;
-        },
-      });
-    } else {
-      if (!alreadyStaged) {
-        setStaged({ left: nextIndex, right: currentIndex });
-        trackX.set(-width);
-      }
-      animate(trackX, 0, {
-        type: "spring",
-        stiffness: 380,
-        damping: 36,
-        restDelta: 0.5,
-        onComplete: () => {
-          setCurrentIndex(nextIndex);
-          resetToCurrentOnly(nextIndex);
-          isAnimating.current = false;
-        },
-      });
-    }
-  };
-
-  const handleDragStart = () => {
-    if (isAnimating.current) return;
-    dragOrigin.current = trackX.get();
-    dragDirection.current = null;
-  };
-
-  const handleDrag = (_: any, info: PanInfo) => {
-    if (isAnimating.current) return;
-
-    const { offset } = info;
-    const width = getWidth();
-
-    if (dragDirection.current === null) {
-      if (offset.x < -8 && hasNext) {
-        dragDirection.current = 1;
-        setStaged({ left: currentIndex, right: currentIndex + 1 });
-        dragOrigin.current = 0;
-      } else if (offset.x > 8 && hasPrev) {
-        dragDirection.current = -1;
-        setStaged({ left: currentIndex - 1, right: currentIndex });
-        dragOrigin.current = -width;
-      } else {
-        return;
-      }
-    }
-
-    const raw = dragOrigin.current + offset.x;
-    trackX.set(Math.max(-width, Math.min(0, raw)));
+        isAnimating.current = false;
+      },
+    });
   };
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     if (isAnimating.current) return;
 
-    const { offset, velocity } = info;
     const width = getWidth();
+    const { offset, velocity } = info;
     const isFastFlick = Math.abs(velocity.x) > 500;
     const isPastThreshold = Math.abs(offset.x) > SWIPE_THRESHOLD;
     const shouldChange = isFastFlick || isPastThreshold;
 
-    if (shouldChange && dragDirection.current === 1) {
-      triggerChange(1, true);
-    } else if (shouldChange && dragDirection.current === -1) {
-      triggerChange(-1, true);
+    if (shouldChange && offset.x < 0 && hasNext) {
+      // Swiped Left -> Go Next
+      isAnimating.current = true;
+      animate(trackX, -width, {
+        type: "spring",
+        stiffness: 380,
+        damping: 36,
+        onComplete: () => {
+          setCurrentIndex(currentIndex + 1);
+          trackX.set(0);
+          isAnimating.current = false;
+        },
+      });
+    } else if (shouldChange && offset.x > 0 && hasPrev) {
+      // Swiped Right -> Go Prev
+      isAnimating.current = true;
+      animate(trackX, width, {
+        type: "spring",
+        stiffness: 380,
+        damping: 36,
+        onComplete: () => {
+          setCurrentIndex(currentIndex - 1);
+          trackX.set(0);
+          isAnimating.current = false;
+        },
+      });
     } else {
-      const snapTo = dragDirection.current === -1 ? -width : 0;
-      animate(trackX, snapTo, {
+      // Cancelled / Snap back
+      isAnimating.current = true;
+      animate(trackX, 0, {
         type: "spring",
         stiffness: 400,
         damping: 36,
-        onComplete: () => resetToCurrentOnly(currentIndex),
+        onComplete: () => {
+          isAnimating.current = false;
+        },
       });
     }
-
-    dragDirection.current = null;
   };
 
   const renderCard = (index: number) => {
@@ -163,8 +119,7 @@ const DiscoveryResults = ({
     return (
       <div
         key={user.user_id}
-        className="shrink-0 bg-white border border-gray-200 rounded-xl p-4 md:p-5"
-        style={{ width: "100%" }}
+        className="w-full shrink-0 bg-white border border-gray-200 rounded-xl p-4 md:p-5"
       >
         <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
           <div className="flex-1 min-w-0">
@@ -231,16 +186,35 @@ const DiscoveryResults = ({
       {/* SWIPE MODE */}
       {!isSearching && currentUser && viewMode === "single" && (
         <div className="space-y-3">
-          <div ref={containerRef} className="overflow-hidden rounded-xl">
+          <div
+            ref={containerRef}
+            className="overflow-hidden rounded-xl relative w-full"
+          >
             <motion.div
-              className="flex will-change-transform touch-pan-y cursor-grab active:cursor-grabbing"
+              className="relative flex w-full will-change-transform touch-pan-y cursor-grab active:cursor-grabbing"
               style={{ x: trackX }}
-              onPanStart={handleDragStart}
-              onPan={handleDrag}
-              onPanEnd={handleDragEnd}
+              drag="x"
+              dragDirectionLock
+              dragElastic={0.2}
+              dragConstraints={{ left: 0, right: 0 }}
+              onDragEnd={handleDragEnd}
             >
-              {renderCard(staged.left)}
-              {staged.right !== null && renderCard(staged.right)}
+              {/* Previous Card Slot */}
+              {hasPrev && (
+                <div className="absolute top-0 left-0 w-full h-full -translate-x-full pointer-events-none select-none">
+                  {renderCard(currentIndex - 1)}
+                </div>
+              )}
+
+              {/* Current Card Slot */}
+              <div className="w-full shrink-0">{renderCard(currentIndex)}</div>
+
+              {/* Next Card Slot */}
+              {hasNext && (
+                <div className="absolute top-0 left-0 w-full h-full translate-x-full pointer-events-none select-none">
+                  {renderCard(currentIndex + 1)}
+                </div>
+              )}
             </motion.div>
           </div>
 
@@ -249,7 +223,7 @@ const DiscoveryResults = ({
             <button
               onClick={() => triggerChange(-1)}
               disabled={!hasPrev}
-              className="cursor-pointer flex items-center gap-1 text-xs text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed "
+              className="cursor-pointer flex items-center gap-1 text-xs text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ArrowLeft className="w-3 h-3" />
               Prev
@@ -262,7 +236,7 @@ const DiscoveryResults = ({
                     key={i}
                     className={`block rounded-full transition-all duration-200 ${
                       i === currentIndex
-                        ? "w-3 h-1.5 bg-orange"
+                        ? "w-3 h-1.5 bg-orange-500"
                         : "w-1.5 h-1.5 bg-gray-300"
                     }`}
                   />
@@ -277,7 +251,7 @@ const DiscoveryResults = ({
             <button
               onClick={() => triggerChange(1)}
               disabled={!hasNext}
-              className="cursor-pointer flex items-center gap-1 text-xs text-orange disabled:opacity-30 disabled:cursor-not-allowed"
+              className="cursor-pointer flex items-center gap-1 text-xs text-orange-600 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               Next
               <ArrowRight className="w-3 h-3" />
