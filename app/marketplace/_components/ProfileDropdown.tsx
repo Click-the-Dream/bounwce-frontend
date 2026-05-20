@@ -21,12 +21,14 @@ const ProfileDropdown = ({ fullMode = false }) => {
         className="flex items-center gap-2 ml-2 font-medium cursor-pointer select-none"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <p className="text-sm">
-          Hello,{" "}
-          {(user?.full_name?.length > 7
-            ? `${user?.full_name?.slice(0, 7)}...`
-            : user?.full_name) || "User"}
-        </p>
+        {fullMode && (
+          <p className="text-sm">
+            Hello,{" "}
+            {(user?.full_name?.length > 7
+              ? `${user?.full_name?.slice(0, 7)}...`
+              : user?.full_name) || "User"}
+          </p>
+        )}
         <div className="flex items-center rounded-full bg-gray-200/50 w-max p-1">
           {user?.profile?.profileImage ? (
             <img
@@ -62,7 +64,7 @@ const ProfileDropdown = ({ fullMode = false }) => {
             <ul className="py-2 text-sm text-gray-700">
               {/* Dashboard Link - Based on Role */}
               <Link
-                href={user?.role === "vendor" ? "/vendor" : "/buyer"}
+                href="/app"
                 className="px-4 py-2.5 flex items-center gap-2 hover:bg-gray-50 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
@@ -70,32 +72,13 @@ const ProfileDropdown = ({ fullMode = false }) => {
                 Dashboard
               </Link>
 
-              {fullMode && (
-                <>
-                  <Link
-                    href={
-                      user?.role === "vendor"
-                        ? "/vendor/profile"
-                        : "/buyer/profile"
-                    }
-                    className="px-4 py-2.5 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <FiUser size={18} className="text-gray-400" /> Profile
-                  </Link>
-
-                  {user?.role === "vendor" && (
-                    <Link
-                      href="/vendor/settings"
-                      className="px-4 py-2.5 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <FiSettings size={18} className="text-gray-400" />{" "}
-                      Settings
-                    </Link>
-                  )}
-                </>
-              )}
+              <Link
+                href="/app/profile"
+                className="px-4 py-2.5 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <FiUser size={18} className="text-gray-400" /> Profile
+              </Link>
 
               <hr className="my-1 border-gray-100" />
 

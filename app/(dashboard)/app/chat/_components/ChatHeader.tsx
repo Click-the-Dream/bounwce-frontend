@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import UserImage from "../../_components/UserImage";
 
 interface ChatHeaderProps {
-  selectedChat: User;
+  selectedChat?: User;
   role?: "buyer" | "vendor";
 }
 

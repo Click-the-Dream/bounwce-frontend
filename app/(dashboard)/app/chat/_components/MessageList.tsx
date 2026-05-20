@@ -14,7 +14,7 @@ import { websocket } from "@/app/services/websocket";
 import TypingDots from "./TypingDots";
 
 interface ChatHeaderProps {
-  selectedChat: User;
+  selectedChat?: User;
   role?: "buyer" | "vendor";
 }
 

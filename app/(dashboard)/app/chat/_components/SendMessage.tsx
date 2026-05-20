@@ -8,7 +8,7 @@ import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
 
 interface ChatHeaderProps {
-  selectedChat: User;
+  selectedChat?: User;
   role?: "buyer" | "vendor";
 }
 

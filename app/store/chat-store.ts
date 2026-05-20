@@ -1,35 +1,67 @@
-import { create } from "zustand";
+import Dexie, { Table } from "dexie";
+import { User } from "../_utils/types/buyer";
 
-type ChatStore = {
-  typingUsers: Record<string, boolean>;
-  onlineUsers: Record<string, boolean>;
-  selectedConversation: string | null;
+export interface CachedMessage {
+  id: string;
+  conversation_id: string;
+  body: string;
+  sender_id: string;
+  recipient_id: string;
+  created_at: string;
+  updated_at?: string;
+  pending?: boolean;
+  synced?: boolean;
+  read_at?: string | null;
+}
 
-  setTyping: (conversationId: string, value: boolean) => void;
-  setOnline: (userId: string, value: boolean) => void;
-  setSelectedConversation: (id: string | null) => void;
+export interface CachedConversation {
+  id: string; // Typically the user.id or conversation unique identifier
+  user: {
+    id: string;
+    full_name: string;
+    username: string;
+    profile_pic?: { url: string };
+  };
+  last_message: {
+    body: string;
+    caption: string;
+    media_type: string;
+    media_url: string;
+    sender_id: string;
+  };
+  updated_at: string;
+}
+
+class ChatDB extends Dexie {
+  messages!: Table<CachedMessage, string>;
+  conversations!: Table<CachedConversation, string>;
+  users!: Table<User, string>;
+
+  constructor(userId: string) {
+    // Dynamically create a DB named by the user ID
+    super(`chat_db_${userId}`);
+
+    this.version(1).stores({
+      messages: "id, conversation_id, created_at, recipient_id",
+      conversations: "id, updated_at",
+      users: "id",
+    });
+  }
+
+  async clearAll() {
+    await this.messages.clear();
+    await this.conversations.clear();
+    await this.users.clear();
+  }
+}
+
+// Do NOT export a static instance.
+// Instead, export a function or a getter to handle initialization.
+let currentChatDB: ChatDB | null = null;
+
+export const getChatDB = (userId: string) => {
+  if (!currentChatDB || currentChatDB.name !== `chat_db_${userId}`) {
+    currentChatDB = new ChatDB(userId);
+  }
+  return currentChatDB;
 };
-
-export const useChatStore = create<ChatStore>((set) => ({
-  typingUsers: {},
-  onlineUsers: {},
-  selectedConversation: null,
-
-  setTyping: (conversationId, value) =>
-    set((state) => ({
-      typingUsers: {
-        ...state.typingUsers,
-        [conversationId]: value,
-      },
-    })),
-
-  setOnline: (userId, value) =>
-    set((state) => ({
-      onlineUsers: {
-        ...state.onlineUsers,
-        [userId]: value,
-      },
-    })),
-
-  setSelectedConversation: (id) => set({ selectedConversation: id }),
-}));

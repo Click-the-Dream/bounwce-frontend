@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { websocket } from "../services/websocket";
 import { useNotifications } from "../context/NotificationContext";
 import { onMessageToast } from "../_utils/message-toast";
+import { getChatDB } from "../store/chat-store";
 
 export const useSocketConnection = ({
   token,
@@ -20,6 +21,7 @@ export const useSocketConnection = ({
   activeConversationId?: string;
 }) => {
   const queryClient = useQueryClient();
+  const chatDB = getChatDB(authUserId);
   const typingTimeouts = new Map<string, NodeJS.Timeout>();
 
   const { pushNotification, incrementUnread, decrementUnread } =
@@ -48,13 +50,14 @@ export const useSocketConnection = ({
       connectedRef.current = true;
     }
 
-    const handleMessage = (raw: any) => {
+    const handleMessage = async (raw: any) => {
       // normalize payload
       const message = raw.message || raw;
       const otherUserId =
         message.sender_id === authUserId
           ? message.recipient_id
           : message.sender_id;
+      const conversationId = message.conversation_id;
 
       const isMyMessage =
         String(message.sender_id) === String(authUserRef.current);
@@ -105,7 +108,18 @@ export const useSocketConnection = ({
         };
       });
 
+      await chatDB.messages.put({
+        ...message,
+        conversation_id: otherUserId,
+        synced: true,
+      });
+
       // ---------------- CONVERSATIONS ----------------
+
+      await chatDB.conversations.update(conversationId, {
+        last_message: message,
+        updated_at: new Date().toISOString(),
+      });
 
       queryClient.setQueryData(["conversations"], (old: any) => {
         if (!old) return old;

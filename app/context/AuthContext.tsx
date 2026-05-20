@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true); // 🔹 new
 
   useEffect(() => {
-    const storedUser = sessionStorage.getItem("authUser");
+    const storedUser = localStorage.getItem("authUser");
 
     if (storedUser) {
       setAuthDetails(JSON.parse(storedUser));
@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setupInterceptors(
       () => {
-        const stored = sessionStorage.getItem("authUser");
+        const stored = localStorage.getItem("authUser");
         return stored ? JSON.parse(stored) : null;
       },
       (newUser) => updateAuth(newUser),
@@ -39,11 +39,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setAuthDetails((prev: any) => {
         const resolved =
           typeof newUser === "function" ? newUser(prev) : newUser;
-        sessionStorage.setItem("authUser", JSON.stringify(resolved));
+        localStorage.setItem("authUser", JSON.stringify(resolved));
         return resolved;
       });
     } else {
-      sessionStorage.removeItem("authUser");
+      localStorage.removeItem("authUser");
       setAuthDetails(null);
       queryClient.removeQueries({ queryKey: ["authUser"] });
     }

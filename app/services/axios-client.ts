@@ -41,7 +41,7 @@ export const setupInterceptors = (
     let auth = getAuth();
 
     if (!auth?.access_token) {
-      const stored = sessionStorage.getItem("authUser");
+      const stored = localStorage.getItem("authUser");
       if (stored) auth = JSON.parse(stored);
     }
 
@@ -72,13 +72,13 @@ export const setupInterceptors = (
             .then(({ data }) => {
               const newToken = data?.data?.access_token;
 
-              const stored = sessionStorage.getItem("authUser");
+              const stored = localStorage.getItem("authUser");
 
               if (stored && newToken) {
                 const parsed = JSON.parse(stored);
                 const updatedUser = { ...parsed, access_token: newToken };
 
-                sessionStorage.setItem("authUser", JSON.stringify(updatedUser));
+                localStorage.setItem("authUser", JSON.stringify(updatedUser));
                 return newToken;
               }
 

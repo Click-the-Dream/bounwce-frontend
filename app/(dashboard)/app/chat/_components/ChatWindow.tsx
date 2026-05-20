@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
 
 interface ChatWindowProps {
-  selectedUser: User;
+  selectedUser?: User;
   isConversationLoading: boolean;
   role?: "buyer" | "vendor";
 }
@@ -16,7 +16,7 @@ interface ChatWindowProps {
 const ChatWindow = ({
   selectedUser,
   isConversationLoading,
-  role = "buyer"
+  role = "buyer",
 }: ChatWindowProps) => {
   const { chatId } = useParams<{ chatId: string }>();
   const { resetUnread } = useNotifications();
@@ -69,13 +69,13 @@ const ChatWindow = ({
       className={`flex-1 flex-col bg-white ${chatId ? "flex" : "hidden md:flex"}`}
     >
       {/* Header */}
-      <ChatHeader selectedChat={selectedUser} role={role}/>
+      <ChatHeader selectedChat={selectedUser} role={role} />
 
       {/* Messages */}
-      <MessageList selectedChat={selectedUser} role={role}/>
+      <MessageList selectedChat={selectedUser} role={role} />
 
       {/* Input Area */}
-      {chatId && <SendMessage selectedChat={selectedUser} role={role}/>}
+      {chatId && <SendMessage selectedChat={selectedUser} role={role} />}
     </div>
   );
 };

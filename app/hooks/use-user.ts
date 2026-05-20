@@ -8,9 +8,13 @@ import api from "../services/api";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage } from "../_utils/formatters";
 import { useAuth } from "../context/AuthContext";
+import { getChatDB } from "../store/chat-store";
+import { User } from "../_utils/types/buyer";
 
 const useUser = () => {
-  const {updateAuth, authDetails } = useAuth();
+  const { updateAuth, authDetails } = useAuth();
+  const db = authDetails?.user?.id ? getChatDB(authDetails.user.id) : null;
+
   const client = api;
   const queryClient = useQueryClient();
 
@@ -20,18 +24,42 @@ const useUser = () => {
     useQuery({
       queryKey: ["currentUser"],
       queryFn: async () => {
+        const userId = authDetails?.user?.id;
+        if (db && userId) {
+          const cachedUser = await db.users.get(userId);
+          if (cachedUser) return cachedUser;
+        }
+
         const res = await client.get(`/users/me`);
-        return res.data;
+        const user = res.data?.data || res.data;
+        if (db && user) {
+          await db.users.put(user);
+        }
+
+        if (!user) throw new Error("User not found");
+        return user;
       },
       enabled,
     });
 
   const useGetUserById = (userId: string) =>
-    useQuery({
+    useQuery<User>({
       queryKey: ["user", userId],
       queryFn: async () => {
+        if (db) {
+          const cachedUser = await db.users.get(userId);
+          if (cachedUser) return cachedUser;
+        }
+
         const res = await client.get(`/users/${userId}`);
-        return res.data?.data;
+        const user = res.data?.data;
+
+        if (db && user) {
+          await db.users.put(user);
+        }
+
+        if (!user) throw new Error("User not found");
+        return user;
       },
       enabled: !!userId,
       staleTime: 1000 * 60 * 5,
@@ -40,26 +68,25 @@ const useUser = () => {
   const useGetUsers = (params: { page_size?: number; name?: string } = {}) =>
     useInfiniteQuery({
       queryKey: ["users", params],
-
       queryFn: async ({ pageParam = 1 }) => {
         const res = await client.get("/users", {
-          params: {
-            ...params,
-            page: pageParam,
-          },
+          params: { ...params, page: pageParam },
         });
 
-        return res.data?.data;
-      },
+        const data = res.data?.data;
+        const items = data?.items;
 
+        // Populate DB whenever we fetch a list
+        if (db && items && Array.isArray(items)) {
+          await db.users.bulkPut(items);
+        }
+
+        return data;
+      },
       getNextPageParam: (lastPage: any) => {
         const { page, total, page_size } = lastPage;
-
-        const hasMore = page * page_size < total;
-
-        return hasMore ? page + 1 : undefined;
+        return page * page_size < total ? page + 1 : undefined;
       },
-
       initialPageParam: 1,
     });
 
@@ -113,7 +140,10 @@ const useUser = () => {
       const res = await client.put(`/users/${userId}`, data);
       return res.data;
     },
-    onSuccess: (_, { userId }) => {
+    onSuccess: async (data, { userId }) => {
+      if (db) {
+        await db.users.update(userId, data);
+      }
       onSuccess({
         title: "User Updated",
         message: "User information has been updated successfully.",
@@ -241,70 +271,66 @@ const useUser = () => {
       }),
   });
 
-const uploadProfilePicture = useMutation({
-  mutationFn: async (file: File) => {
-    const formData = new FormData();
-    formData.append("picture", file);
+  const uploadProfilePicture = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("picture", file);
 
-    const res = await client.put(
-      "/users/profile-picture",
-      formData,
-      {
+      const res = await client.put("/users/profile-picture", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      },
-    );
+      });
 
-    return res.data;
-  },
+      return res.data;
+    },
 
-  onSuccess: (response: any) => {
-    const updatedUser = response?.data;
+    onSuccess: (response: any) => {
+      const updatedUser = response?.data;
 
-    // Update auth context immediately
-    updateAuth((prev: any) => ({
-      ...prev,
-      user: updatedUser,
-    }));
+      // Update auth context immediately
+      updateAuth((prev: any) => ({
+        ...prev,
+        user: updatedUser,
+      }));
 
-    // Update query cache
-    queryClient.setQueryData(["currentUser"], response);
+      // Update query cache
+      queryClient.setQueryData(["currentUser"], response);
 
-    onSuccess({
-      title: "Profile Updated",
-      message: "Your profile has been updated successfully.",
-    });
-  },
+      onSuccess({
+        title: "Profile Updated",
+        message: "Your profile has been updated successfully.",
+      });
+    },
 
-  onError: (error: any) =>
-    onFailure({
-      title: "Upload Failed",
-      message: extractErrorMessage(error),
-    }),
-});
+    onError: (error: any) =>
+      onFailure({
+        title: "Upload Failed",
+        message: extractErrorMessage(error),
+      }),
+  });
 
-const deleteProfilePicture = useMutation({
-  mutationFn: async () => {
-    const res = await client.delete("/users/profile-picture");
-    return res.data;
-  },
+  const deleteProfilePicture = useMutation({
+    mutationFn: async () => {
+      const res = await client.delete("/users/profile-picture");
+      return res.data;
+    },
 
-  onSuccess: () => {
-    onSuccess({
-      title: "Profile Picture Removed",
-      message: "Your profile picture has been deleted.",
-    });
+    onSuccess: () => {
+      onSuccess({
+        title: "Profile Picture Removed",
+        message: "Your profile picture has been deleted.",
+      });
 
-    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-  },
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    },
 
-  onError: (error: any) =>
-    onFailure({
-      title: "Delete Failed",
-      message: extractErrorMessage(error),
-    }),
-});
+    onError: (error: any) =>
+      onFailure({
+        title: "Delete Failed",
+        message: extractErrorMessage(error),
+      }),
+  });
 
   return {
     useGetCurrentUser,
@@ -320,8 +346,8 @@ const deleteProfilePicture = useMutation({
     useGetVendorVerification,
     updateVendorVerification,
     createVendorVerification,
-uploadProfilePicture,
-  deleteProfilePicture,
+    uploadProfilePicture,
+    deleteProfilePicture,
   };
 };
 

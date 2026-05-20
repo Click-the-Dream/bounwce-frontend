@@ -4,213 +4,206 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { websocket } from "../services/websocket";
+import { getChatDB } from "../store/chat-store";
+
+const mergeIntoQuery = (old: any, message: any) => {
+  if (!old) {
+    return {
+      pages: [
+        {
+          messages: {
+            items: [message],
+            page: 1,
+            total: 1,
+            page_size: 20,
+          },
+        },
+      ],
+      pageParams: [1],
+    };
+  }
+
+  const pages = [...old.pages];
+
+  const items = pages[0].messages.items;
+
+  const exists = items.some((m: any) => m.id === message.id);
+  if (exists) return old;
+
+  pages[0] = {
+    ...pages[0],
+    messages: {
+      ...pages[0].messages,
+      items: [...items, message],
+    },
+  };
+
+  return { ...old, pages };
+};
 
 const useChat = () => {
   const queryClient = useQueryClient();
   const { authDetails } = useAuth();
   const currentUser = authDetails?.user;
-  const useGetConversations = (
-    params: { page_size?: number; name?: string } = {},
-  ) =>
+  const getDB = () => {
+    if (!currentUser) throw new Error("No user authenticated");
+    return getChatDB(currentUser.id);
+  };
+
+  const chatDB = getDB();
+
+  const useGetConversations = (params = {}) =>
     useInfiniteQuery({
       queryKey: ["conversations"],
-
       queryFn: async ({ pageParam = 1 }) => {
+        // 1. FAST PATH: Load from IndexedDB
+        if (pageParam === 1) {
+          const cached = await chatDB.conversations
+            .orderBy("updated_at")
+            .reverse()
+            .toArray();
+          if (cached.length > 0) {
+            return {
+              items: cached,
+              page: 1,
+              total: cached.length,
+              page_size: cached.length,
+            };
+          }
+        }
+
+        // 2. Fallback to API
         const res = await api.get("/chats/conversations", {
-          params: {
-            ...params,
-            page: pageParam,
-          },
+          params: { ...params, page: pageParam },
         });
 
-        return res.data?.data;
-      },
+        const data = res.data?.data;
+        const items = data?.items;
 
+        // 3. Persist to IndexedDB
+        if (items && pageParam === 1) {
+          await chatDB.conversations.bulkPut(items);
+        }
+
+        return data;
+      },
       getNextPageParam: (lastPage: any) => {
         const { page, total, page_size } = lastPage;
-
-        const hasMore = page * page_size < total;
-
-        return hasMore ? page + 1 : undefined;
+        return page * page_size < total ? page + 1 : undefined;
       },
-
       initialPageParam: 1,
     });
 
-  const useGetConversation = (conversationId?: string) =>
-    useQuery({
-      queryKey: ["conversation", conversationId],
-      queryFn: async () => {
-        const res = await api.get(`/chats/conversations/${conversationId}`);
-        return res.data.data;
-      },
-      enabled: !!conversationId,
-    });
-
-  const useGetMessages = (
-    options: {
-      userId?: string;
-      params?: { page?: number; page_size?: number };
-    } = { params: { page_size: 10 } },
-  ) =>
+  // ---------------- MESSAGES (OFFLINE-FIRST) ----------------
+  const useGetMessages = (options: any = {}) =>
     useInfiniteQuery({
       queryKey: ["messages", options.userId],
 
       queryFn: async ({ pageParam = 1 }) => {
-        const res = await api.get(
-          `/chats/conversations/with/${options.userId}`,
-          {
-            params: {
-              page: pageParam,
-              page_size: options.params?.page_size || 20,
-            },
-          },
-        );
+        const userId = options.userId;
 
-        return res.data?.data;
+        // 1. Load IndexedDB first (FAST PATH)
+        const cached = await chatDB.messages
+          .where("conversation_id")
+          .equals(userId)
+          .toArray();
+
+        if (cached.length && pageParam === 1) {
+          return {
+            messages: {
+              items: cached,
+              page: 1,
+              total: cached.length,
+              page_size: cached.length,
+            },
+          };
+        }
+
+        // 2. fallback to server
+        const res = await api.get(`/chats/conversations/with/${userId}`, {
+          params: {
+            page: pageParam,
+            page_size: options.params?.page_size || 20,
+          },
+        });
+
+        const data = res.data?.data;
+        const items = data?.messages?.items;
+
+        // Persist to IndexedDB immediately after successful fetch
+        if (items) {
+          await chatDB.messages.bulkPut(
+            items.map((m: any) => ({
+              ...m,
+              conversation_id: userId,
+              synced: true,
+            })),
+          );
+        }
+
+        return data;
       },
+
+      staleTime: 1000 * 60 * 5, //5mins
+      gcTime: 1000 * 60 * 30,
 
       getNextPageParam: (lastPage: any) => {
         const { page, total, page_size } = lastPage?.messages || {};
-
-        const hasMore = page * page_size < total;
-        return hasMore ? page + 1 : undefined;
+        return page * page_size < total ? page + 1 : undefined;
       },
 
       initialPageParam: 1,
       enabled: !!options.userId,
     });
 
-  const transmitMessage = (payload: { recipient_id: string; body: string }) => {
+  // ---------------- SEND MESSAGE ----------------
+  const transmitMessage = async (payload: {
+    recipient_id: string;
+    body: string;
+  }) => {
     if (!currentUser) return;
 
-    const optimisticMessage = {
+    const message = {
       id: `temp-${Date.now()}`,
-
       body: payload.body,
-
       sender_id: currentUser.id,
-
       recipient_id: payload.recipient_id,
-
-      conversation_id: null,
-
+      conversation_id: payload.recipient_id,
       created_at: new Date().toISOString(),
-
       updated_at: new Date().toISOString(),
-
-      read_at: null,
-
       pending: true,
-
-      sender: {
-        id: currentUser.id,
-        username: currentUser.username,
-        full_name: currentUser.full_name,
-      },
-
-      recipient: {
-        id: payload.recipient_id,
-      },
+      synced: false,
     };
 
-    queryClient.setQueryData(["messages", payload.recipient_id], (old: any) => {
-      // no cache yet
-      if (!old) {
-        return {
-          pages: [
-            {
-              messages: {
-                items: [optimisticMessage],
-                page: 1,
-                total: 1,
-                page_size: 20,
-              },
-            },
-          ],
+    // 1. React Query
+    queryClient.setQueryData(["messages", payload.recipient_id], (old: any) =>
+      mergeIntoQuery(old, message),
+    );
 
-          pageParams: [1],
-        };
-      }
+    // 2. IndexedDB (offline persistence)
+    await chatDB.messages.put(message);
 
-      const updatedPages = [...old.pages];
-
-      updatedPages[0] = {
-        ...updatedPages[0],
-
-        messages: {
-          ...updatedPages[0].messages,
-
-          items: [...updatedPages[0].messages.items, optimisticMessage],
-        },
-      };
-
-      return {
-        ...old,
-        pages: updatedPages,
-      };
-    });
-
+    // 3. WebSocket send
     websocket.emit("chat.send", {
       recipient_id: payload.recipient_id,
       body: payload.body,
     });
   };
 
-  const transmitImageMessage = ({
-    recipient_id,
-    image_url,
-    caption,
-  }: {
-    recipient_id: string;
-    image_url: string;
-    caption?: string;
-  }) => {
-    websocket.emit("chat.upload_image", {
-      type: "chat.upload_image",
-      recipient_id,
-      image_url,
-      caption,
-    });
-  };
+  // ---------------- MEDIA ----------------
+  const transmitImageMessage = (p: any) =>
+    websocket.emit("chat.upload_image", p);
 
-  const transmitVideoMessage = ({
-    recipient_id,
-    video_url,
-    caption,
-  }: {
-    recipient_id: string;
-    video_url: string;
-    caption?: string;
-  }) => {
-    websocket.emit("chat.upload_video", {
-      type: "chat.upload_video",
-      recipient_id,
-      video_url,
-      caption,
-    });
-  };
+  const transmitVideoMessage = (p: any) =>
+    websocket.emit("chat.upload_video", p);
 
-  const transmitFileMessage = ({
-    recipient_id,
-    file_url,
-    caption,
-  }: {
-    recipient_id: string;
-    file_url: string;
-    caption?: string;
-  }) => {
-    websocket.emit("chat.upload_file", {
-      type: "chat.upload_file",
-      recipient_id,
-      file_url,
-      caption,
-    });
-  };
+  const transmitFileMessage = (p: any) => websocket.emit("chat.upload_file", p);
 
+  // ---------------- SIGNATURES ----------------
   const useGetChatImageSignature = () =>
     useMutation({
       mutationFn: async () => {
@@ -235,6 +228,7 @@ const useChat = () => {
       },
     });
 
+  // ---------------- CLOUD UPLOAD ----------------
   const uploadToCloudinary = async (file: File, signature: any) => {
     const form = new FormData();
 
@@ -246,38 +240,29 @@ const useChat = () => {
     form.append("folder", signature.folder);
     form.append("public_id", signature.public_id);
 
-    const resourceType = signature.constraints.resource_type;
-
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${signature.cloud_name}/${resourceType}/upload`,
+      `https://api.cloudinary.com/v1_1/${signature.cloud_name}/${signature.constraints.resource_type}/upload`,
       {
         method: "POST",
         body: form,
       },
     );
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(JSON.stringify(err));
-    }
-
+    if (!res.ok) throw new Error(await res.text());
     return res.json();
   };
 
   return {
     useGetConversations,
-    useGetConversation,
     useGetMessages,
     transmitMessage,
-    useGetChatImageSignature,
-    useGetChatVideoSignature,
-    useGetChatFileSignature,
-
-    uploadToCloudinary,
-
     transmitImageMessage,
     transmitVideoMessage,
     transmitFileMessage,
+    useGetChatImageSignature,
+    useGetChatVideoSignature,
+    useGetChatFileSignature,
+    uploadToCloudinary,
   };
 };
 
