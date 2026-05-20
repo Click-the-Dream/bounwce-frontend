@@ -265,14 +265,14 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
       />
 
       {/* PROFILE IMAGE */}
-      <div className="relative w-15.75 h-15.25 mb-3.25">
+      <div className="w-12.5 relative mb-3.25">
         <UserImage
           user={{
             id: data.id,
             full_name: data?.name,
             profile_pic: data?.profile_pic,
           }}
-          size={63}
+          size={50}
         />
 
         {isOwnProfile && (

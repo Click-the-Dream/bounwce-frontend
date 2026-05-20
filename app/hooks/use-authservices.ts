@@ -6,10 +6,11 @@ import api from "../services/api";
 import { useRouter } from "next/navigation";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage, storedUserEmail } from "../_utils/formatters";
+import { getChatDB } from "../store/chat-store";
 const useAuthServices = () => {
   const router = useRouter();
   const { authDetails, updateAuth } = useContext(AuthContext);
-
+  const db = authDetails?.user?.id ? getChatDB(authDetails.user.id) : null;
   const client = api;
 
   // Login Mutation
@@ -178,17 +179,24 @@ const useAuthServices = () => {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
+      if (db) {
+        await db.clearAll();
+      }
+
       queryClient.clear(); // Clear all cached data
       updateAuth(null); // Reset auth state
+      return null;
+    },
+    onSuccess: () => {
       onSuccess({
         title: "Logout successful",
         message: "You have been logged out.",
       });
-      window.location.reload();
+      // Force hard refresh to reset memory/state
+      window.location.href = "/login";
     },
-    onSuccess: () => {},
     onError: (err: any) => {
-      onFailure({ title: "Logout Failed", message: err.message });
+      onFailure({ title: "Logout Failed", message: extractErrorMessage(err) });
     },
   });
 

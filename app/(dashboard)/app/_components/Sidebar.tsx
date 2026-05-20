@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Home, X, Briefcase } from "lucide-react";
+import { Compass, Home, X, Briefcase, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,6 +11,7 @@ import { PiDotsNineBold } from "react-icons/pi";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/context/AuthContext";
+import useAuthServices from "@/app/hooks/use-authservices";
 
 const Sidebar = ({
   isMobile,
@@ -20,27 +21,28 @@ const Sidebar = ({
   onClose?: () => void;
 }) => {
   const pathname = usePathname();
-const { authDetails } = useAuth();
+  const { authDetails } = useAuth();
+  const { logout } = useAuthServices();
   const [collapsed, setCollapsed] = useState(false);
 
   const isActive = (path: string) => pathname === path;
   const onToggleCollapse = () => setCollapsed(!collapsed);
 
   const navItems = [
-  { name: "Home", href: "/app", icon: Home },
-  { name: "Explore", href: "/app/explore", icon: Compass },
-  { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
+    { name: "Home", href: "/app", icon: Home },
+    { name: "Explore", href: "/app/explore", icon: Compass },
+    { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
 
-  ...(authDetails?.user?.role === "vendor"
-    ? [
-        {
-          name: "Business Hub",
-          href: "/vendor",
-          icon: Briefcase,
-        },
-      ]
-    : []),
-];
+    ...(authDetails?.user?.role === "vendor"
+      ? [
+          {
+            name: "Business Hub",
+            href: "/vendor",
+            icon: Briefcase,
+          },
+        ]
+      : []),
+  ];
   return (
     <motion.aside
       initial={false}
@@ -96,7 +98,7 @@ const { authDetails } = useAuth();
       </div>
 
       <nav
-        className={`relative h-full space-y-2 text-[13px] px-2.5 pt-5.75 ${collapsed ? "pr-4" : "pr-7.5"} transition-all duration-300`}
+        className={`flex flex-col relative h-full space-y-2 text-[13px] px-2.5 pt-5.75 ${collapsed ? "pr-4" : "pr-7.5"} transition-all duration-300`}
       >
         {navItems.map((item) => {
           const active = isActive(item.href);
@@ -142,6 +144,29 @@ const { authDetails } = useAuth();
           >
             <PiDotsNineBold size={16} />
           </motion.div>
+        </button>
+
+        {/* Logout Footer */}
+        <button
+          onClick={() => logout.mutate()}
+          className={`cursor-pointer 
+        w-full flex mt-auto mb-3 items-center p-3 rounded-[7px] transition-colors text-red-600 hover:bg-red-50
+        ${collapsed ? "justify-center" : "justify-start"}
+      `}
+        >
+          <LogOut
+            size={20}
+            className={`shrink-0 ${collapsed ? "" : "mr-3.25"}`}
+          />
+          {!collapsed && (
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="whitespace-nowrap"
+            >
+              Logout
+            </motion.span>
+          )}
         </button>
       </nav>
     </motion.aside>

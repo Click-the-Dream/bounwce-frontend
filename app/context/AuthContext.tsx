@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } else {
       localStorage.removeItem("authUser");
+      localStorage.removeItem("ws_token");
       setAuthDetails(null);
       queryClient.removeQueries({ queryKey: ["authUser"] });
     }

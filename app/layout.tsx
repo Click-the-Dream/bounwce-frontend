@@ -37,6 +37,8 @@ export default function RootLayout({
           href="https://db.onlinewebfonts.com/c/0927e08fbdf95205b63c5b8774adeef6?family=Aeonik+TRIAL"
         />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
       </head>
       <body className="min-h-screen w-screen flex flex-col font-inter">
         <AppProvider>{children}</AppProvider>
