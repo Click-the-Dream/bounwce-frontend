@@ -1,9 +1,12 @@
 "use client";
-import SecureRoute from "@/app/protocols/SecureRoutes";
-import React from "react";
 
-const layout = ({ children }: { children: React.ReactNode }) => {
-  return <SecureRoute>{children}</SecureRoute>;
-};
+import AdminLayout from "./_components/AdminLayout";
+import AdminSidebar from "./_components/Sidebar";
 
-export default layout;
+export default function AdminDashboard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <AdminLayout children={children} />;
+}

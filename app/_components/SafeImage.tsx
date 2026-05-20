@@ -14,6 +14,7 @@ const SafeImage = ({
   width: number;
   height: number;
   className?: string;
+  onError?: any;
   style?: any;
 }) => {
   const [mounted, setMounted] = useState(false);

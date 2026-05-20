@@ -107,10 +107,10 @@ const HomeDiscovery = () => {
         {/* HERO */}
         {!hasSearched && (
           <div className="max-w-4xl text-center mb-10">
-            <h1 className="text-5xl font-bold text-[#1A1A1A] mb-3">
-              Find Whatever You Need
+            <h1 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] mb-3">
+              Who are you connecting with today?
             </h1>
-            <p className="text-[18px] text-gray-600 max-w-xl mx-auto">
+            <p className="text-sm md:text-[18px] text-gray-600 max-w-xl mx-auto">
               Type what you're looking for — food, events, faith, or a date.
               Bouwnce brings vendors and people near you, instantly.
             </p>

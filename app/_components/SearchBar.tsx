@@ -38,7 +38,7 @@ const SearchBar = () => {
             className="cursor-pointer bg-[#FF5030] hover:bg-[#e4462a] text-black font-semibold px-6 md:px-7.5 py-3 md:py-3.75 rounded-lg md:rounded-[5px] border-2 border-black transition-all active:scale-[0.98] h-13 md:h-11.5 text-[14px] md:text-[13px] flex items-center justify-center"
           >
             <Search className="block lg:hidden" />
-            <span className="hidden lg:block">Search</span>
+            <span className="hidden lg:block">Connect</span>
           </button>
         </div>
       </div>

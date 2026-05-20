@@ -13,6 +13,7 @@ import useInterest from "@/app/hooks/use-interest";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("Posts");
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const { profileId, isOwnProfile } = profileHelper();
 
@@ -113,26 +114,9 @@ export default function ProfilePage() {
 
           {/* CONTENT */}
           <div className="px-4 md:pl-8.75 py-5">
-            {isLoading ? (
-              <>
-                <div className="h-5 w-40 bg-gray-200 rounded animate-pulse mb-2" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3.25" />
-              </>
-            ) : (
-              <>
-                <h2 className="text-[16px] font-semibold text-black mb-1">
-                  {userData.name}
-                </h2>
-
-                <p className="text-[#888888] text-[13px] mb-3.25">
-                  @{userData.handle}
-                </p>
-              </>
-            )}
-
             {/* TAGS SECTION */}
-            <div className="flex flex-wrap gap-3 mb-4">
-              {/* LOADING STATE */}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              {/* LOADING */}
               {!isTagsReady &&
                 Array.from({ length: 4 }).map((_, i) => (
                   <div
@@ -141,21 +125,31 @@ export default function ProfilePage() {
                   />
                 ))}
 
-              {/* EMPTY STATE */}
+              {/* EMPTY */}
               {isTagsReady && tags.length === 0 && (
                 <p className="text-sm text-gray-400">No interests yet</p>
               )}
 
               {/* TAGS */}
               {isTagsReady &&
-                tags.map((tag: string) => (
+                (showAllTags ? tags : tags.slice(0, 3)).map((tag: string) => (
                   <span
                     key={tag}
-                    className="px-3.75 py-1 border border-[#8D8D8D] rounded-full text-[12px] text-[#747474] font-medium"
+                    className="px-3.75 py-1 border border-[#8D8D8D] rounded-full text-[12px] text-[#747474] font-medium transition-colors hover:bg-[#f5f5f5]"
                   >
                     {tag}
                   </span>
                 ))}
+
+              {/* EXPAND / COLLAPSE */}
+              {isTagsReady && tags.length > 3 && (
+                <button
+                  onClick={() => setShowAllTags((prev) => !prev)}
+                  className="text-xs font-medium text-black hover:underline transition-all"
+                >
+                  {showAllTags ? "Show less" : `+${tags.length - 3} more`}
+                </button>
+              )}
             </div>
 
             {/* TABS */}
