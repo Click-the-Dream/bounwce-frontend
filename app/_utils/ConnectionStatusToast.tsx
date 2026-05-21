@@ -1,12 +1,22 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { websocket } from "../services/websocket";
+import { useAuth } from "../context/AuthContext";
 
-export const ConnectionStatusToast = ({
-  state,
-}: {
-  state: "connecting" | "connected" | "reconnecting" | "disconnected";
-}) => {
+export const ConnectionStatusToast = () => {
+  const { authDetails } = useAuth();
+  const [state, setState] = useState<
+    "connecting" | "connected" | "reconnecting" | "disconnected"
+  >("disconnected");
+
+  useEffect(() => {
+    const handler = (state: any) => setState(state);
+    websocket.onStateChange(handler);
+    return () => websocket.offStateChange(handler);
+  }, []);
+
   const map = {
     connecting: {
       text: "Connecting…",
@@ -30,7 +40,7 @@ export const ConnectionStatusToast = ({
 
   return (
     <AnimatePresence>
-      {state !== "connected" && (
+      {authDetails && state !== "connected" && (
         <motion.div
           initial={{ y: 20, opacity: 0, scale: 0.98 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -38,7 +48,7 @@ export const ConnectionStatusToast = ({
           transition={{ type: "spring", stiffness: 420, damping: 30 }}
           className="
             fixed bottom-4 left-1/2 -translate-x-1/2
-            z-[9999]
+            z-9999
 
             px-3 py-1.5
             rounded-full

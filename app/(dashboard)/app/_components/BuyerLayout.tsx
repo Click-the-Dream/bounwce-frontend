@@ -1,46 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
-import { useChatUtils } from "@/app/context/ChatContext";
 import InterestSelector from "./InterestSelector";
-import { useSocketConnection } from "@/app/hooks/use-socket";
-import { useAuth } from "@/app/context/AuthContext";
-import { useParams } from "next/navigation";
-import { websocket } from "@/app/services/websocket";
-import { ConnectionStatusToast } from "@/app/_utils/ConnectionStatusToast";
 
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [wsState, setWsState] = useState<
-    "connecting" | "connected" | "reconnecting" | "disconnected"
-  >("disconnected");
-  const { authDetails } = useAuth();
-  const params = useParams<{ chatId: string }>();
-  const chatId = params.chatId;
-
-  const { setTypingUsers, setOnlineUsers } = useChatUtils();
-
-  const token = authDetails?.access_token;
-  const userId = authDetails?.user?.id;
-  const activeChatUserId = chatId;
-
-  useSocketConnection({
-    token,
-    authUserId: userId,
-    setTypingUsers,
-    setOnlineUsers,
-    activeConversationId: activeChatUserId,
-  });
-
-  useEffect(() => {
-    const cb = (state: any) => setWsState(state);
-
-    websocket.onStateChange(cb);
-
-    return () => websocket.offStateChange(cb);
-  }, []);
 
   return (
     <>
@@ -81,7 +47,6 @@ const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
 
       <InterestSelector />
-      <ConnectionStatusToast state={wsState} />
     </>
   );
 };

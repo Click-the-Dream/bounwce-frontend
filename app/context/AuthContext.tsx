@@ -18,7 +18,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const storedUser = localStorage.getItem("authUser");
 
     if (storedUser) {
+      const parsed = JSON.parse(storedUser);
       setAuthDetails(JSON.parse(storedUser));
+
+      if (parsed?.access_token) {
+        websocket.connect(parsed.access_token);
+      }
     }
 
     setupInterceptors(

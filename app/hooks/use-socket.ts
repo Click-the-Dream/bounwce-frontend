@@ -6,28 +6,21 @@ import { websocket } from "../services/websocket";
 import { useNotifications } from "../context/NotificationContext";
 import { onMessageToast } from "../_utils/message-toast";
 import { getChatDB } from "../store/chat-store";
+import { useChatUtils } from "../context/ChatContext";
 
 export const useSocketConnection = ({
-  token,
   authUserId,
-  setTypingUsers,
-  setOnlineUsers,
   activeConversationId,
 }: {
-  token: string;
   authUserId: string;
-  setTypingUsers: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-  setOnlineUsers: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   activeConversationId?: string;
 }) => {
   const queryClient = useQueryClient();
   const chatDB = getChatDB(authUserId);
-  const typingTimeouts = new Map<string, NodeJS.Timeout>();
 
   const { pushNotification, incrementUnread, decrementUnread } =
     useNotifications();
-
-  const connectedRef = useRef(false);
+  const { setTypingUsers, setOnlineUsers } = useChatUtils();
 
   // latest active chat without rerender/reconnect
   const activeChatRef = useRef<string | undefined>(activeConversationId);
@@ -43,13 +36,6 @@ export const useSocketConnection = ({
 
   //  SOCKET CONNECT ONLY ON TOKEN CHANGE
   useEffect(() => {
-    if (!token || !authUserId) return;
-
-    if (!connectedRef.current) {
-      websocket.connect(token);
-      connectedRef.current = true;
-    }
-
     const handleMessage = async (raw: any) => {
       const message = raw.message || raw;
       const otherUserId =
@@ -215,7 +201,7 @@ export const useSocketConnection = ({
 
       if (!userId) return;
 
-      setTypingUsers((prev) => ({
+      setTypingUsers((prev: any) => ({
         ...prev,
         [userId]: data.is_typing,
       }));
@@ -224,7 +210,7 @@ export const useSocketConnection = ({
     const handleUserOnline = ({ user, online }: any) => {
       if (!user?.id) return;
 
-      setOnlineUsers((prev) => {
+      setOnlineUsers((prev: any) => {
         const next = { ...prev };
 
         if (online) {
@@ -308,5 +294,5 @@ export const useSocketConnection = ({
       websocket.off("user.online.snapshot", handleOnlineSnapshot);
       websocket.off("chat.read.updated", handleReadUpdated);
     };
-  }, [token, authUserId]);
+  }, [authUserId]);
 };
