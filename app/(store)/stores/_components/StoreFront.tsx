@@ -220,7 +220,7 @@ const StoreFront = () => {
         <div className="overflow-hidden rounded-3xl border border-zinc-100 bg-[#f7f4ef]">
           <div className="grid lg:grid-cols-2">
             {/* LEFT MAP PREVIEW */}
-            <div className="relative min-h-65 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:40px_40px] flex items-center justify-center">
+            <div className="relative min-h-65 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-size-[40px_40px] flex items-center justify-center">
               {/* map cross */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-full h-px bg-black/5 absolute" />
