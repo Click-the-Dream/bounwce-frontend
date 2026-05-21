@@ -20,6 +20,10 @@ class WebSocketService {
   private state: ConnectionState = "disconnected";
 
   private stateListeners: Set<(state: ConnectionState) => void> = new Set();
+  reconnectWithToken(newToken: string) {
+    console.log("Forcing websocket reconnect with new token");
+    this.connect(newToken, true);
+  }
 
   // prevents UI flicker during token refresh reconnect
   private isManualReconnect = false;
@@ -82,6 +86,7 @@ class WebSocketService {
   // ---------------- CONNECT ----------------
 
   connect(token: string, force = false) {
+    console.log("WS CONNECT TOKEN:", token);
     if (!token) return;
 
     const url = process.env.NEXT_PUBLIC_WS_URL;
@@ -334,7 +339,6 @@ class WebSocketService {
 
     if (this.socket) {
       this.socket.close(1000, "manual disconnect");
-
       this.socket = null;
     }
 

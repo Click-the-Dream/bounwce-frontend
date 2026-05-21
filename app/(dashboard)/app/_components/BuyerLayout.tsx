@@ -3,11 +3,10 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
-import { ChatProvider, useChatUtils } from "@/app/context/ChatContext";
+import { useChatUtils } from "@/app/context/ChatContext";
 import InterestSelector from "./InterestSelector";
 import { useSocketConnection } from "@/app/hooks/use-socket";
 import { useAuth } from "@/app/context/AuthContext";
-import { NotificationProvider } from "@/app/context/NotificationContext";
 import { useParams } from "next/navigation";
 import { websocket } from "@/app/services/websocket";
 import { ConnectionStatusToast } from "@/app/_utils/ConnectionStatusToast";

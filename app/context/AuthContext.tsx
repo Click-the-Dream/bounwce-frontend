@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { setupInterceptors } from "../services/axios-client";
+import { websocket } from "../services/websocket";
 
 export const AuthContext = createContext<any>(null);
 
@@ -40,11 +41,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const resolved =
           typeof newUser === "function" ? newUser(prev) : newUser;
         localStorage.setItem("authUser", JSON.stringify(resolved));
+        if (
+          resolved?.access_token &&
+          resolved.access_token !== prev?.access_token
+        ) {
+          websocket.reconnectWithToken(resolved.access_token);
+        }
         return resolved;
       });
     } else {
       localStorage.removeItem("authUser");
       localStorage.removeItem("ws_token");
+      websocket.disconnect();
       setAuthDetails(null);
       queryClient.removeQueries({ queryKey: ["authUser"] });
     }

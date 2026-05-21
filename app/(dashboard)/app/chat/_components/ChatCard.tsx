@@ -30,7 +30,7 @@ const ChatCard = ({ chat }: any) => {
     const body = lastMessage.body?.trim();
     const mediaType = lastMessage.media_type;
 
-    const mediaClass = "inline-flex items-center gap-1";
+    const mediaClass = "inline-flex items-center gap-1 ";
 
     switch (mediaType) {
       case "image":
@@ -97,7 +97,7 @@ const ChatCard = ({ chat }: any) => {
           {isTyping ? (
             "typing..."
           ) : lastMessage ? (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 line-clamp-1">
               {isMine && <span className="text-gray-600">You: </span>}
               {renderLastMessage()}
             </span>

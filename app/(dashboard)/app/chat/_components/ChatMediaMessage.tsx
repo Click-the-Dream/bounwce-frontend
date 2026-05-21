@@ -44,7 +44,13 @@ const ChatMediaMessage = ({ msg, onOpen }: any) => {
             {isUploading && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-[10px]">
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <div
+                    className="w-8 h-8 rounded-full animate-spin"
+                    style={{
+                      border: "2px solid #d1fae5",
+                      borderTop: "2px solid #059669",
+                    }}
+                  />
                   <span className="text-white text-[10px]">Sending...</span>
                 </div>
               </div>
@@ -63,7 +69,13 @@ const ChatMediaMessage = ({ msg, onOpen }: any) => {
 
             {isUploading && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                <div
+                  className="w-8 h-8 rounded-full animate-spin"
+                  style={{
+                    border: "2px solid #d1fae5",
+                    borderTop: "2px solid #059669",
+                  }}
+                />
               </div>
             )}
           </div>
@@ -133,7 +145,7 @@ const ChatMediaMessage = ({ msg, onOpen }: any) => {
           <div
             className={`absolute bottom-0 left-0 right-0 h-20 pointer-events-none ${
               isSender
-                ? "bg-linear-to-t from-black/80 via-black/40 to-transparent"
+                ? "bg-linear-to-b from-black/80 via-black/40 to-gray-700"
                 : "bg-linear-to-b from-white/80 via-white/10 to-gray-300"
             }`}
           />

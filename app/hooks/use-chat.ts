@@ -283,29 +283,13 @@ const useChat = () => {
       };
 
       const payloadMap = {
-        image: {
-          recipient_id,
-          image_url: uploaded.secure_url,
-          body: caption,
-          client_id: optimistic.id,
-        },
-
-        video: {
-          recipient_id,
-          video_url: uploaded.secure_url,
-          body: caption,
-          client_id: optimistic.id,
-        },
-
-        file: {
-          recipient_id,
-          file_url: uploaded.secure_url,
-          body: caption,
-          client_id: optimistic.id,
-        },
+        recipient_id,
+        media_url: uploaded.secure_url,
+        body: caption,
+        client_id: optimistic.id,
       };
 
-      websocket.emit(eventMap[type], payloadMap[type]);
+      websocket.emit(eventMap[type], payloadMap);
     } catch (err) {
       console.error("Media send failed:", err);
     }
