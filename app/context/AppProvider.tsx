@@ -14,18 +14,23 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unlock = () => {
       audioController.unlock();
+
       window.removeEventListener("touchstart", unlock);
       window.removeEventListener("click", unlock);
+      window.removeEventListener("keydown", unlock);
     };
 
-    window.addEventListener("touchstart", unlock);
-    window.addEventListener("click", unlock);
+    window.addEventListener("touchstart", unlock, { once: true });
+    window.addEventListener("click", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
 
     return () => {
       window.removeEventListener("touchstart", unlock);
       window.removeEventListener("click", unlock);
+      window.removeEventListener("keydown", unlock);
     };
   }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <NotificationProvider>

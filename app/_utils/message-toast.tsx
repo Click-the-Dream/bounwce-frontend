@@ -2,14 +2,13 @@
 
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import notificationSound from "@/app/assets/audio/bell.mp4";
 import { useEffect } from "react";
 import audioController from "./audioController";
 
 const MessageToast = ({ senderName, message, avatar, onDismiss }: any) => {
   // play sound ONCE when toast mounts
   useEffect(() => {
-    audioController.play(notificationSound);
+    audioController.play("/public/audio/bell.mp3");
 
     return () => {
       audioController.stop();
