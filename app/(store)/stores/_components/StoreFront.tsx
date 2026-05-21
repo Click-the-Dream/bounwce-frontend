@@ -75,7 +75,7 @@ const StoreFront = () => {
           {store?.store_banner?.url && (
             <SafeImage
               src={store.store_banner.url}
-              alt={store.full_name}
+              alt={store.name}
               width={1920}
               height={800}
               className="w-full h-full object-cover"
