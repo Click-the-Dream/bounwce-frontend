@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowUp, Plus, Image, Camera, Video, File } from "lucide-react";
+import {
+  ArrowUp,
+  Plus,
+  Image,
+  Camera,
+  Video,
+  File,
+  Loader2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
@@ -24,16 +32,25 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   );
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
+  const [isSendingMedia, setIsSendingMedia] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+
+    const maxHeight = 112; // ~ max-h-28
+    const newHeight = Math.min(el.scrollHeight, maxHeight);
+
+    el.style.height = newHeight + "px";
+  };
 
   const {
     transmitMessage,
+    prepareOptimisticMedia,
+    uploadAndEmitMedia,
     useGetChatImageSignature,
     useGetChatVideoSignature,
     useGetChatFileSignature,
-    uploadToCloudinary,
-    transmitImageMessage,
-    transmitVideoMessage,
-    transmitFileMessage,
   } = useChat();
 
   const imageSignature = useGetChatImageSignature();
@@ -84,62 +101,75 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const handleSend = async () => {
     if (!selectedChat) return;
 
-    try {
-      // TEXT ONLY
-      if (message.trim() && pendingFiles.length === 0) {
-        transmitMessage({
-          recipient_id: selectedChat.id,
-          body: message.trim(),
-        });
+    const recipient_id = selectedChat.id;
 
-        setMessage("");
-        stopTyping();
-        return;
-      }
-
-      // MEDIA
-      for (const file of pendingFiles) {
-        const isImage = file.type.startsWith("image/");
-        const isVideo = file.type.startsWith("video/");
-        const isFile = !isImage && !isVideo;
-
-        const signature = isImage
-          ? await imageSignature.mutateAsync()
-          : isVideo
-            ? await videoSignature.mutateAsync()
-            : await fileSignature.mutateAsync();
-
-        const uploaded = await uploadToCloudinary(file, signature);
-        const url = uploaded.secure_url;
-
-        const caption = message.trim();
-
-        if (isImage) {
-          await transmitImageMessage({
-            recipient_id: selectedChat.id,
-            image_url: url,
-            caption,
-          });
-        } else if (isVideo) {
-          await transmitVideoMessage({
-            recipient_id: selectedChat.id,
-            video_url: url,
-            caption,
-          });
-        } else if (isFile) {
-          await transmitFileMessage({
-            recipient_id: selectedChat.id,
-            file_url: url,
-            caption,
-          });
-        }
-      }
-
-      setPendingFiles([]);
+    // TEXT ONLY
+    if (message.trim() && pendingFiles.length === 0) {
+      await transmitMessage({ recipient_id, body: message.trim() });
       setMessage("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
       stopTyping();
-    } catch (err) {
-      console.error(err);
+      return;
+    }
+
+    // MEDIA
+    const filesToSend = [...pendingFiles];
+    const captionToSend = message.trim();
+
+    // 1. Put ALL optimistic messages in cache synchronously
+    const prepared = filesToSend.map((file) => {
+      const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
+      const type: "image" | "video" | "file" = isImage
+        ? "image"
+        : isVideo
+          ? "video"
+          : "file";
+
+      const clientId = prepareOptimisticMedia({
+        file,
+        recipient_id,
+        type,
+        caption: captionToSend,
+      });
+
+      return { file, type, clientId };
+    });
+
+    // 2. Close modal immediately — chat already shows all images
+    setPendingFiles([]);
+    setMessage("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+    stopTyping();
+
+    // 3. Upload everything in background, no awaiting in UI
+    for (const { file, type, clientId } of prepared) {
+      if (!clientId) continue;
+
+      (async () => {
+        try {
+          let signature;
+          if (type === "image") signature = await imageSignature.mutateAsync();
+          else if (type === "video")
+            signature = await videoSignature.mutateAsync();
+          else signature = await fileSignature.mutateAsync();
+
+          await uploadAndEmitMedia({
+            file,
+            type,
+            caption: captionToSend,
+            recipient_id,
+            signature,
+            clientId,
+          });
+        } catch (err) {
+          console.error("Upload failed for", clientId, err);
+        }
+      })();
     }
   };
 
@@ -152,6 +182,8 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
     };
   }, []);
 
+  const canSend = message.trim().length > 0 || pendingFiles.length > 0;
+
   return (
     <div className="relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
       {pendingFiles.length > 0 && (
@@ -163,6 +195,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
           onSend={handleSend}
           onAddMore={() => fileRef.current?.click()}
           user={selectedChat}
+          isSendingMedia={isSendingMedia}
         />
       )}
 
@@ -171,7 +204,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
           {/* IMAGES */}
           <button
             onClick={() => {
-              setFileAccept("image/*");
+              setFileAccept("image/*,image/heic,image/heif");
               fileRef.current?.click();
               setShowMenu(false);
             }}
@@ -184,7 +217,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
           {/* VIDEOS */}
           <button
             onClick={() => {
-              setFileAccept("video/*");
+              setFileAccept("video/mp4,video/quicktime,video/x-m4v,video/*");
               fileRef.current?.click();
               setShowMenu(false);
             }}
@@ -234,26 +267,40 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
           />
         </button>
 
-        <input
+        <textarea
+          ref={textareaRef}
+          rows={1}
           value={message}
-          onChange={(e) => handleTyping(e.target.value)}
-          type="text"
+          onChange={(e) => {
+            handleTyping(e.target.value);
+            autoResize(e.target);
+          }}
           placeholder="Message"
           onFocus={() => setIsFocused(true)}
           onBlur={() => {
             setIsFocused(false);
             stopTyping();
           }}
-          className="flex-1 bg-transparent text-sm focus:outline-none"
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          className="flex-1 bg-transparent text-sm focus:outline-none max-h-28 resize-none overflow-hidden leading-5 py-1"
         />
 
         {(isFocused || message) && (
           <button
             onClick={handleSend}
+            disabled={!canSend || isSendingMedia}
             className="w-7.5 h-7.5 flex items-center justify-center bg-orange text-white rounded-full transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <ArrowUp size={18} strokeWidth={1} />
+            {isSendingMedia ? (
+              <Loader2 size={18} strokeWidth={1} />
+            ) : (
+              <ArrowUp size={18} strokeWidth={1} />
+            )}
           </button>
         )}
       </div>

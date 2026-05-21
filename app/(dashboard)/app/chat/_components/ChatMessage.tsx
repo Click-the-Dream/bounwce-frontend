@@ -22,17 +22,20 @@ const ChatMessage = ({ msg }: any) => {
 
   const renderStatus = () => {
     if (!isSender) return null;
-    if (msg.pending) return <LuClock size={10} className="opacity-50" />;
+    if (msg.pending) return <LuClock size={10} className="" />;
     if (msg.read_at) return renderCheck("read");
     return renderCheck("sent");
   };
   return (
     <div className={styles.container}>
       <div
-        className={`${styles.bubble} p-4 rounded-[10px] text-[13px] relative pb-6 pr-12`}
+        className={`${styles.bubble} p-4 rounded-[10px] text-[13px] relative pb-6 pr-12 whitespace-pre-wrap wrap-break-word`}
         style={{
           boxShadow:
             "0px 0px 1.5px 0px #00000040, 0px 0px 0px 0px #00000040 inset",
+          wordBreak: "break-word",
+          overflowWrap: "anywhere",
+          whiteSpace: "pre-wrap",
         }}
       >
         {msg?.body}

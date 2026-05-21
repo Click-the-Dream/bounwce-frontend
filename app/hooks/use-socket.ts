@@ -51,7 +51,6 @@ export const useSocketConnection = ({
     }
 
     const handleMessage = async (raw: any) => {
-      // normalize payload
       const message = raw.message || raw;
       const otherUserId =
         message.sender_id === authUserId
@@ -62,11 +61,7 @@ export const useSocketConnection = ({
       const isMyMessage =
         String(message.sender_id) === String(authUserRef.current);
 
-      console.log("New message", message, isMyMessage);
-
-      //  ALWAYS USE LATEST ACTIVE CHAT
       const activeChatId = activeChatRef.current;
-
       const isActiveChat =
         activeChatId &&
         (message.sender_id === activeChatId ||
@@ -78,10 +73,10 @@ export const useSocketConnection = ({
         if (!old) return old;
 
         const pages = [...old.pages];
-
         const items = pages[0]?.messages?.items || [];
 
-        const filtered = items.filter(
+        // 1. Strip pending text duplicate
+        let filtered = items.filter(
           (m: any) =>
             !(
               m.pending &&
@@ -90,8 +85,30 @@ export const useSocketConnection = ({
             ),
         );
 
-        const exists = filtered.some((m: any) => m.id === message.id);
+        // 2. Replace optimistic media message by client_id
+        if (message.client_id) {
+          const optimisticIndex = filtered.findIndex(
+            (m: any) => m.client_id === message.client_id,
+          );
 
+          if (optimisticIndex !== -1) {
+            filtered = [
+              ...filtered.slice(0, optimisticIndex),
+              { ...message, local_url: undefined },
+              ...filtered.slice(optimisticIndex + 1),
+            ];
+
+            pages[0] = {
+              ...pages[0],
+              messages: { ...pages[0].messages, items: filtered },
+            };
+
+            return { ...old, pages };
+          }
+        }
+
+        // 3. Fallback: normal dedup by real id
+        const exists = filtered.some((m: any) => m.id === message.id);
         if (exists) return old;
 
         pages[0] = {
@@ -102,11 +119,15 @@ export const useSocketConnection = ({
           },
         };
 
-        return {
-          ...old,
-          pages,
-        };
+        return { ...old, pages };
       });
+
+      // ---------------- INDEXEDDB ----------------
+
+      if (message.client_id) {
+        // Media message: swap optimistic row for real one
+        await chatDB.messages.delete(message.client_id);
+      }
 
       await chatDB.messages.put({
         ...message,
@@ -117,7 +138,15 @@ export const useSocketConnection = ({
       // ---------------- CONVERSATIONS ----------------
 
       await chatDB.conversations.update(conversationId, {
-        last_message: message,
+        last_message: {
+          body: message.body,
+          caption: message.caption,
+          created_at: message?.created_at,
+          updated_at: message?.updated_at,
+          media_type: message?.media_type,
+          media_url: message?.media_url,
+          sender_id: message?.sender_id,
+        },
         updated_at: new Date().toISOString(),
       });
 
@@ -135,37 +164,29 @@ export const useSocketConnection = ({
 
           const conversation = items[index];
 
-          // update last message
           const updated = {
             ...conversation,
             last_message: {
               body: message.body,
               created_at: message?.created_at,
               updated_at: message?.updated_at,
+              media_type: message?.media_type,
+              media_url: message?.media_url,
+              sender_id: message?.sender_id,
             },
           };
 
-          // remove from old position
           items.splice(index, 1);
-
-          // move to top
           items.unshift(updated);
 
-          return {
-            ...page,
-            items,
-          };
+          return { ...page, items };
         });
 
-        return {
-          ...old,
-          pages,
-        };
+        return { ...old, pages };
       });
 
       // ---------------- NOTIFICATIONS ----------------
 
-      // no notification if currently inside chat
       if (!isMyMessage && !isActiveChat) {
         pushNotification({
           id: message.id,

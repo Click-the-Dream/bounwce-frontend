@@ -1,5 +1,15 @@
 import { clsx, type ClassValue } from "clsx";
 
+import {
+  FileText,
+  FileImage,
+  FileAudio,
+  FileVideo,
+  FileCode,
+  File,
+  Download,
+} from "lucide-react";
+
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
@@ -105,4 +115,71 @@ export const statusConfig = {
     label: "Shipped",
     cls: "bg-sky-50 text-sky-700 border border-sky-200",
   },
+};
+
+export const buildOptimisticMessage = ({
+  body,
+  media_type,
+  media_url,
+  recipient_id,
+  conversation_id,
+  currentUser,
+  ...rest
+}: any) => {
+  return {
+    id: `temp-${Date.now()}`,
+    body: body || "",
+    media_type: media_type || null,
+    media_url: media_url || null,
+
+    sender_id: currentUser.id,
+    recipient_id,
+    conversation_id,
+
+    ...rest,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+
+    pending: true,
+    uploading: !!media_url,
+    synced: false,
+  };
+};
+
+export const getFileIcon = (fileName: string) => {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+
+  switch (ext) {
+    case "jpg":
+    case "jpeg":
+    case "png":
+    case "gif":
+      return FileImage;
+    case "mp4":
+    case "mov":
+      return FileVideo;
+    case "mp3":
+    case "wav":
+      return FileAudio;
+    case "js":
+    case "ts":
+    case "tsx":
+    case "json":
+      return FileCode;
+    case "pdf":
+    case "doc":
+    case "docx":
+      return FileText;
+    default:
+      return File;
+  }
+};
+
+export const formatBytes = (bytes: number, decimals = 2) => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };

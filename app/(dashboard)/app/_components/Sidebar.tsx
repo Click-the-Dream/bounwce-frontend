@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Home, X, Briefcase, LogOut } from "lucide-react";
+import { Compass, Home, X, Briefcase, LogOut, UserPlus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,10 +27,16 @@ const Sidebar = ({
 
   const isActive = (path: string) => pathname === path;
   const onToggleCollapse = () => setCollapsed(!collapsed);
-
+  const pendingRequestsCount = 2;
   const navItems = [
     { name: "Home", href: "/app", icon: Home },
     { name: "Explore", href: "/app/explore", icon: Compass },
+    {
+      name: "Requests",
+      href: "/app/requests",
+      icon: UserPlus,
+      badge: pendingRequestsCount,
+    },
     { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
 
     ...(authDetails?.user?.role === "vendor"
@@ -130,6 +136,11 @@ const Sidebar = ({
                   </motion.span>
                 )}
               </AnimatePresence>
+              {item?.badge && item?.badge > 0 && (
+                <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}

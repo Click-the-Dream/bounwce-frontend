@@ -1,5 +1,5 @@
 "use client";
-import SafeImage from "@/app/_components/SafeImage";
+import { LuImage, LuVideo, LuFile, LuMic } from "react-icons/lu";
 import { formatTime } from "@/app/_utils/formatters";
 import { useChatUtils } from "@/app/context/ChatContext";
 import { useNotifications } from "@/app/context/NotificationContext";
@@ -20,6 +20,55 @@ const ChatCard = ({ chat }: any) => {
   const lastMessageTime = chat?.last_message?.created_at;
   const lastMessage = chat?.last_message;
   const isMine = lastMessage?.sender_id === currentUserId;
+
+  const renderLastMessage = () => {
+    if (!lastMessage) {
+      return `@${chatUser.username}`;
+    }
+
+    const caption = lastMessage.caption?.trim();
+    const body = lastMessage.body?.trim();
+    const mediaType = lastMessage.media_type;
+
+    const mediaClass = "inline-flex items-center gap-1";
+
+    switch (mediaType) {
+      case "image":
+        return (
+          <span className={mediaClass}>
+            <LuImage className="text-[13px]" />
+            <span>{caption || "Photo"}</span>
+          </span>
+        );
+
+      case "video":
+        return (
+          <span className={mediaClass}>
+            <LuVideo className="text-[13px]" />
+            <span>{caption || "Video"}</span>
+          </span>
+        );
+
+      case "file":
+        return (
+          <span className={mediaClass}>
+            <LuFile className="text-[13px]" />
+            <span>{caption || body || "Document"}</span>
+          </span>
+        );
+
+      case "audio":
+        return (
+          <span className={mediaClass}>
+            <LuMic className="text-[13px]" />
+            <span>{caption || "Voice message"}</span>
+          </span>
+        );
+
+      default:
+        return body || caption || "Message";
+    }
+  };
 
   return (
     <div
@@ -48,9 +97,9 @@ const ChatCard = ({ chat }: any) => {
           {isTyping ? (
             "typing..."
           ) : lastMessage ? (
-            <span>
+            <span className="flex items-center gap-1">
               {isMine && <span className="text-gray-600">You: </span>}
-              {lastMessage.body}
+              {renderLastMessage()}
             </span>
           ) : (
             `@${chatUser.username}`

@@ -12,6 +12,11 @@ export interface CachedMessage {
   pending?: boolean;
   synced?: boolean;
   read_at?: string | null;
+  file_name?: string;
+  file_size?: string;
+  media_type?: string;
+  media_url?: string;
+  local_url?: string;
 }
 
 export interface CachedConversation {
@@ -24,10 +29,12 @@ export interface CachedConversation {
   };
   last_message: {
     body: string;
-    caption: string;
+    caption?: string;
     media_type: string;
     media_url: string;
     sender_id: string;
+    created_at?: string;
+    updated_at?: string;
   };
   updated_at: string;
 }

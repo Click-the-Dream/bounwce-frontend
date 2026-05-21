@@ -9,6 +9,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { websocket } from "../services/websocket";
 import { getChatDB } from "../store/chat-store";
+import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
 
 const mergeIntoQuery = (old: any, message: any) => {
   if (!old) {
@@ -161,54 +162,42 @@ const useChat = () => {
     });
 
   // ---------------- SEND MESSAGE ----------------
-  const transmitMessage = async (payload: {
+  const transmitMessage = async ({
+    recipient_id,
+    body,
+  }: {
     recipient_id: string;
     body: string;
   }) => {
     if (!currentUser) return;
 
-    const message = {
-      id: `temp-${Date.now()}`,
-      body: payload.body,
-      sender_id: currentUser.id,
-      recipient_id: payload.recipient_id,
-      conversation_id: payload.recipient_id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      pending: true,
-      synced: false,
-    };
+    const message = buildOptimisticMessage({
+      recipient_id,
+      body,
+      currentUser,
+    });
 
-    // 1. React Query
-    queryClient.setQueryData(["messages", payload.recipient_id], (old: any) =>
+    // 1. React Query cache
+    queryClient.setQueryData(["messages", recipient_id], (old: any) =>
       mergeIntoQuery(old, message),
     );
 
-    // 2. IndexedDB (offline persistence)
+    // 2. IndexedDB
     await chatDB.messages.put(message);
 
-    // 3. WebSocket send
+    // 3. WebSocket
     websocket.emit("chat.send", {
-      recipient_id: payload.recipient_id,
-      body: payload.body,
+      recipient_id,
+      body,
     });
   };
-
-  // ---------------- MEDIA ----------------
-  const transmitImageMessage = (p: any) =>
-    websocket.emit("chat.upload_image", p);
-
-  const transmitVideoMessage = (p: any) =>
-    websocket.emit("chat.upload_video", p);
-
-  const transmitFileMessage = (p: any) => websocket.emit("chat.upload_file", p);
 
   // ---------------- SIGNATURES ----------------
   const useGetChatImageSignature = () =>
     useMutation({
       mutationFn: async () => {
         const res = await api.post("/uploads/chat-image/sign");
-        return res.data?.data?.fields;
+        return res.data?.data;
       },
     });
 
@@ -224,7 +213,7 @@ const useChat = () => {
     useMutation({
       mutationFn: async () => {
         const res = await api.post("/uploads/chat-file/sign");
-        return res.data?.data?.fields;
+        return res.data?.data;
       },
     });
 
@@ -233,15 +222,15 @@ const useChat = () => {
     const form = new FormData();
 
     form.append("file", file);
-    form.append("api_key", signature.api_key);
-    form.append("timestamp", String(signature.timestamp));
-    form.append("signature", signature.signature);
-    form.append("upload_preset", signature.upload_preset);
-    form.append("folder", signature.folder);
-    form.append("public_id", signature.public_id);
+    form.append("api_key", signature.fields.api_key);
+    form.append("timestamp", String(signature.fields.timestamp));
+    form.append("signature", signature.fields.signature);
+    form.append("upload_preset", signature.fields.upload_preset);
+    form.append("folder", signature.fields.folder);
+    form.append("public_id", signature.fields.public_id);
 
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${signature.cloud_name}/${signature.constraints.resource_type}/upload`,
+      `https://api.cloudinary.com/v1_1/${signature.fields.cloud_name}/${signature.constraints.resource_type}/upload`,
       {
         method: "POST",
         body: form,
@@ -251,14 +240,173 @@ const useChat = () => {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   };
+  const transmitMediaMessage = async ({
+    file,
+    recipient_id,
+    type,
+    caption = "",
+    signature,
+  }: {
+    file: File;
+    recipient_id: string;
+    type: "image" | "video" | "file";
+    caption?: string;
+    signature: any;
+  }) => {
+    if (!currentUser) return;
 
+    const localUrl = URL.createObjectURL(file);
+
+    const optimistic = buildOptimisticMessage({
+      recipient_id,
+      body: caption,
+      media_type: type,
+      media_url: localUrl,
+      local_url: localUrl,
+      currentUser,
+    });
+
+    queryClient.setQueryData(["messages", recipient_id], (old: any) =>
+      mergeIntoQuery(old, optimistic),
+    );
+
+    await chatDB.messages.put(optimistic);
+
+    try {
+      // upload directly using provided signature
+      const uploaded = await uploadToCloudinary(file, signature);
+
+      const eventMap = {
+        image: "chat.upload_image",
+        video: "chat.upload_video",
+        file: "chat.upload_file",
+      };
+
+      const payloadMap = {
+        image: {
+          recipient_id,
+          image_url: uploaded.secure_url,
+          body: caption,
+          client_id: optimistic.id,
+        },
+
+        video: {
+          recipient_id,
+          video_url: uploaded.secure_url,
+          body: caption,
+          client_id: optimistic.id,
+        },
+
+        file: {
+          recipient_id,
+          file_url: uploaded.secure_url,
+          body: caption,
+          client_id: optimistic.id,
+        },
+      };
+
+      websocket.emit(eventMap[type], payloadMap[type]);
+    } catch (err) {
+      console.error("Media send failed:", err);
+    }
+  };
+
+  // Step 1: instant — puts optimistic message in cache and returns the id
+  const prepareOptimisticMedia = ({
+    file,
+    recipient_id,
+    type,
+    caption = "",
+  }: {
+    file: File;
+    recipient_id: string;
+    type: "image" | "video" | "file";
+    caption?: string;
+  }) => {
+    if (!currentUser) return null;
+
+    const localUrl = URL.createObjectURL(file);
+
+    const optimistic = buildOptimisticMessage({
+      recipient_id,
+      body: caption,
+      media_type: type,
+      media_url: localUrl,
+      local_url: localUrl,
+      currentUser,
+      file_name: file.name,
+      file_size: formatBytes(file.size),
+    });
+
+    // Sync — no await, no network
+    queryClient.setQueryData(["messages", recipient_id], (old: any) =>
+      mergeIntoQuery(old, optimistic),
+    );
+
+    chatDB.messages.put(optimistic); // fire and forget
+
+    return optimistic.id;
+  };
+
+  // Step 2: background — upload and emit socket event
+  const uploadAndEmitMedia = async ({
+    file,
+    recipient_id,
+    type,
+    caption = "",
+    signature,
+    clientId,
+  }: {
+    file: File;
+    recipient_id: string;
+    type: "image" | "video" | "file";
+    caption?: string;
+    signature: any;
+    clientId: string;
+  }) => {
+    try {
+      const uploaded = await uploadToCloudinary(file, signature);
+
+      const eventMap = {
+        image: "chat.upload_image",
+        video: "chat.upload_video",
+        file: "chat.upload_file",
+      };
+
+      const payloadMap = {
+        image: {
+          recipient_id,
+          image_url: uploaded.secure_url,
+          body: caption,
+          client_id: clientId,
+        },
+        video: {
+          recipient_id,
+          video_url: uploaded.secure_url,
+          body: caption,
+          client_id: clientId,
+        },
+        file: {
+          recipient_id,
+          file_url: uploaded.secure_url,
+          body: caption,
+          client_id: clientId,
+        },
+      };
+
+      websocket.emit(eventMap[type], payloadMap[type]);
+    } catch (err) {
+      console.error("Media upload failed:", err);
+      // TODO: mark optimistic message as failed by clientId
+    }
+  };
   return {
     useGetConversations,
     useGetMessages,
     transmitMessage,
-    transmitImageMessage,
-    transmitVideoMessage,
-    transmitFileMessage,
+    transmitMediaMessage,
+    prepareOptimisticMedia,
+    uploadAndEmitMedia,
     useGetChatImageSignature,
     useGetChatVideoSignature,
     useGetChatFileSignature,

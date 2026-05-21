@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { FiArrowUp } from "react-icons/fi";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import Image from "next/image";
 import ViewerNav from "./ViewerNav";
 import { User } from "@/app/_utils/types/buyer";
@@ -15,6 +15,7 @@ interface MediaUploadModalProps {
   onSend: () => void;
   onAddMore: () => void;
   user?: User;
+  isSendingMedia?: boolean;
 }
 
 const MediaUploadModal = ({
@@ -25,6 +26,7 @@ const MediaUploadModal = ({
   onSend,
   onAddMore,
   user,
+  isSendingMedia = false,
 }: MediaUploadModalProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -100,9 +102,14 @@ const MediaUploadModal = ({
 
           <button
             onClick={onSend}
-            className="absolute right-6 top-1/2 -translate-y-1/2 w-7.75 h-7.5 bg-orange rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+            disabled={isSendingMedia}
+            className="absolute right-6 top-1/2 -translate-y-1/2 w-7.75 h-7.5 flex items-center justify-center bg-orange text-white rounded-full transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <FiArrowUp size={18} />
+            {isSendingMedia ? (
+              <Loader2 size={18} strokeWidth={1} className="animate-spin" />
+            ) : (
+              <FiArrowUp size={18} strokeWidth={1} />
+            )}
           </button>
         </div>
       </div>

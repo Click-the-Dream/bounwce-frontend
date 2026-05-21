@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useChatUtils } from "@/app/context/ChatContext";
 import ChatMessage from "./ChatMessage";
-import ChatImageMessage from "./ChatImageMessage";
 import ImageViewer from "./ImageViewer";
 import { User } from "@/app/_utils/types/buyer";
 import useChat from "@/app/hooks/use-chat";
@@ -12,6 +11,7 @@ import { formatMessageDate } from "@/app/_utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
 import { websocket } from "@/app/services/websocket";
 import TypingDots from "./TypingDots";
+import ChatMediaMessage from "./ChatMediaMessage";
 
 interface ChatHeaderProps {
   selectedChat?: User;
@@ -52,33 +52,60 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
 
-  const groupedMessages = Object.values(
-    sortedMessages.reduce((acc: any, msg: any) => {
+  const groupedMessages = useMemo(() => {
+    const map: Record<string, any> = {};
+
+    for (const msg of sortedMessages) {
       const label = formatMessageDate(msg.created_at);
 
-      if (!acc[label]) {
-        acc[label] = {
+      if (!map[label]) {
+        map[label] = {
           label,
           timestamp: new Date(msg.created_at).getTime(),
           messages: [],
         };
       }
 
-      acc[label].messages.push(msg);
+      map[label].messages.push(msg);
+    }
 
-      return acc;
-    }, {}),
-  ).sort((a: any, b: any) => a.timestamp - b.timestamp);
+    return Object.values(map).sort(
+      (a: any, b: any) => a.timestamp - b.timestamp,
+    );
+  }, [sortedMessages]);
 
   // MEDIA LIST
-  const mediaImages = sortedMessages.flatMap((m: any) =>
-    (m.images || []).map((img: string) => ({
-      src: img,
-      messageId: m.id,
-    })),
+  const mediaMessages = useMemo(
+    () =>
+      sortedMessages
+        .filter((m: any) => m.media_type && (m.media_url || m.local_url))
+        .map((m: any) => ({
+          src: m.media_url || m.local_url,
+          id: m.id,
+          created_at: m.created_at,
+          sender: m.sender,
+          sender_id: m.sender_id,
+        })),
+    [sortedMessages],
   );
 
+  const mediaIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+
+    mediaMessages.forEach((m: { id: string }, i: number) => {
+      map.set(m.id, i);
+    });
+
+    return map;
+  }, [mediaMessages]);
+
   const isTyping = typingUsers[chatId];
+
+  const isMedia = (msg: any) =>
+    (msg.media_type === "image" ||
+      msg.media_type === "video" ||
+      msg.media_type === "file") &&
+    (msg.media_url || msg.local_url);
 
   // INITIAL SCROLL
   useEffect(() => {
@@ -102,19 +129,26 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
     return el.scrollHeight - el.scrollTop - el.clientHeight < 180;
   };
 
-  useEffect(() => {
-    const prev = prevMessageCountRef.current;
-    const current = sortedMessages.length;
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-    if (current > prev && isNearBottom()) {
-      requestAnimationFrame(() => {
-        const el = containerRef.current;
-        if (!el) return;
+    const lastMessage = sortedMessages.at(-1);
+    if (!lastMessage) return;
+
+    const isMyMessage = lastMessage.sender_id === authDetails?.user?.id;
+
+    const isNear = isNearBottom();
+
+    const shouldScroll = isMyMessage || isNear;
+
+    requestAnimationFrame(() => {
+      if (shouldScroll) {
         el.scrollTop = el.scrollHeight;
-      });
-    }
+      }
+    });
 
-    prevMessageCountRef.current = current;
+    prevMessageCountRef.current = sortedMessages.length;
   }, [sortedMessages.length]);
 
   const handleScroll = () => {
@@ -191,12 +225,13 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
           <div className="space-y-2">
             {group.messages.map((msg: any) =>
-              msg.images?.length ? (
-                <ChatImageMessage
+              isMedia(msg) ? (
+                <ChatMediaMessage
                   key={msg.id}
                   msg={msg}
-                  mediaImages={mediaImages}
-                  onOpen={(index: number) => {
+                  onOpen={(id: string) => {
+                    const index = mediaIndexMap.get(id);
+                    if (index === undefined) return;
                     setViewerIndex(index);
                     setViewerOpen(true);
                   }}
@@ -215,10 +250,9 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
       {viewerOpen && (
         <ImageViewer
-          media={mediaImages}
+          media={mediaMessages}
           startIndex={viewerIndex}
           onClose={() => setViewerOpen(false)}
-          user={selectedChat}
         />
       )}
     </div>
