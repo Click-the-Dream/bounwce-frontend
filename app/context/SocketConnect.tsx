@@ -1,8 +1,6 @@
 import { useParams } from "next/navigation";
 import { useAuth } from "./AuthContext";
 import { useSocketConnection } from "../hooks/use-socket";
-import { useEffect, useState } from "react";
-import { websocket } from "../services/websocket";
 import { ConnectionStatusToast } from "../_utils/ConnectionStatusToast";
 
 export default function SocketConnect({

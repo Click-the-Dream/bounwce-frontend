@@ -22,6 +22,14 @@ export const useSocketConnection = ({
     useNotifications();
   const { setTypingUsers, setOnlineUsers } = useChatUtils();
 
+  const setTypingUsersRef = useRef(setTypingUsers);
+  const setOnlineUsersRef = useRef(setOnlineUsers);
+
+  useEffect(() => {
+    setTypingUsersRef.current = setTypingUsers;
+    setOnlineUsersRef.current = setOnlineUsers;
+  });
+
   // latest active chat without rerender/reconnect
   const activeChatRef = useRef<string | undefined>(activeConversationId);
   const authUserRef = useRef(authUserId);
@@ -201,7 +209,7 @@ export const useSocketConnection = ({
 
       if (!userId) return;
 
-      setTypingUsers((prev: any) => ({
+      setTypingUsersRef.current((prev: any) => ({
         ...prev,
         [userId]: data.is_typing,
       }));
@@ -210,7 +218,7 @@ export const useSocketConnection = ({
     const handleUserOnline = ({ user, online }: any) => {
       if (!user?.id) return;
 
-      setOnlineUsers((prev: any) => {
+      setOnlineUsersRef.current((prev: any) => {
         const next = { ...prev };
 
         if (online) {
