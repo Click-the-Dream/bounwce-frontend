@@ -8,7 +8,7 @@ import audioController from "./audioController";
 const MessageToast = ({ senderName, message, avatar, onDismiss }: any) => {
   // play sound ONCE when toast mounts
   useEffect(() => {
-    audioController.play("/public/audio/bell.mp3");
+    audioController.play("/audio/bell.mp3");
 
     return () => {
       audioController.stop();
