@@ -240,60 +240,6 @@ const useChat = () => {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   };
-  const transmitMediaMessage = async ({
-    file,
-    recipient_id,
-    type,
-    caption = "",
-    signature,
-  }: {
-    file: File;
-    recipient_id: string;
-    type: "image" | "video" | "file";
-    caption?: string;
-    signature: any;
-  }) => {
-    if (!currentUser) return;
-
-    const localUrl = URL.createObjectURL(file);
-
-    const optimistic = buildOptimisticMessage({
-      recipient_id,
-      body: caption,
-      media_type: type,
-      media_url: localUrl,
-      local_url: localUrl,
-      currentUser,
-    });
-
-    queryClient.setQueryData(["messages", recipient_id], (old: any) =>
-      mergeIntoQuery(old, optimistic),
-    );
-
-    await chatDB.messages.put(optimistic);
-
-    try {
-      // upload directly using provided signature
-      const uploaded = await uploadToCloudinary(file, signature);
-
-      const eventMap = {
-        image: "chat.upload_image",
-        video: "chat.upload_video",
-        file: "chat.upload_file",
-      };
-
-      const payloadMap = {
-        recipient_id,
-        media_url: uploaded.secure_url,
-        body: caption,
-        client_id: optimistic.id,
-      };
-
-      websocket.emit(eventMap[type], payloadMap);
-    } catch (err) {
-      console.error("Media send failed:", err);
-    }
-  };
 
   // Step 1: instant — puts optimistic message in cache and returns the id
   const prepareOptimisticMedia = ({
@@ -333,23 +279,29 @@ const useChat = () => {
   };
 
   // Step 2: background — upload and emit socket event
+
   const uploadAndEmitMedia = async ({
-    file,
+    files,
     recipient_id,
     type,
     caption = "",
     signature,
-    clientId,
+    clientIds,
   }: {
-    file: File;
+    files: File[];
     recipient_id: string;
     type: "image" | "video" | "file";
     caption?: string;
     signature: any;
-    clientId: string;
+    clientIds: string[];
   }) => {
     try {
-      const uploaded = await uploadToCloudinary(file, signature);
+      // upload all files in parallel
+      const uploads = await Promise.all(
+        files.map((file) => uploadToCloudinary(file, signature)),
+      );
+
+      const media_url = uploads.map((u) => u.secure_url);
 
       const eventMap = {
         image: "chat.upload_image",
@@ -357,38 +309,67 @@ const useChat = () => {
         file: "chat.upload_file",
       };
 
-      const payloadMap = {
-        image: {
-          recipient_id,
-          image_url: uploaded.secure_url,
-          body: caption,
-          client_id: clientId,
-        },
-        video: {
-          recipient_id,
-          video_url: uploaded.secure_url,
-          body: caption,
-          client_id: clientId,
-        },
-        file: {
-          recipient_id,
-          file_url: uploaded.secure_url,
-          body: caption,
-          client_id: clientId,
-        },
-      };
+      websocket.emit(eventMap[type], {
+        recipient_id,
+        media_url,
+        body: caption,
+        client_id: clientIds,
+      });
 
-      websocket.emit(eventMap[type], payloadMap[type]);
+      // remove pending state
+      queryClient.setQueryData(["messages", recipient_id], (old: any) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            messages: {
+              ...page.messages,
+              items: page.messages.items.map((m: any) =>
+                clientIds.includes(m.id)
+                  ? {
+                      ...m,
+                      pending: false,
+                    }
+                  : m,
+              ),
+            },
+          })),
+        };
+      });
     } catch (err) {
       console.error("Media upload failed:", err);
-      // TODO: mark optimistic message as failed by clientId
+
+      queryClient.setQueryData(["messages", recipient_id], (old: any) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            messages: {
+              ...page.messages,
+              items: page.messages.items.map((m: any) =>
+                clientIds.includes(m.id)
+                  ? {
+                      ...m,
+                      failed: true,
+                      pending: false,
+                    }
+                  : m,
+              ),
+            },
+          })),
+        };
+      });
     }
   };
+
   return {
     useGetConversations,
     useGetMessages,
     transmitMessage,
-    transmitMediaMessage,
     prepareOptimisticMedia,
     uploadAndEmitMedia,
     useGetChatImageSignature,

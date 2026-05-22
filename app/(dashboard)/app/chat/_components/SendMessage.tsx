@@ -1,5 +1,4 @@
 "use client";
-import pLimit from "p-limit";
 import {
   ArrowUp,
   Plus,
@@ -14,7 +13,6 @@ import { User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
-import { UploadJob } from "@/app/_utils/types/payload";
 
 interface ChatHeaderProps {
   selectedChat?: User;
@@ -26,45 +24,6 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [uploadQueue, setUploadQueue] = useState<UploadJob[]>([]);
-
-  const processUpload = async (job: UploadJob) => {
-    try {
-      setUploadQueue((prev) =>
-        prev.map((j) =>
-          j.clientId === job.clientId ? { ...j, status: "uploading" } : j,
-        ),
-      );
-
-      const signature =
-        job.type === "image"
-          ? await imageSignature.mutateAsync()
-          : job.type === "video"
-            ? await videoSignature.mutateAsync()
-            : await fileSignature.mutateAsync();
-
-      await uploadAndEmitMedia({
-        file: job.file,
-        type: job.type,
-        recipient_id: selectedChat?.id || "",
-        signature,
-        clientId: job.clientId,
-      });
-
-      setUploadQueue((prev) =>
-        prev.map((j) =>
-          j.clientId === job.clientId ? { ...j, status: "done" } : j,
-        ),
-      );
-    } catch (e) {
-      setUploadQueue((prev) =>
-        prev.map((j) =>
-          j.clientId === job.clientId ? { ...j, status: "failed" } : j,
-        ),
-      );
-    }
-  };
-
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [fileAccept, setFileAccept] = useState(
     "image/*,video/*,.pdf,.doc,.docx,.zip",
@@ -157,36 +116,74 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
     const filesToSend = [...pendingFiles];
     const captionToSend = message.trim();
 
-    // 1. Put ALL optimistic messages in cache synchronously
-    const prepared = filesToSend.map((file) => {
-      const isImage = file.type.startsWith("image/");
-      const isVideo = file.type.startsWith("video/");
-      const type: "image" | "video" | "file" = isImage
-        ? "image"
-        : isVideo
-          ? "video"
-          : "file";
+    const grouped = {
+      image: [] as File[],
+      video: [] as File[],
+      file: [] as File[],
+    };
 
-      const clientId = prepareOptimisticMedia({
-        file,
-        recipient_id,
-        type,
-        caption: captionToSend,
-      });
-
-      return { file, type, clientId };
+    filesToSend.forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        grouped.image.push(file);
+      } else if (file.type.startsWith("video/")) {
+        grouped.video.push(file);
+      } else {
+        grouped.file.push(file);
+      }
     });
 
-    // 2. Close modal immediately — chat already shows all images
+    const uploadGroup = async (
+      type: "image" | "video" | "file",
+      files: File[],
+    ) => {
+      if (!files.length) return;
+
+      const clientIds = files.map((file) =>
+        prepareOptimisticMedia({
+          file,
+          recipient_id,
+          type,
+          caption: captionToSend,
+        }),
+      );
+
+      const signature =
+        type === "image"
+          ? await imageSignature.mutateAsync()
+          : type === "video"
+            ? await videoSignature.mutateAsync()
+            : await fileSignature.mutateAsync();
+
+      await uploadAndEmitMedia({
+        files,
+        type,
+        recipient_id,
+        caption: captionToSend,
+        signature,
+        clientIds: clientIds.filter(Boolean) as string[],
+      });
+    };
+
     setPendingFiles([]);
     setMessage("");
+
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
+
     stopTyping();
 
-    const limit = pLimit(3);
-    await Promise.all(prepared.map((job) => limit(() => processUpload(job))));
+    setIsSendingMedia(true);
+
+    try {
+      await Promise.all([
+        uploadGroup("image", grouped.image),
+        uploadGroup("video", grouped.video),
+        uploadGroup("file", grouped.file),
+      ]);
+    } finally {
+      setIsSendingMedia(false);
+    }
   };
 
   useEffect(() => {
