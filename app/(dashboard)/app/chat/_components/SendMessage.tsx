@@ -138,14 +138,12 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
     ) => {
       if (!files.length) return;
 
-      const clientIds = files.map((file) =>
-        prepareOptimisticMedia({
-          file,
-          recipient_id,
-          type,
-          caption: captionToSend,
-        }),
-      );
+      const clientId = prepareOptimisticMedia({
+        files: filesToSend,
+        recipient_id,
+        type,
+        caption: captionToSend,
+      });
 
       const signature =
         type === "image"
@@ -160,7 +158,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         recipient_id,
         caption: captionToSend,
         signature,
-        clientIds: clientIds.filter(Boolean) as string[],
+        clientId: clientId,
       });
     };
 

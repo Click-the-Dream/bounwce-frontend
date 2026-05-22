@@ -13,14 +13,9 @@ export const metadata = generatePageMetadata({
 const layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SecureRoute>
-      <NotificationProvider>
-        <ChatProvider>
-          <BuyerLayout children={children} />
-        </ChatProvider>
-      </NotificationProvider>
+      <BuyerLayout children={children} />
     </SecureRoute>
   );
 };
 
 export default layout;
-

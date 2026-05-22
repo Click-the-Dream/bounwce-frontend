@@ -28,7 +28,7 @@ export const useSocketConnection = ({
   useEffect(() => {
     setTypingUsersRef.current = setTypingUsers;
     setOnlineUsersRef.current = setOnlineUsers;
-  });
+  }, [setTypingUsers, setOnlineUsers]);
 
   // latest active chat without rerender/reconnect
   const activeChatRef = useRef<string | undefined>(activeConversationId);
@@ -275,7 +275,7 @@ export const useSocketConnection = ({
         }
       });
 
-      setOnlineUsersRef.current(onlineMap);
+      setOnlineUsersRef.current(() => onlineMap);
     };
 
     // CLEAN BEFORE REGISTERING

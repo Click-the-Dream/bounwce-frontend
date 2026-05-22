@@ -243,37 +243,36 @@ const useChat = () => {
 
   // Step 1: instant — puts optimistic message in cache and returns the id
   const prepareOptimisticMedia = ({
-    file,
+    files,
     recipient_id,
     type,
     caption = "",
   }: {
-    file: File;
+    files: File[];
     recipient_id: string;
     type: "image" | "video" | "file";
     caption?: string;
   }) => {
     if (!currentUser) return null;
 
-    const localUrl = URL.createObjectURL(file);
+    const localUrls = files.map((file) => URL.createObjectURL(file));
 
     const optimistic = buildOptimisticMessage({
       recipient_id,
       body: caption,
       media_type: type,
-      media_url: localUrl,
-      local_url: localUrl,
+      media_url: localUrls,
+      local_url: localUrls,
       currentUser,
-      file_name: file.name,
-      file_size: formatBytes(file.size),
+      file_name: files.length === 1 ? files[0].name : `${files.length} files`,
+      file_size: formatBytes(files.reduce((a, f) => a + f.size, 0)),
     });
 
-    // Sync — no await, no network
     queryClient.setQueryData(["messages", recipient_id], (old: any) =>
       mergeIntoQuery(old, optimistic),
     );
 
-    chatDB.messages.put(optimistic); // fire and forget
+    chatDB.messages.put(optimistic);
 
     return optimistic.id;
   };
@@ -286,14 +285,14 @@ const useChat = () => {
     type,
     caption = "",
     signature,
-    clientIds,
+    clientId,
   }: {
     files: File[];
     recipient_id: string;
     type: "image" | "video" | "file";
     caption?: string;
     signature: any;
-    clientIds: string[];
+    clientId: string[];
   }) => {
     try {
       // upload all files in parallel
@@ -313,7 +312,7 @@ const useChat = () => {
         recipient_id,
         media_url,
         body: caption,
-        client_id: clientIds,
+        client_id: clientId,
       });
 
       // remove pending state
@@ -327,7 +326,7 @@ const useChat = () => {
             messages: {
               ...page.messages,
               items: page.messages.items.map((m: any) =>
-                clientIds.includes(m.id)
+                clientId.includes(m.id)
                   ? {
                       ...m,
                       pending: false,
@@ -351,7 +350,7 @@ const useChat = () => {
             messages: {
               ...page.messages,
               items: page.messages.items.map((m: any) =>
-                clientIds.includes(m.id)
+                clientId.includes(m.id)
                   ? {
                       ...m,
                       failed: true,

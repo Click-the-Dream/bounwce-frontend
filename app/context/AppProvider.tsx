@@ -9,6 +9,7 @@ import { ToastContainer } from "react-toastify";
 import SocketConnect from "./SocketConnect";
 import { NotificationProvider } from "./NotificationContext";
 import audioController from "../_utils/audioController";
+import { ChatProvider } from "./ChatContext";
 
 const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
@@ -35,32 +36,34 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
     <QueryClientProvider client={queryClient}>
       <NotificationProvider>
         <AuthProvider>
-          <StoreProvider>
-            <SocketConnect>{children}</SocketConnect>
+          <ChatProvider>
+            <StoreProvider>
+              <SocketConnect>{children}</SocketConnect>
 
-            <ToastContainer
-              position="bottom-right"
-              stacked
-              autoClose={2000}
-              hideProgressBar
-              closeButton={false}
-              pauseOnHover
-              draggable
-              newestOnTop
-              limit={5}
-              toastStyle={{
-                marginTop: "8px",
-              }}
-              toastClassName={() =>
-                "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible"
-              }
-              style={{
-                bottom: "1.5rem",
-                right: "0.5rem",
-                paddingTop: "1rem",
-              }}
-            />
-          </StoreProvider>
+              <ToastContainer
+                position="bottom-right"
+                stacked
+                autoClose={2000}
+                hideProgressBar
+                closeButton={false}
+                pauseOnHover
+                draggable
+                newestOnTop
+                limit={5}
+                toastStyle={{
+                  marginTop: "8px",
+                }}
+                toastClassName={() =>
+                  "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible"
+                }
+                style={{
+                  bottom: "1.5rem",
+                  right: "0.5rem",
+                  paddingTop: "1rem",
+                }}
+              />
+            </StoreProvider>
+          </ChatProvider>
         </AuthProvider>
       </NotificationProvider>
     </QueryClientProvider>

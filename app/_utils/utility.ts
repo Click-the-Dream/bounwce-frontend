@@ -7,7 +7,6 @@ import {
   FileVideo,
   FileCode,
   File,
-  Download,
 } from "lucide-react";
 
 export function cn(...inputs: ClassValue[]) {
@@ -182,4 +181,26 @@ export const formatBytes = (bytes: number, decimals = 2) => {
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+};
+
+export const getRadius = (i: number, total: number) => {
+  if (total === 1) return "rounded-[10px]";
+
+  if (total === 2) {
+    return i === 0 ? "rounded-l-[10px]" : "rounded-r-[10px]";
+  }
+
+  if (total === 3) {
+    if (i === 0) return "rounded-tl-[10px]";
+    if (i === 1) return "rounded-tr-[10px]";
+    return "rounded-b-[10px] col-span-2";
+  }
+
+  // 4 or more
+  if (i === 0) return "rounded-tl-[10px]";
+  if (i === 1) return "rounded-tr-[10px]";
+  if (i === 2) return "rounded-bl-[10px]";
+  if (i === 3) return "rounded-br-[10px]";
+
+  return "";
 };
