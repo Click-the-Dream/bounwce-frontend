@@ -292,12 +292,12 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             setIsFocused(false);
             stopTyping();
           }}
-          // onKeyDown={(e) => {
-          //   if (e.key === "Enter" && !e.shiftKey) {
-          //     e.preventDefault();
-          //     handleSend();
-          //   }
-          // }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           className="flex-1 bg-transparent text-sm focus:outline-none max-h-28 resize-none overflow-hidden leading-5 py-1"
         />
 
