@@ -25,3 +25,10 @@ export type Notification = {
   created_at: string;
   read: boolean;
 };
+
+export type UploadJob = {
+  file: File;
+  type: "image" | "video" | "file";
+  clientId: string;
+  status: "pending" | "uploading" | "done" | "failed";
+};

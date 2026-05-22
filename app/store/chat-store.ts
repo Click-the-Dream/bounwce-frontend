@@ -56,9 +56,11 @@ class ChatDB extends Dexie {
   }
 
   async clearAll() {
-    await this.messages.clear();
-    await this.conversations.clear();
-    await this.users.clear();
+    await Promise.all([
+      this.messages.clear(),
+      this.conversations.clear(),
+      this.users.clear(),
+    ]);
   }
 }
 

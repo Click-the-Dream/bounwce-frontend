@@ -9,7 +9,7 @@ import SafeImage from "@/app/_components/SafeImage";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
-  const { totalUnread, unreadCount } = useNotifications();
+  const { totalUnread } = useNotifications();
   const { authDetails } = useAuth();
 
   return (

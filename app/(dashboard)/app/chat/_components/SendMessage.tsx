@@ -1,5 +1,5 @@
 "use client";
-
+import pLimit from "p-limit";
 import {
   ArrowUp,
   Plus,
@@ -14,6 +14,7 @@ import { User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
+import { UploadJob } from "@/app/_utils/types/payload";
 
 interface ChatHeaderProps {
   selectedChat?: User;
@@ -25,6 +26,44 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadQueue, setUploadQueue] = useState<UploadJob[]>([]);
+
+  const processUpload = async (job: UploadJob) => {
+    try {
+      setUploadQueue((prev) =>
+        prev.map((j) =>
+          j.clientId === job.clientId ? { ...j, status: "uploading" } : j,
+        ),
+      );
+
+      const signature =
+        job.type === "image"
+          ? await imageSignature.mutateAsync()
+          : job.type === "video"
+            ? await videoSignature.mutateAsync()
+            : await fileSignature.mutateAsync();
+
+      await uploadAndEmitMedia({
+        file: job.file,
+        type: job.type,
+        recipient_id: selectedChat?.id || "",
+        signature,
+        clientId: job.clientId,
+      });
+
+      setUploadQueue((prev) =>
+        prev.map((j) =>
+          j.clientId === job.clientId ? { ...j, status: "done" } : j,
+        ),
+      );
+    } catch (e) {
+      setUploadQueue((prev) =>
+        prev.map((j) =>
+          j.clientId === job.clientId ? { ...j, status: "failed" } : j,
+        ),
+      );
+    }
+  };
 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [fileAccept, setFileAccept] = useState(
@@ -38,7 +77,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const autoResize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
 
-    const maxHeight = 112; // ~ max-h-28
+    const maxHeight = 112;
     const newHeight = Math.min(el.scrollHeight, maxHeight);
 
     el.style.height = newHeight + "px";
@@ -146,31 +185,8 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
     }
     stopTyping();
 
-    // 3. Upload everything in background, no awaiting in UI
-    for (const { file, type, clientId } of prepared) {
-      if (!clientId) continue;
-
-      (async () => {
-        try {
-          let signature;
-          if (type === "image") signature = await imageSignature.mutateAsync();
-          else if (type === "video")
-            signature = await videoSignature.mutateAsync();
-          else signature = await fileSignature.mutateAsync();
-
-          await uploadAndEmitMedia({
-            file,
-            type,
-            caption: captionToSend,
-            recipient_id,
-            signature,
-            clientId,
-          });
-        } catch (err) {
-          console.error("Upload failed for", clientId, err);
-        }
-      })();
-    }
+    const limit = pLimit(3);
+    await Promise.all(prepared.map((job) => limit(() => processUpload(job))));
   };
 
   useEffect(() => {

@@ -275,7 +275,7 @@ export const useSocketConnection = ({
         }
       });
 
-      setOnlineUsers(onlineMap);
+      setOnlineUsersRef.current(onlineMap);
     };
 
     // CLEAN BEFORE REGISTERING

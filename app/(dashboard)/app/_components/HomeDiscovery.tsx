@@ -111,8 +111,8 @@ const HomeDiscovery = () => {
               Who are you connecting with today?
             </h1>
             <p className="text-sm md:text-[18px] text-gray-600 max-w-xl mx-auto">
-              Type what you're looking for — food, events, faith, or a date.
-              Bouwnce brings vendors and people near you, instantly.
+              Meet people worth connecting with and discover experiences worth
+              sharing. Everything is just a search away.
             </p>
           </div>
         )}
