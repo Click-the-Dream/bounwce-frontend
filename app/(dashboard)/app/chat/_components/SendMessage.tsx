@@ -22,12 +22,11 @@ import { useChatUtils } from "@/app/context/ChatContext";
 interface ChatHeaderProps {
   selectedChat?: User;
   role?: "buyer" | "vendor";
-  onCancelReply?: () => void;
 }
 
-const SendMessage = ({ selectedChat, onCancelReply }: ChatHeaderProps) => {
+const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const { authDetails } = useAuth();
-  const { replyTo } = useChatUtils();
+  const { replyTo, setReplyTo } = useChatUtils();
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
@@ -108,7 +107,7 @@ const SendMessage = ({ selectedChat, onCancelReply }: ChatHeaderProps) => {
       setMessage("");
       if (textareaRef.current) textareaRef.current.style.height = "auto";
       stopTyping();
-      onCancelReply?.();
+      setReplyTo(null);
       return;
     }
 
@@ -161,7 +160,7 @@ const SendMessage = ({ selectedChat, onCancelReply }: ChatHeaderProps) => {
     setMessage("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     stopTyping();
-    onCancelReply?.();
+    setReplyTo(null);
     setIsSendingMedia(true);
 
     try {
@@ -214,7 +213,7 @@ const SendMessage = ({ selectedChat, onCancelReply }: ChatHeaderProps) => {
             </div>
 
             <button
-              onClick={onCancelReply}
+              onClick={() => setReplyTo(null)}
               className="cursor-pointer p-2 hover:bg-black/80 rounded-full text-gray-500"
             >
               <X size={14} />

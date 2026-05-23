@@ -21,7 +21,7 @@ interface ChatHeaderProps {
 
 const MessageList = ({ selectedChat }: ChatHeaderProps) => {
   const { authDetails } = useAuth();
-  const { replyTo, setReplyTo } = useChatUtils();
+  const { setReplyTo } = useChatUtils();
   const { chatId } = useParams<any>();
   const { useGetMessages } = useChat();
 
