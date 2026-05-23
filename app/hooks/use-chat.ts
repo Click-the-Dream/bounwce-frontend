@@ -305,54 +305,8 @@ const useChat = () => {
         client_id: clientId,
         reply_to_message_id: reply_to?.id,
       });
-
-      // remove pending state
-      queryClient.setQueryData(["messages", recipient_id], (old: any) => {
-        if (!old) return old;
-
-        return {
-          ...old,
-          pages: old.pages.map((page: any) => ({
-            ...page,
-            messages: {
-              ...page.messages,
-              items: page.messages.items.map((m: any) =>
-                clientId.includes(m.id)
-                  ? {
-                      ...m,
-                      pending: false,
-                    }
-                  : m,
-              ),
-            },
-          })),
-        };
-      });
     } catch (err) {
       console.error("Media upload failed:", err);
-
-      queryClient.setQueryData(["messages", recipient_id], (old: any) => {
-        if (!old) return old;
-
-        return {
-          ...old,
-          pages: old.pages.map((page: any) => ({
-            ...page,
-            messages: {
-              ...page.messages,
-              items: page.messages.items.map((m: any) =>
-                clientId.includes(m.id)
-                  ? {
-                      ...m,
-                      failed: true,
-                      pending: false,
-                    }
-                  : m,
-              ),
-            },
-          })),
-        };
-      });
     }
   };
 
