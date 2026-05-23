@@ -69,7 +69,7 @@ const ProfileDropdown = ({ fullMode = false }) => {
                 onClick={() => setIsOpen(false)}
               >
                 <MdOutlineDashboard size={18} className="text-gray-400" />
-                Dashboard
+                Home
               </Link>
 
               <Link
