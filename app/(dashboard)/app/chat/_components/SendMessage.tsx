@@ -184,7 +184,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const canSend = message.trim().length > 0 || pendingFiles.length > 0;
 
   return (
-    <div className="relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
+    <div className="w-full relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
       {pendingFiles.length > 0 && (
         <MediaUploadModal
           files={pendingFiles}
@@ -200,9 +200,14 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
 
       {/* Reply preview bar */}
       {replyTo && (
-        <div className="relative px-3 pb-1 pt-1 mb-1">
-          <div className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-[10px] border-l-4 border-orange">
-            <div className="flex-1 min-w-0">
+        <div className="relative px-3 pb-1 pt-1 mb-1 w-full">
+          <div
+            className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-[10px]"
+            style={{
+              borderLeft: "4px solid #b07b1b",
+            }}
+          >
+            <div className="flex-1">
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
                 {replyTo.sender_id === authDetails?.user?.id
                   ? "Replying to yourself"
