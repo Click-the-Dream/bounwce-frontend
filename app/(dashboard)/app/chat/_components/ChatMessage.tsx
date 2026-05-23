@@ -30,14 +30,21 @@ const ChatMessage = ({ msg, onReply }: any) => {
           whiteSpace: "pre-wrap",
           borderTopLeftRadius: msg.reply_to && !isSender ? "0" : undefined,
           borderTopRightRadius: msg.reply_to && isSender ? "0" : undefined,
-          paddingTop: msg?.reply_to && "6px",
+          padding: msg?.reply_to && "6px",
         }}
       >
         {msg.reply_to && (
           <ReplyPreview reply={msg.reply_to} isSender={isSender} />
         )}
 
-        <span className="pr-12">{msg?.body}</span>
+        <span
+          className="pr-12"
+          style={{
+            paddingLeft: msg.reply_to && "10px",
+          }}
+        >
+          {msg?.body}
+        </span>
         <span
           className={`absolute bottom-1.25 right-1.25 text-[10px] flex items-center gap-1 ${styles.time}`}
         >

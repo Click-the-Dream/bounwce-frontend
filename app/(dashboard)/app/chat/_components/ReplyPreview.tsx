@@ -68,15 +68,20 @@ export default function ReplyPreview({ reply, isSender }: Props) {
   return (
     <div
       className={`
-        mb-1 px-2.5 py-2 rounded-md w-full
-        border-l-[2.5px]
-        flex items-center gap-2
-        ${
-          isSender
-            ? "border-green-500 bg-black/40"
-            : "border-gray-300 bg-black/60"
-        }
-      `}
+      mb-1 px-2.5 py-2 rounded-md w-full
+      border-l-[2.5px]
+      flex items-start gap-2
+      min-w-0
+      backdrop-blur-sm
+      ${
+        isSender
+          ? "border-green-500 bg-black/40"
+          : "border-gray-300 bg-black/60"
+      }
+    `}
+      style={{
+        borderLeft: "4px solid #bbb",
+      }}
     >
       {/* THUMBNAIL */}
       {renderThumbnail()}
@@ -86,18 +91,20 @@ export default function ReplyPreview({ reply, isSender }: Props) {
         {/* NAME */}
         <div
           className={`
-            text-[10px] font-medium truncate
-            ${isSender ? "text-green-700/80" : "text-gray-500"}
-          `}
+          text-[10px] font-medium truncate
+          ${isSender ? "text-green-700/80" : "text-gray-500"}
+        `}
         >
           {isReplySender ? "You" : reply.sender?.full_name || "User"}
         </div>
 
         {/* MESSAGE */}
-        <div className="flex items-center gap-1 text-[12px] text-black/55 truncate">
+        <div className="flex items-center gap-1 text-[12px] text-black/55 min-w-0">
           {Icon && <Icon size={12} className="shrink-0 text-black/35" />}
 
-          <span className="line-clamp-1">{getPreviewText()}</span>
+          <span className="min-w-0 flex-1 line-clamp-2 wrap-break-word ">
+            {getPreviewText()}
+          </span>
         </div>
       </div>
     </div>
