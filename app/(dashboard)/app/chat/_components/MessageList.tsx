@@ -143,17 +143,24 @@ const MessageList = () => {
       if (files) {
         try {
           const getSignature = useGetChatSignature();
-          const signature = await getSignature.mutateAsync({
+          const raw = await getSignature.mutateAsync({
             uploadType: msg.media_type,
             count: files.length,
           });
+
+          const signatureItems = (raw.items || [raw.fields]).map(
+            (item: any) => ({
+              fields: item,
+              constraints: raw.constraints,
+            }),
+          );
 
           await uploadAndEmitMedia({
             files,
             recipient_id: chatId,
             type: msg.media_type,
             caption: msg.body || msg.caption || "",
-            signature,
+            signatures: signatureItems,
             clientId: [msg.id],
             reply_to: msg.reply_to,
           });

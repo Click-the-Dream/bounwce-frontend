@@ -1,6 +1,7 @@
 "use client";
 
 import { avatarColor, STATUS_CONFIG, timeAgo } from "@/app/_utils/formatters";
+import { slugify } from "@/app/_utils/slugify";
 import {
   ConnectionRequest,
   RequestStatus,
@@ -8,6 +9,8 @@ import {
 import { getInitials } from "@/app/_utils/utility";
 import { useAuth } from "@/app/context/AuthContext";
 import { Check, Clock, Link2, Loader2, UserCheck, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import UserImage from "../../_components/UserImage";
 
 const RequestCard = ({
   r,
@@ -21,6 +24,7 @@ const RequestCard = ({
   onReject: () => void;
 }) => {
   const { authDetails } = useAuth();
+  const router = useRouter();
   // Access the user ID from the auth context
   const currentUserId = authDetails?.user?.id;
 
@@ -34,22 +38,26 @@ const RequestCard = ({
   // Logic: Am I the recipient?
   const isRecipient = r.target_user.id === currentUserId;
 
+  const goToProfile = () => {
+    router.push(
+      `/app/profile/${slugify(r.requester.full_name)}_${r.requester.id}`,
+    );
+  };
+
   return (
     <div className="group flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all duration-150">
       {/* Avatar */}
-      <div
-        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${avatarColor(isRecipient ? r.requester.id : r.target_user.id)}`}
-      >
-        {getInitials(
-          isRecipient ? r.requester.full_name : r.target_user.full_name,
-        )}
-      </div>
+
+      <UserImage user={r.requester} rounded="rounded-full" size={40} />
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="cursor-pointer flex items-center gap-2 flex-wrap">
           {/* If I am the recipient, show the Requester's name. If I am the requester, show the Target's name. */}
-          <span className="text-sm font-semibold text-slate-800 truncate">
+          <span
+            onClick={goToProfile}
+            className="hover:underline text-sm font-semibold text-slate-800 truncate"
+          >
             {isRecipient ? r.requester.full_name : r.target_user.full_name}
           </span>
           <span

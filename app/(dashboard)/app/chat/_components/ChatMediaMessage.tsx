@@ -23,7 +23,6 @@ const ChatMediaMessage = ({
   const styles = getMessageLayout(isSender);
   const caption = msg.body || msg.caption || "";
 
-  // Timer logic: Mark as failed if pending for more than 60 seconds
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isSender && msg.pending) {
@@ -93,10 +92,14 @@ const ChatMediaMessage = ({
       return (
         <div
           className="relative cursor-pointer"
-          onClick={() =>
-            !isUploading &&
-            onOpen?.(mediaImages.findIndex((m: any) => m.src === mediaUrls[0]))
-          }
+          onClick={() => {
+            console.log("images");
+
+            if (!isUploading)
+              onOpen?.(
+                mediaImages.findIndex((m: any) => m.src === mediaUrls[0]),
+              );
+          }}
         >
           <SafeImage
             src={mediaUrls[0]}

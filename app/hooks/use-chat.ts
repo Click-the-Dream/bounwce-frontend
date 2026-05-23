@@ -273,7 +273,7 @@ const useChat = () => {
     recipient_id,
     type,
     caption = "",
-    signature,
+    signatures,
     clientId,
     reply_to,
   }: {
@@ -281,14 +281,17 @@ const useChat = () => {
     recipient_id: string;
     type: "image" | "video" | "file";
     caption?: string;
-    signature: any;
+    signatures: any;
     clientId: string[];
     reply_to?: ReplyTarget | null;
   }) => {
     try {
       // upload all files in parallel
       const uploads = await Promise.all(
-        files.map((file) => uploadToCloudinary(file, signature)),
+        files.map((file, index) => {
+          const signatureObj = signatures[index];
+          return uploadToCloudinary(file, signatureObj);
+        }),
       );
 
       const media_urls = uploads.map((u) => u.secure_url);

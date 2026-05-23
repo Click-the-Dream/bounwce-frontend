@@ -141,17 +141,22 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
 
       activeUploadsRef.current.set(clientId, files);
 
-      const signature = await getSignature.mutateAsync({
+      const raw = await getSignature.mutateAsync({
         uploadType: type,
         count: files.length,
       });
+
+      const signatureItems = (raw.items || [raw.fields]).map((item: any) => ({
+        fields: item,
+        constraints: raw.constraints,
+      }));
 
       await uploadAndEmitMedia({
         files,
         type,
         recipient_id,
         caption: captionToSend,
-        signature,
+        signatures: signatureItems,
         clientId,
         reply_to: replyTo,
       });

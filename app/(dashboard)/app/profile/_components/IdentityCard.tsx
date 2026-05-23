@@ -49,10 +49,10 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
   const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
     useMatch();
-  const { data: appRewuests } = useGetMatchRequests({
+  const { data: appRequests } = useGetMatchRequests({
     enabled: !isOwnProfile,
   });
-  const matchRequests = data?.items || [];
+  const matchRequests = appRequests?.items || [];
 
   // CROPPER STATES
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -66,10 +66,10 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
   const relation = matchRequests?.find((req: any) => {
     return (
-      (req.target_user_id === data.id &&
-        req.requester_id === authDetails?.user?.id) ||
-      (req.requester_id === data.id &&
-        req.target_user_id === authDetails?.user?.id)
+      (req.target_user?.id === data.id &&
+        req.requester?.d === authDetails?.user?.id) ||
+      (req.requester?.id === data.id &&
+        req.target_user?.id === authDetails?.user?.id)
     );
   });
 

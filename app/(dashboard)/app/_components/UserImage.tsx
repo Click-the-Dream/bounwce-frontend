@@ -9,6 +9,8 @@ interface UserImageProps {
   };
   size?: number;
   style?: any;
+  // Add this new prop
+  rounded?: string;
 }
 
 const UserImage = ({
@@ -18,16 +20,17 @@ const UserImage = ({
     boxShadow:
       "0px 0px 2.03px 0.51px #00000040, 0.51px -3.05px 2.03px 1.52px #00000040 inset",
   },
+  // Default to rounded-xl if nothing is provided
+  rounded = "rounded-xl",
 }: UserImageProps) => {
   const { onlineUsers } = useChatUtils();
-
   const isOnline = !!user?.id && !!onlineUsers?.[user.id];
-
   const initials = user.full_name?.trim()?.slice(0, 2)?.toUpperCase() || "NA";
 
   return (
     <div
-      className="relative shrink-0 rounded-xl border border-white"
+      // Use template literals to inject the dynamic rounded class
+      className={`relative shrink-0 border border-white ${rounded}`}
       style={{ ...style, width: size, height: size }}
     >
       {user.profile_pic?.url ? (
@@ -36,11 +39,11 @@ const UserImage = ({
           alt={user.full_name}
           width={size}
           height={size}
-          className="w-full h-full object-cover rounded-xl"
+          className={`w-full h-full object-cover ${rounded}`}
         />
       ) : (
         <div
-          className="flex items-center justify-center bg-gray-100 font-semibold text-black rounded-xl"
+          className={`flex items-center justify-center bg-gray-100 font-semibold text-black ${rounded}`}
           style={{ width: size, height: size }}
         >
           {initials}
