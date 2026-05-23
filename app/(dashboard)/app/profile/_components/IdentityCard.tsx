@@ -50,7 +50,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
   const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
     useMatch();
-  const { data } = useGetMatchRequests({
+  const { data : appRewuests} = useGetMatchRequests({
     enabled: !isOwnProfile,
   });
   const matchRequests=data?.items ||[]
