@@ -1,150 +1,117 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import UserImage from "../../_components/UserImage";
 
 interface ConnectionModalProps {
   isOpen: boolean;
-  userName: string;
-  userInitials: string;
+  full_name: string;
+  profile_pic?: { url: string };
+  userId: string;
   onGoToChat: () => void;
   onDismiss: () => void;
-  autoRedirectSeconds?: number;
 }
 
 const ConnectionModal = ({
   isOpen,
-  userName,
-  userInitials,
+  full_name,
+  profile_pic,
   onGoToChat,
   onDismiss,
-  autoRedirectSeconds = 4,
+  userId,
 }: ConnectionModalProps) => {
-  const [countdown, setCountdown] = useState(autoRedirectSeconds);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setCountdown(autoRedirectSeconds);
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-
-    setCountdown(autoRedirectSeconds);
-
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-6 sm:pb-0"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onDismiss();
-      }}
-    >
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden animate-slide-up">
-        {/* Progress bar */}
-        <div className="h-0.5 bg-gray-100 w-full">
-          <div
-            className="h-full bg-emerald-500 transition-none"
-            style={{
-              width: `${((autoRedirectSeconds - countdown) / autoRedirectSeconds) * 100}%`,
-              transition: "width 1s linear",
-            }}
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onDismiss}
+            className="absolute inset-0 bg-black/55 backdrop-blur-md"
           />
-        </div>
 
-        <div className="px-6 pt-7 pb-6 text-center">
-          {/* Avatar */}
-          <div className="relative w-16 h-16 mx-auto mb-4">
-            <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-700 font-medium text-lg">
-              {userInitials}
-            </div>
-            <span className="absolute bottom-0 right-0 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
-              <svg
-                className="w-2.5 h-2.5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={3}
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            className="relative w-full max-w-sm rounded-[28px] bg-white/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+          >
+            {/* subtle gradient glow */}
+            <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/70 via-transparent to-transparent pointer-events-none" />
+
+            <div className="relative px-6 pt-10 pb-7 text-center">
+              {/* Avatar success ring */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1, type: "spring" }}
+                className="mx-auto mb-6 relative w-24 h-24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
+                <motion.span
+                  className="absolute inset-0 rounded-full bg-emerald-300/40"
+                  animate={{
+                    scale: [1, 1.6, 1],
+                    opacity: [0.6, 0, 0.6],
+                  }}
+                  transition={{ repeat: Infinity, duration: 2 }}
                 />
-              </svg>
-            </span>
-          </div>
 
-          {/* Status pill */}
-          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium px-3 py-1 rounded-full mb-3">
-            <svg
-              className="w-3 h-3"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-            Request sent
-          </span>
+                <div className="relative h-24 w-24 rounded-full bg-white shadow-lg flex items-center justify-center">
+                  <UserImage
+                    user={{
+                      id: userId,
+                      full_name,
+                      profile_pic,
+                    }}
+                    size={50}
+                  />
+                </div>
+              </motion.div>
 
-          <h2 className="text-[17px] font-medium text-gray-900 mb-1.5">
-            You connected with {userName}
-          </h2>
-          <p className="text-sm text-gray-500 leading-relaxed mb-5">
-            Your request is pending. You can start a conversation while you wait
-            for them to respond.
-          </p>
+              {/* Title */}
+              <h2 className="text-[20px] font-semibold text-gray-900">
+                Request sent
+              </h2>
 
-          {/* Countdown hint */}
-          <p className="text-xs text-gray-400 mb-4">
-            {countdown > 0
-              ? `Taking you to chat in ${countdown}s…`
-              : "Redirecting…"}
-          </p>
+              {/* Context */}
+              <p className="mt-2 text-[14px] text-gray-500 leading-relaxed">
+                Your request to{" "}
+                <span className="font-medium text-gray-800">{full_name}</span>{" "}
+                has been sent. You can start chatting anytime.
+              </p>
 
-          {/* CTAs */}
-          <button
-            onClick={() => {
-              if (timerRef.current) clearInterval(timerRef.current);
-              onGoToChat();
-            }}
-            className="w-full bg-black text-white text-sm font-medium py-3 rounded-xl mb-2.5 hover:bg-gray-800 active:scale-[0.98] transition-all"
-          >
-            Go to chat now
-          </button>
-          <button
-            onClick={() => {
-              if (timerRef.current) clearInterval(timerRef.current);
-              onDismiss();
-            }}
-            className="w-full bg-transparent text-gray-500 text-sm border border-gray-200 py-3 rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all"
-          >
-            Stay on explore
-          </button>
+              {/* Divider */}
+              <div className="my-6 mx-auto h-px w-14 bg-gray-200" />
+
+              {/* Primary Action */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onGoToChat}
+                className="w-full rounded-2xl  py-3.5 text-black font-semibold shadow-md"
+              >
+                Send message
+              </motion.button>
+
+              {/* Secondary Action */}
+              <motion.button
+                whileHover={{ opacity: 0.7 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onDismiss}
+                className="mt-3 w-full rounded-2xl py-3 text-sm font-medium text-gray-600"
+              >
+                Not now
+              </motion.button>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };
 

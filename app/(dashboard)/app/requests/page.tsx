@@ -237,7 +237,7 @@ export default function RequestsPage() {
   const { useGetMatchRequests, respondToMatchRequest } = useMatch();
   const { data, isLoading, isError, refetch } = useGetMatchRequests();
 
-  const requests: ConnectionRequest[] = data || [];
+  const requests: ConnectionRequest[] = data?.items || [];
 
   const filtered = useMemo(() => {
     if (filter === "all") return requests;

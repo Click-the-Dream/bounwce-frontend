@@ -1,7 +1,5 @@
 "use client";
-
 import { Image as ImageIcon, Video, FileText, Type } from "lucide-react";
-import SafeImage from "@/app/_components/SafeImage";
 
 interface Props {
   reply: any;

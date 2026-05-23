@@ -29,7 +29,7 @@ const useMatch = () => {
       queryKey: ["matches", "requests"],
       queryFn: async () => {
         const res = await api.get("/matches/requests");
-        return res?.data?.items || res?.data;
+        return res?.data;
       },
       enabled: !!authDetails?.access_token && enabled,
     });

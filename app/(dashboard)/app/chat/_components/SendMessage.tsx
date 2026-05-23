@@ -9,7 +9,6 @@ import {
   File,
   Loader2,
   X,
-  Reply,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ReplyTarget, User } from "@/app/_utils/types/buyer";
@@ -18,20 +17,17 @@ import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
 import { useAuth } from "@/app/context/AuthContext";
 import SmartReplyPreview from "./SmartReplyPreview";
+import { useChatUtils } from "@/app/context/ChatContext";
 
 interface ChatHeaderProps {
   selectedChat?: User;
   role?: "buyer" | "vendor";
-  replyTo?: ReplyTarget | null;
   onCancelReply?: () => void;
 }
 
-const SendMessage = ({
-  selectedChat,
-  replyTo,
-  onCancelReply,
-}: ChatHeaderProps) => {
+const SendMessage = ({ selectedChat, onCancelReply }: ChatHeaderProps) => {
   const { authDetails } = useAuth();
+  const { replyTo } = useChatUtils();
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
@@ -208,7 +204,7 @@ const SendMessage = ({
         <div className="relative px-3 pb-1 pt-1 mb-1">
           <div className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-[10px] border-l-4 border-orange">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-orange uppercase tracking-wide">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
                 {replyTo.sender_id === authDetails?.user?.id
                   ? "Replying to yourself"
                   : `Replying to ${selectedChat?.full_name ?? "them"}`}
@@ -314,7 +310,7 @@ const SendMessage = ({
               handleSend();
             }
           }}
-          className="flex-1 bg-transparent text-sm focus:outline-none max-h-28 resize-none overflow-hidden leading-5 py-1"
+          className="flex-1 bg-transparent text-sm focus:outline-none max-h-28 resize-none overflow-hidden overflow-y-auto leading-5 py-1"
         />
 
         {(isFocused || message) && (

@@ -91,9 +91,9 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
 
   return (
     <div
-      className={`w-80 min-w-80  border-r-[0.53px] border-[#00000033] flex-col bg-white h-full ${
-        chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-0"
-      }`}
+      className={`w-80 min-w-80 flex flex-col bg-white border-r-[0.53px] border-[#00000033] 
+    h-dvh overflow-hidden
+    ${chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-0"}`}
     >
       {/* HEADER */}
       <div className="p-4 flex items-center justify-between h-15.5 border-b-[0.53px] border-[#00000033]">
@@ -124,7 +124,10 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
       </div>
 
       {/* LIST */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-2">
+      <div
+        ref={scrollRef}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 pb-2"
+      >
         {isLoading ? (
           <div className="text-center mt-10 text-gray-400 text-sm">
             Loading chats...

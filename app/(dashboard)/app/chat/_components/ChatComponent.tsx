@@ -17,7 +17,7 @@ const ChatComponent = ({ role = "buyer" }: ChatComponentProps) => {
   const { data: selectedUser, isLoading, isFetching } = useGetUserById(chatId);
 
   return (
-    <div className="flex h-[calc(100vh-60px)] bg-white overflow-hidden  border-[0.56px] border-t-0 border-l-0 border-[#00000033]">
+    <div className="flex h-[calc(100vh-60px)] bg-white min-h-0 overflow-hidden  border-[0.56px] border-t-0 border-l-0 border-[#00000033]">
       <ChatSidebar role={role} selectedUser={selectedUser} />
       <ChatWindow
         selectedUser={selectedUser}

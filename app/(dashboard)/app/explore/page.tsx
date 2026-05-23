@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import useMatch from "@/app/hooks/use-match";
 import ExploreCard from "./_components/ExploreCard";
 import { ConnectStatus, SuggestedCandidate } from "@/app/_utils/types/payload";
 import ExploreCardSkeleton from "../_components/loader/ExploreCardSkeleton";
-import { onFailure, onSuccess } from "@/app/_utils/notification";
+import { onFailure } from "@/app/_utils/notification";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import ConnectionModal from "./_components/ConnectionModal";
@@ -13,23 +13,17 @@ import ConnectionModal from "./_components/ConnectionModal";
 interface ModalState {
   isOpen: boolean;
   userId: string;
-  userName: string;
-  userInitials: string;
+  full_name: string;
+  profile_pic?: {
+    url: string;
+  };
 }
 
 const MODAL_CLOSED: ModalState = {
   isOpen: false,
   userId: "",
-  userName: "",
-  userInitials: "",
+  full_name: "",
 };
-
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0]?.toUpperCase() ?? "")
-    .join("");
 
 const ExplorePage = () => {
   const router = useRouter();
@@ -37,7 +31,8 @@ const ExplorePage = () => {
   const { useGetSuggestedCandidates, createMatchRequest, useGetMatchRequests } =
     useMatch();
 
-  const { data: matchRequests } = useGetMatchRequests();
+  const { data } = useGetMatchRequests();
+  const matchRequests = data?.items;
   const [connectState, setConnectState] = useState<
     Record<string, ConnectStatus>
   >({});
@@ -82,17 +77,12 @@ const ExplorePage = () => {
           setConnectState((prev) => ({ ...prev, [userId]: "pending" }));
           queryClient.invalidateQueries();
 
-          onSuccess({
-            title: "Connection Request Sent",
-            message: "Your connection request has been sent successfully.",
-          });
-
           // Open the modal — it handles auto-redirect internally
           setModal({
             isOpen: true,
             userId,
-            userName: user.full_name ?? "this person",
-            userInitials: getInitials(user.full_name ?? "?"),
+            full_name: user.full_name ?? "USer",
+            profile_pic: user.profile_pic,
           });
         },
         onError: () => {
@@ -106,10 +96,12 @@ const ExplorePage = () => {
     );
   };
 
-  const goToChat = () => {
-    setModal(MODAL_CLOSED);
+  const goToChat = useCallback(() => {
+    if (!modal.userId) return;
+
     router.push(`/app/chat/${modal.userId}`);
-  };
+    setModal(MODAL_CLOSED);
+  }, [modal.userId, router]);
 
   const dismissModal = () => {
     setModal(MODAL_CLOSED);
@@ -147,8 +139,36 @@ const ExplorePage = () => {
 
   if (!suggestions || suggestions.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        No suggestions available right now.
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center max-w-sm">
+          {/* Icon */}
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+            <svg
+              className="h-6 w-6 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.172 16.172a4 4 0 015.656 0M12 14h.01M7.5 8.5h.01M16.5 8.5h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-[16px] font-semibold text-gray-900">
+            No suggestions yet
+          </h2>
+
+          {/* Description */}
+          <p className="mt-2 text-sm text-gray-500 leading-relaxed">
+            We couldn’t find any recommendations right now. Try again later or
+            update your preferences.
+          </p>
+        </div>
       </div>
     );
   }
@@ -179,11 +199,10 @@ const ExplorePage = () => {
 
       <ConnectionModal
         isOpen={modal.isOpen}
-        userName={modal.userName}
-        userInitials={modal.userInitials}
+        full_name={modal.full_name}
         onGoToChat={goToChat}
         onDismiss={dismissModal}
-        autoRedirectSeconds={4}
+        userId={modal?.userId}
       />
     </>
   );

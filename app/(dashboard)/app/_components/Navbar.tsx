@@ -31,14 +31,14 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
       {/* RIGHT SECTION */}
       <div className="flex items-center gap-3 text-black ml-4 md:mr-4">
-        <Link href="/marketplace/carts" className="mr-0 md:mr-2">
+        {/* <Link href="/marketplace/carts" className="mr-0 md:mr-2">
           <div className="relative flex items-center justify-center size-9 bg-[#ECECF0] rounded-xl cursor-pointer hover:bg-gray-200 transition-colors">
             <ShoppingCart strokeWidth={1.5} className="size-5" />
             <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-4.5 h-4.5 bg-orange text-white text-[9px] rounded-full px-1">
               {carts?.length || 0}
             </span>
           </div>
-        </Link>
+        </Link> */}
         <Link href="/app/chat" className="relative">
           <MessageCircleMore className="shrink-0 size-5 cursor-pointer" />
           {totalUnread > 0 && (

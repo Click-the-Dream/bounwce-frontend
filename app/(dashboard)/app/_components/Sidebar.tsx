@@ -8,10 +8,11 @@ import logo from "../../../assets/bouwnce-main.png";
 import logoIcon from "../../../assets/bouwnce-icon.png";
 import { LuSquareUserRound } from "react-icons/lu";
 import { PiDotsNineBold } from "react-icons/pi";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/context/AuthContext";
 import useAuthServices from "@/app/hooks/use-authservices";
+import useMatch from "@/app/hooks/use-match";
 
 const Sidebar = ({
   isMobile,
@@ -24,31 +25,34 @@ const Sidebar = ({
   const { authDetails } = useAuth();
   const { logout } = useAuthServices();
   const [collapsed, setCollapsed] = useState(false);
+  const { useGetMatchRequests } = useMatch();
+  const { data } = useGetMatchRequests();
 
   const isActive = (path: string) => pathname === path;
   const onToggleCollapse = () => setCollapsed(!collapsed);
-  const pendingRequestsCount = 2;
-  const navItems = [
-    { name: "Home", href: "/app", icon: Home },
-    { name: "Explore", href: "/app/explore", icon: Compass },
-    {
-      name: "Requests",
-      href: "/app/requests",
-      icon: UserPlus,
-      badge: pendingRequestsCount,
-    },
-    { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
+  const navItems = useMemo(() => {
+    const items = [
+      { name: "Home", href: "/app", icon: Home },
+      { name: "Explore", href: "/app/explore", icon: Compass },
+      {
+        name: "Requests",
+        href: "/app/requests",
+        icon: UserPlus,
+        badge: data?.total,
+      },
+      { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
+    ];
 
-    ...(authDetails?.user?.role === "vendor"
-      ? [
-          {
-            name: "Business Hub",
-            href: "/vendor",
-            icon: Briefcase,
-          },
-        ]
-      : []),
-  ];
+    if (authDetails?.user?.role === "vendor") {
+      items.push({
+        name: "Business Hub",
+        href: "/vendor",
+        icon: Briefcase,
+      });
+    }
+
+    return items;
+  }, [authDetails?.user?.role, data?.total]);
   return (
     <motion.aside
       initial={false}

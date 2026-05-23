@@ -19,8 +19,9 @@ interface ChatHeaderProps {
   role?: "buyer" | "vendor";
 }
 
-const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
+const MessageList = ({ selectedChat }: ChatHeaderProps) => {
   const { authDetails } = useAuth();
+  const { replyTo, setReplyTo } = useChatUtils();
   const { chatId } = useParams<any>();
   const { useGetMessages } = useChat();
 
@@ -42,9 +43,6 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
-
-  // Reply state — lifted here so both MessageList and SendMessage share it
-  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
 
   const flatMessages =
     messages?.pages?.flatMap((page: any) => page?.messages?.items || []) || [];
@@ -248,13 +246,6 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
           />
         )}
       </div>
-
-      {/* SendMessage is rendered here so it receives replyTo state */}
-      <SendMessage
-        selectedChat={selectedChat}
-        replyTo={replyTo}
-        onCancelReply={() => setReplyTo(null)}
-      />
     </div>
   );
 };

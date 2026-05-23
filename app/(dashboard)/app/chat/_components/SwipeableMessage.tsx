@@ -75,7 +75,7 @@ export default function SwipeableMessage({
   };
 
   return (
-    <div className={`relative group ${className}`}>
+    <div className={`relative w-fit group ${className}`}>
       {/* Reply icon (hover + swipe hybrid) */}
       <div
         onClick={onReply}
@@ -113,7 +113,7 @@ export default function SwipeableMessage({
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         animate={controls}
-        className="relative z-10 touch-pan-y"
+        className="cursor-grab relative z-10 touch-pan-y"
       >
         {children}
       </motion.div>
