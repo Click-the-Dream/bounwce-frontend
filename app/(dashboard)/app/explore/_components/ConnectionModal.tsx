@@ -35,7 +35,6 @@ const ConnectionModal = ({
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          onGoToChat();
           return 0;
         }
         return prev - 1;
