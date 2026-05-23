@@ -72,7 +72,7 @@ const ChatWindow = ({
       <ChatHeader selectedChat={selectedUser} role={role} />
 
       {/* Messages */}
-      <MessageList selectedChat={selectedUser} />
+      <MessageList />
 
       {/* Input Area */}
       {chatId && <SendMessage selectedChat={selectedUser} />}

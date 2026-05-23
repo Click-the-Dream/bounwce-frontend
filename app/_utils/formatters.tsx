@@ -201,3 +201,50 @@ export const formatTime = (dateString?: string) => {
     timeZone: "Africa/Lagos",
   });
 };
+
+export const timeAgo = (dateStr: string) => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+};
+
+export const getInitials = (id: string) =>
+  id?.slice(0, 2).toUpperCase() ?? "??";
+
+export const AVATAR_COLORS = [
+  "bg-violet-100 text-violet-700",
+  "bg-blue-100 text-blue-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-orange-100 text-orange-700",
+  "bg-pink-100 text-pink-700",
+];
+
+export const avatarColor = (id: string) =>
+  AVATAR_COLORS[id?.charCodeAt(0) % AVATAR_COLORS.length] ?? AVATAR_COLORS[0];
+
+export const STATUS_CONFIG = {
+  pending: {
+    label: "Pending",
+    pill: "bg-amber-50 text-amber-600 border-amber-200",
+    dot: "bg-amber-400",
+  },
+  accepted: {
+    label: "Accepted",
+    pill: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    dot: "bg-emerald-500",
+  },
+  rejected: {
+    label: "Rejected",
+    pill: "bg-red-50 text-red-600 border-red-200",
+    dot: "bg-red-400",
+  },
+  expired: {
+    label: "Expired",
+    pill: "bg-slate-100 text-slate-500 border-slate-200",
+    dot: "bg-slate-400",
+  },
+};

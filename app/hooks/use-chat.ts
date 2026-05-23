@@ -248,8 +248,8 @@ const useChat = () => {
       recipient_id,
       body: caption,
       media_type: type,
-      media_url: localUrls,
-      local_url: localUrls,
+      media_urls: localUrls,
+      local_urls: localUrls,
       currentUser,
       file_name: files.length === 1 ? files[0].name : `${files.length} files`,
       file_size: formatBytes(files.reduce((a, f) => a + f.size, 0)),
@@ -290,19 +290,14 @@ const useChat = () => {
         files.map((file) => uploadToCloudinary(file, signature)),
       );
 
-      const media_url = uploads.map((u) => u.secure_url);
+      const media_urls = uploads.map((u) => u.secure_url);
 
-      const eventMap = {
-        image: "chat.upload_image",
-        video: "chat.upload_video",
-        file: "chat.upload_file",
-      };
-
-      websocket.emit(eventMap[type], {
+      websocket.emit("chat.upload_media", {
         recipient_id,
-        media_url,
+        media_urls,
         body: caption,
         client_id: clientId,
+        media_type: type,
         reply_to_message_id: reply_to?.id,
       });
     } catch (err) {
@@ -310,6 +305,27 @@ const useChat = () => {
     }
   };
 
+  const retryEmitMedia = async ({
+    recipient_id,
+    media_urls,
+    caption,
+    clientId,
+    reply_to,
+  }: {
+    recipient_id: string;
+    media_urls: string[];
+    caption: string;
+    clientId: string[];
+    reply_to?: ReplyTarget | null;
+  }) => {
+    websocket.emit("chat.upload_media", {
+      recipient_id,
+      media_urls,
+      body: caption,
+      client_id: clientId,
+      reply_to_message_id: reply_to?.id,
+    });
+  };
   return {
     useGetConversations,
     useGetMessages,
@@ -318,6 +334,7 @@ const useChat = () => {
     uploadAndEmitMedia,
     useGetChatSignature,
     uploadToCloudinary,
+    retryEmitMedia,
   };
 };
 

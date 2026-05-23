@@ -38,7 +38,7 @@ export interface ReplyTarget {
   id: string;
   body: string;
   media_type?: "image" | "video" | "file";
-  media_url?: string[];
+  media_urls?: string[];
   sender_id: string;
   sender: {
     full_name: string;

@@ -26,7 +26,7 @@ interface ChatHeaderProps {
 
 const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const { authDetails } = useAuth();
-  const { replyTo, setReplyTo } = useChatUtils();
+  const { replyTo, setReplyTo, activeUploadsRef } = useChatUtils();
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
@@ -139,6 +139,8 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         caption: captionToSend,
         reply_to: replyTo,
       });
+
+      activeUploadsRef.current.set(clientId, files);
 
       const signature = await getSignature.mutateAsync({
         uploadType: type,

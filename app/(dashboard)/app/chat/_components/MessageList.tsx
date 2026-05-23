@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useChatUtils } from "@/app/context/ChatContext";
 import ChatMessage from "./ChatMessage";
 import ImageViewer from "./ImageViewer";
-import { ReplyTarget, User } from "@/app/_utils/types/buyer";
+import { User } from "@/app/_utils/types/buyer";
 import useChat from "@/app/hooks/use-chat";
 import { useParams } from "next/navigation";
 import { formatMessageDate } from "@/app/_utils/formatters";
@@ -12,18 +12,17 @@ import { useAuth } from "@/app/context/AuthContext";
 import { websocket } from "@/app/services/websocket";
 import TypingDots from "./TypingDots";
 import ChatMediaMessage from "./ChatMediaMessage";
-import SendMessage from "./SendMessage";
 
-interface ChatHeaderProps {
-  selectedChat?: User;
-  role?: "buyer" | "vendor";
-}
-
-const MessageList = ({ selectedChat }: ChatHeaderProps) => {
+const MessageList = () => {
   const { authDetails } = useAuth();
   const { setReplyTo } = useChatUtils();
   const { chatId } = useParams<any>();
-  const { useGetMessages } = useChat();
+  const {
+    useGetMessages,
+    retryEmitMedia,
+    uploadAndEmitMedia,
+    useGetChatSignature,
+  } = useChat();
 
   const {
     data: messages,
@@ -33,7 +32,7 @@ const MessageList = ({ selectedChat }: ChatHeaderProps) => {
     isFetchingNextPage,
   } = useGetMessages({ userId: chatId });
 
-  const { typingUsers } = useChatUtils();
+  const { typingUsers, activeUploadsRef } = useChatUtils();
 
   const topAnchorRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -73,9 +72,9 @@ const MessageList = ({ selectedChat }: ChatHeaderProps) => {
   const mediaMessages = useMemo(
     () =>
       sortedMessages
-        .filter((m: any) => m.media_type && (m.media_url || m.local_url))
+        .filter((m: any) => m.media_type && (m.media_urls || m.local_urls))
         .map((m: any) => ({
-          src: m.media_url || m.local_url,
+          src: m.media_urls || m.local_urls,
           id: m.id,
           created_at: m.created_at,
           sender: m.sender,
@@ -96,7 +95,7 @@ const MessageList = ({ selectedChat }: ChatHeaderProps) => {
     (msg.media_type === "image" ||
       msg.media_type === "video" ||
       msg.media_type === "file") &&
-    (msg.media_url || msg.local_url);
+    (msg.media_urls || msg.local_urls);
 
   useEffect(() => {
     if (!sortedMessages.length || hasInitialScrollRef.current) return;
@@ -125,6 +124,48 @@ const MessageList = ({ selectedChat }: ChatHeaderProps) => {
     });
     prevMessageCountRef.current = sortedMessages.length;
   }, [sortedMessages.length]);
+
+  const handleRetry = async (msg: any) => {
+    const isUploaded = msg.media_url && !msg.media_url[0]?.startsWith("blob:");
+
+    if (isUploaded) {
+      // SCENARIO A: Upload succeeded, but WebSocket failed.
+      await retryEmitMedia({
+        recipient_id: chatId,
+        media_urls: msg.media_urls,
+        caption: msg.body || msg.caption || "",
+        clientId: [msg.id],
+        reply_to: msg.reply_to,
+      });
+    } else {
+      // SCENARIO B: Upload failed. We must re-upload.
+      const files = activeUploadsRef.current.get(msg.id);
+
+      if (files) {
+        try {
+          const getSignature = useGetChatSignature();
+          const signature = await getSignature.mutateAsync({
+            uploadType: msg.media_type,
+            count: files.length,
+          });
+
+          await uploadAndEmitMedia({
+            files,
+            recipient_id: chatId,
+            type: msg.media_type,
+            caption: msg.body || msg.caption || "",
+            signature,
+            clientId: [msg.id],
+            reply_to: msg.reply_to,
+          });
+        } catch (err) {
+          console.error("Retry upload failed:", err);
+        }
+      } else {
+        console.error("Original files not found in activeUploadsRef");
+      }
+    }
+  };
 
   const handleScroll = () => {
     const el = containerRef.current;
@@ -215,6 +256,7 @@ const MessageList = ({ selectedChat }: ChatHeaderProps) => {
                       setViewerIndex(index);
                       setViewerOpen(true);
                     }}
+                    onRetry={() => handleRetry(msg)}
                   />
                 ) : (
                   <ChatMessage

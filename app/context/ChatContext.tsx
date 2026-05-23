@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import { ReplyTarget } from "../_utils/types/buyer";
 
 export const ChatContext = createContext<any>({});
@@ -9,8 +9,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   const [onlineUsers, setOnlineUsers] = useState<Record<string, true>>({});
 
-  // Reply state — lifted here so both MessageList and SendMessage share it
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
+
+  const activeUploadsRef = useRef(new Map<string, File[]>());
   return (
     <ChatContext.Provider
       value={{
@@ -22,6 +23,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setOnlineUsers,
         replyTo,
         setReplyTo,
+        activeUploadsRef,
       }}
     >
       {children}

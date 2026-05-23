@@ -49,8 +49,8 @@ const ChatMessage = ({ msg, onReply }: any) => {
           borderTopRightRadius: msg.reply_to && isSender ? "0" : undefined,
         }}
       >
-        {msg.reply_to && (
-          <ReplyPreview reply={msg.reply_to} isSender={isSender} />
+        {msg.reply_to_message && (
+          <ReplyPreview reply={msg.reply_to_message} isSender={isSender} />
         )}
 
         {/* Message Body with dynamic line-clamp */}
