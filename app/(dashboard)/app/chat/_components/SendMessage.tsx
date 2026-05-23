@@ -17,6 +17,7 @@ import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
 import { useAuth } from "@/app/context/AuthContext";
+import SmartReplyPreview from "./SmartReplyPreview";
 
 interface ChatHeaderProps {
   selectedChat?: User;
@@ -205,20 +206,20 @@ const SendMessage = ({
       {/* Reply preview bar */}
       {replyTo && (
         <div className="relative px-3 pb-1 pt-1 mb-1">
-          <div className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-xl border-l-4 border-orange">
+          <div className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-[10px] border-l-4 border-orange">
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-bold text-orange uppercase tracking-wide">
                 {replyTo.sender_id === authDetails?.user?.id
                   ? "Replying to yourself"
                   : `Replying to ${selectedChat?.full_name ?? "them"}`}
               </p>
-              <p className="text-[12px] text-gray-600 truncate mt-0.5">
-                {replyTo.body}
-              </p>
+
+              <SmartReplyPreview reply={replyTo} isSender={false} />
             </div>
+
             <button
               onClick={onCancelReply}
-              className="p-1 hover:bg-black/5 rounded-full text-gray-500 transition-colors"
+              className="cursor-pointer p-2 hover:bg-black/80 rounded-full text-gray-500"
             >
               <X size={14} />
             </button>

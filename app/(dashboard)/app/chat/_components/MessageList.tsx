@@ -205,6 +205,8 @@ const MessageList = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
                       setReplyTo({
                         id: m.id,
                         body: m.body ?? m.caption ?? "",
+                        media_type: m.media_type,
+                        media_url: m.media_url,
                         sender_id: m.sender_id,
                         sender: m.sender,
                       })
