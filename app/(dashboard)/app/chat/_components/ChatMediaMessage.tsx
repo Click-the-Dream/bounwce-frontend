@@ -7,8 +7,9 @@ import SafeImage from "@/app/_components/SafeImage";
 import { getFileIcon, getRadius } from "@/app/_utils/utility";
 import { Download } from "lucide-react";
 import { useMemo } from "react";
+import SwipeableMessage from "./SwipeableMessage";
 
-const ChatMediaMessage = ({ msg, onOpen, mediaImages = [] }: any) => {
+const ChatMediaMessage = ({ msg, onOpen, mediaImages = [], onReply }: any) => {
   const { authDetails } = useAuth();
 
   const isSender = msg.sender_id === authDetails?.user?.id;
@@ -226,7 +227,11 @@ const ChatMediaMessage = ({ msg, onOpen, mediaImages = [] }: any) => {
   };
 
   return (
-    <div className={styles.container}>
+    <SwipeableMessage
+      isSender={isSender}
+      onReply={() => onReply?.(msg)}
+      className={styles.container}
+    >
       <div
         className={`${styles.bubble} p-0.5 relative w-71.25 rounded-[10px] overflow-hidden shadow-sm`}
       >
@@ -258,7 +263,7 @@ const ChatMediaMessage = ({ msg, onOpen, mediaImages = [] }: any) => {
           )}
         </span>
       </div>
-    </div>
+    </SwipeableMessage>
   );
 };
 

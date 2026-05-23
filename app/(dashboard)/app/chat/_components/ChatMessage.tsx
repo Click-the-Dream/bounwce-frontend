@@ -9,6 +9,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { useRef } from "react";
+import SwipeableMessage from "./SwipeableMessage";
 
 const SWIPE_THRESHOLD = 48;
 
@@ -64,81 +65,56 @@ const ChatMessage = ({ msg, onReply }: any) => {
   };
 
   return (
-    <div className={`${styles.container} relative`}>
-      {/* Reply icon sits BEHIND the bubble, revealed on swipe */}
-      <motion.div
-        style={{ opacity: iconOpacity, scale: iconScale }}
-        className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 ${
-          isSender ? "left-1" : "right-1"
-        }`}
+    <SwipeableMessage
+      isSender={isSender}
+      onReply={() => onReply?.(msg)}
+      className={styles.container}
+    >
+      <div
+        className={`${styles.bubble} p-4 rounded-[10px] text-[13px] relative pb-6`}
+        style={{
+          boxShadow: "0px 0px 1.5px 0px #00000040",
+          wordBreak: "break-word",
+          overflowWrap: "anywhere",
+          whiteSpace: "pre-wrap",
+          borderTopLeftRadius: msg.reply_to && !isSender ? "0" : undefined,
+          borderTopRightRadius: msg.reply_to && isSender ? "0" : undefined,
+          paddingTop: msg?.reply_to && "6px",
+        }}
       >
-        <Reply size={15} className="text-gray-500" />
-      </motion.div>
-
-      {/* Draggable bubble */}
-      <motion.div
-        style={{ x }}
-        drag="x"
-        dragConstraints={
-          isSender
-            ? { left: -SWIPE_THRESHOLD * 1.4, right: 0 }
-            : { left: 0, right: SWIPE_THRESHOLD * 1.4 }
-        }
-        dragElastic={0.25}
-        dragMomentum={false}
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
-        animate={controls}
-        className="flex flex-col gap-0.5 max-w-[75%] cursor-grab active:cursor-grabbing touch-pan-y"
-      >
-        {/* Quoted reply preview */}
-
-        <div
-          className={`${styles.bubble} p-4 rounded-[10px] text-[13px] relative pb-6`}
-          style={{
-            boxShadow: "0px 0px 1.5px 0px #00000040",
-            wordBreak: "break-word",
-            overflowWrap: "anywhere",
-            whiteSpace: "pre-wrap",
-            borderTopLeftRadius: msg.reply_to && !isSender ? "0" : undefined,
-            borderTopRightRadius: msg.reply_to && isSender ? "0" : undefined,
-            paddingTop: msg?.reply_to && "6px",
-          }}
-        >
-          {msg.reply_to && (
-            <div
-              className={`mb-1 px-3 py-2 rounded-lg text-xs overflow-hidden w-full ${
-                isSender
-                  ? "bg-black/10 border-l-4 border-white/30"
-                  : "bg-black/5 border-l-4 border-black/10"
-              }`}
-            >
-              <div className="font-semibold text-[11px] opacity-70 mb-0.5">
-                {msg.reply_to.sender_id === authDetails?.user?.id
-                  ? "You"
-                  : msg.reply_to?.sender?.full_name || "Them"}
-              </div>
-              <div className="truncate text-[12px] opacity-90">
-                {msg.reply_to.body || "Message unavailable"}
-              </div>
-            </div>
-          )}
-          <span className="pr-12">{msg?.body}</span>
-          <span
-            className={`absolute bottom-1.25 right-1.25 text-[10px] flex items-center gap-1 ${styles.time}`}
+        {msg.reply_to && (
+          <div
+            className={`mb-1 px-3 py-2 rounded-lg text-xs overflow-hidden w-full ${
+              isSender
+                ? "bg-black/10 border-l-4 border-white/30"
+                : "bg-black/5 border-l-4 border-black/10"
+            }`}
           >
-            {msg?.created_at &&
-              new Date(msg.created_at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            {isSender && (
-              <span className="text-[10px] opacity-80">{renderStatus()}</span>
-            )}
-          </span>
-        </div>
-      </motion.div>
-    </div>
+            <div className="font-semibold text-[11px] opacity-70 mb-0.5">
+              {msg.reply_to.sender_id === authDetails?.user?.id
+                ? "You"
+                : msg.reply_to?.sender?.full_name || "Them"}
+            </div>
+            <div className="truncate text-[12px] opacity-90">
+              {msg.reply_to.body || "Message unavailable"}
+            </div>
+          </div>
+        )}
+        <span className="pr-12">{msg?.body}</span>
+        <span
+          className={`absolute bottom-1.25 right-1.25 text-[10px] flex items-center gap-1 ${styles.time}`}
+        >
+          {msg?.created_at &&
+            new Date(msg.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          {isSender && (
+            <span className="text-[10px] opacity-80">{renderStatus()}</span>
+          )}
+        </span>
+      </div>
+    </SwipeableMessage>
   );
 };
 
