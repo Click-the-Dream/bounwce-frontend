@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { websocket } from "../services/websocket";
 import { getChatDB } from "../store/chat-store";
 import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
+import { ReplyTarget } from "../_utils/types/buyer";
 
 const mergeIntoQuery = (old: any, message: any) => {
   if (!old) {
@@ -161,13 +162,14 @@ const useChat = () => {
       enabled: !!options.userId,
     });
 
-  // ---------------- SEND MESSAGE ----------------
   const transmitMessage = async ({
     recipient_id,
     body,
+    reply_to,
   }: {
     recipient_id: string;
     body: string;
+    reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return;
 
@@ -175,44 +177,27 @@ const useChat = () => {
       recipient_id,
       body,
       currentUser,
+      reply_to,
     });
 
-    // 1. React Query cache
     queryClient.setQueryData(["messages", recipient_id], (old: any) =>
       mergeIntoQuery(old, message),
     );
 
-    // 2. IndexedDB
     await chatDB.messages.put(message);
 
     // 3. WebSocket
     websocket.emit("chat.send", {
       recipient_id,
       body,
+      reply_to_message_id: reply_to?.id,
     });
   };
 
-  // ---------------- SIGNATURES ----------------
-  const useGetChatImageSignature = () =>
+  const useGetChatSignature = () =>
     useMutation({
-      mutationFn: async () => {
-        const res = await api.post("/uploads/chat-image/sign");
-        return res.data?.data;
-      },
-    });
-
-  const useGetChatVideoSignature = () =>
-    useMutation({
-      mutationFn: async () => {
-        const res = await api.post("/uploads/chat-video/sign");
-        return res.data?.data;
-      },
-    });
-
-  const useGetChatFileSignature = () =>
-    useMutation({
-      mutationFn: async () => {
-        const res = await api.post("/uploads/chat-file/sign");
+      mutationFn: async (payload: { uploadType: string; count: number }) => {
+        const res = await api.post("/uploads/chat/sign", payload);
         return res.data?.data;
       },
     });
@@ -247,11 +232,13 @@ const useChat = () => {
     recipient_id,
     type,
     caption = "",
+    reply_to,
   }: {
     files: File[];
     recipient_id: string;
     type: "image" | "video" | "file";
     caption?: string;
+    reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return null;
 
@@ -266,6 +253,7 @@ const useChat = () => {
       currentUser,
       file_name: files.length === 1 ? files[0].name : `${files.length} files`,
       file_size: formatBytes(files.reduce((a, f) => a + f.size, 0)),
+      reply_to_message_id: reply_to?.id,
     });
 
     queryClient.setQueryData(["messages", recipient_id], (old: any) =>
@@ -286,6 +274,7 @@ const useChat = () => {
     caption = "",
     signature,
     clientId,
+    reply_to,
   }: {
     files: File[];
     recipient_id: string;
@@ -293,6 +282,7 @@ const useChat = () => {
     caption?: string;
     signature: any;
     clientId: string[];
+    reply_to?: ReplyTarget | null;
   }) => {
     try {
       // upload all files in parallel
@@ -313,6 +303,7 @@ const useChat = () => {
         media_url,
         body: caption,
         client_id: clientId,
+        reply_to_message_id: reply_to?.id,
       });
 
       // remove pending state
@@ -371,9 +362,7 @@ const useChat = () => {
     transmitMessage,
     prepareOptimisticMedia,
     uploadAndEmitMedia,
-    useGetChatImageSignature,
-    useGetChatVideoSignature,
-    useGetChatFileSignature,
+    useGetChatSignature,
     uploadToCloudinary,
   };
 };

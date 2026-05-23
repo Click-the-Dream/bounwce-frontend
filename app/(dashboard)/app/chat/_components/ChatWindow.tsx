@@ -73,9 +73,6 @@ const ChatWindow = ({
 
       {/* Messages */}
       <MessageList selectedChat={selectedUser} role={role} />
-
-      {/* Input Area */}
-      {chatId && <SendMessage selectedChat={selectedUser} role={role} />}
     </div>
   );
 };

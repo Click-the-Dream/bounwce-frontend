@@ -33,3 +33,12 @@ export interface User {
   profile_pic?: { url: string };
   created_at?: string;
 }
+
+export interface ReplyTarget {
+  id: string;
+  body: string;
+  sender_id: string;
+  sender: {
+    full_name: string;
+  };
+}

@@ -1,8 +1,5 @@
-import Image from "next/image";
-import userImg from "../../../../assets/buyer/user.jpg";
 import { Loader2, PlusIcon } from "lucide-react";
 import { ConnectStatus, SuggestedCandidate } from "@/app/_utils/types/payload";
-import useMatch from "@/app/hooks/use-match";
 import { useRouter } from "next/navigation";
 import { LuClock } from "react-icons/lu";
 import { slugify } from "@/app/_utils/slugify";

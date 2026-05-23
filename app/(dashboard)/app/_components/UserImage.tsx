@@ -28,7 +28,7 @@ const UserImage = ({
   return (
     <div
       className="relative shrink-0 rounded-xl border border-white"
-      style={style}
+      style={{ ...style, width: size, height: size }}
     >
       {user.profile_pic?.url ? (
         <SafeImage
@@ -36,7 +36,7 @@ const UserImage = ({
           alt={user.full_name}
           width={size}
           height={size}
-          className="rounded-xl object-cover"
+          className="w-full h-full object-cover rounded-xl"
         />
       ) : (
         <div

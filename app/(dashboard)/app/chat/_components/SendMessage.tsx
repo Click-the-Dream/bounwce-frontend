@@ -1,4 +1,5 @@
 "use client";
+
 import {
   ArrowUp,
   Plus,
@@ -7,19 +8,29 @@ import {
   Video,
   File,
   Loader2,
+  X,
+  Reply,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { User } from "@/app/_utils/types/buyer";
+import { ReplyTarget, User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
+import { useAuth } from "@/app/context/AuthContext";
 
 interface ChatHeaderProps {
   selectedChat?: User;
   role?: "buyer" | "vendor";
+  replyTo?: ReplyTarget | null;
+  onCancelReply?: () => void;
 }
 
-const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
+const SendMessage = ({
+  selectedChat,
+  replyTo,
+  onCancelReply,
+}: ChatHeaderProps) => {
+  const { authDetails } = useAuth();
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
@@ -33,27 +44,26 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
   const [isSendingMedia, setIsSendingMedia] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Auto-focus textarea when a reply is set
+  useEffect(() => {
+    if (replyTo) {
+      textareaRef.current?.focus();
+    }
+  }, [replyTo]);
+
   const autoResize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
-
     const maxHeight = 112;
-    const newHeight = Math.min(el.scrollHeight, maxHeight);
-
-    el.style.height = newHeight + "px";
+    el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
   };
 
   const {
     transmitMessage,
     prepareOptimisticMedia,
     uploadAndEmitMedia,
-    useGetChatImageSignature,
-    useGetChatVideoSignature,
-    useGetChatFileSignature,
+    useGetChatSignature,
   } = useChat();
-
-  const imageSignature = useGetChatImageSignature();
-  const videoSignature = useGetChatVideoSignature();
-  const fileSignature = useGetChatFileSignature();
+  const getSignature = useGetChatSignature();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -64,18 +74,15 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
 
   const stopTyping = () => {
     if (!selectedChat || !isTypingRef.current) return;
-
     websocket.emit("chat.typing", {
       user_id: selectedChat.id,
       is_typing: false,
     });
-
     isTypingRef.current = false;
   };
 
   const handleTyping = (value: string) => {
     setMessage(value);
-
     if (!selectedChat) return;
 
     if (!isTypingRef.current) {
@@ -83,32 +90,28 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         user_id: selectedChat.id,
         is_typing: true,
       });
-
       isTypingRef.current = true;
     }
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      stopTyping();
-    }, 1500);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(stopTyping, 1500);
   };
 
   const handleSend = async () => {
     if (!selectedChat) return;
 
     const recipient_id = selectedChat.id;
-
     // TEXT ONLY
     if (message.trim() && pendingFiles.length === 0) {
-      await transmitMessage({ recipient_id, body: message.trim() });
+      await transmitMessage({
+        recipient_id,
+        body: message.trim(),
+        reply_to: replyTo,
+      });
       setMessage("");
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
       stopTyping();
+      onCancelReply?.();
       return;
     }
 
@@ -121,15 +124,10 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
       video: [] as File[],
       file: [] as File[],
     };
-
     filesToSend.forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        grouped.image.push(file);
-      } else if (file.type.startsWith("video/")) {
-        grouped.video.push(file);
-      } else {
-        grouped.file.push(file);
-      }
+      if (file.type.startsWith("image/")) grouped.image.push(file);
+      else if (file.type.startsWith("video/")) grouped.video.push(file);
+      else grouped.file.push(file);
     });
 
     const uploadGroup = async (
@@ -143,14 +141,13 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         recipient_id,
         type,
         caption: captionToSend,
+        reply_to: replyTo,
       });
 
-      const signature =
-        type === "image"
-          ? await imageSignature.mutateAsync()
-          : type === "video"
-            ? await videoSignature.mutateAsync()
-            : await fileSignature.mutateAsync();
+      const signature = await getSignature.mutateAsync({
+        uploadType: type,
+        count: files.length,
+      });
 
       await uploadAndEmitMedia({
         files,
@@ -158,19 +155,16 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         recipient_id,
         caption: captionToSend,
         signature,
-        clientId: clientId,
+        clientId,
+        reply_to: replyTo,
       });
     };
 
     setPendingFiles([]);
     setMessage("");
-
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     stopTyping();
-
+    onCancelReply?.();
     setIsSendingMedia(true);
 
     try {
@@ -186,9 +180,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
 
   useEffect(() => {
     return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       stopTyping();
     };
   }, []);
@@ -210,9 +202,32 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         />
       )}
 
+      {/* Reply preview bar */}
+      {replyTo && (
+        <div className="relative px-3 pb-1 pt-1 mb-1">
+          <div className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-xl border-l-4 border-orange">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold text-orange uppercase tracking-wide">
+                {replyTo.sender_id === authDetails?.user?.id
+                  ? "Replying to yourself"
+                  : `Replying to ${selectedChat?.full_name ?? "them"}`}
+              </p>
+              <p className="text-[12px] text-gray-600 truncate mt-0.5">
+                {replyTo.body}
+              </p>
+            </div>
+            <button
+              onClick={onCancelReply}
+              className="p-1 hover:bg-black/5 rounded-full text-gray-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {showMenu && (
         <div className="absolute bottom-16 left-3 md:left-6 w-48 bg-white rounded-xl shadow-lg border border-gray-100 p-1 flex flex-col gap-1 z-50">
-          {/* IMAGES */}
           <button
             onClick={() => {
               setFileAccept("image/*,image/heic,image/heif");
@@ -224,8 +239,6 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             <Image size={12} className="text-[#007BFC]" />
             <span>Add Photos</span>
           </button>
-
-          {/* VIDEOS */}
           <button
             onClick={() => {
               setFileAccept("video/mp4,video/quicktime,video/x-m4v,video/*");
@@ -237,8 +250,6 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             <Video size={12} className="text-[#FF2E74]" />
             <span>Add Videos</span>
           </button>
-
-          {/* FILES */}
           <button
             onClick={() => {
               setFileAccept(".pdf,.doc,.docx,.zip");
@@ -250,14 +261,12 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             <File size={12} className="text-[#333]" />
             <span>Files</span>
           </button>
-
           <button
             onClick={() => fileRef.current?.click()}
             className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
-            {" "}
-            <Camera size={12} className="text-[#FF2E74]" />{" "}
-            <span>Camera</span>{" "}
+            <Camera size={12} className="text-[#FF2E74]" />
+            <span>Camera</span>
           </button>
         </div>
       )}
@@ -272,9 +281,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
           <Plus
             size={18}
             strokeWidth={1}
-            className={`${
-              showMenu ? "rotate-45" : "rotate-0"
-            } transition-transform`}
+            className={`${showMenu ? "rotate-45" : "rotate-0"} transition-transform`}
           />
         </button>
 

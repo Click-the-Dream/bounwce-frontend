@@ -66,7 +66,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
-      <div className="bg-white w-md rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="bg-white h-full w-full  md:h-40 md:max-h-[90vh] md:max-w-112.5 rounded-xl shadow-xl overflow-hidden flex flex-col">
         {/* HEADER */}
         <div className="p-5 flex justify-between items-start">
           <div>
@@ -140,7 +140,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                       </span>
 
                       <span className="text-xs text-gray-400">
-                        {user.email}
+                        {user.username && `@${user.username}`}
                       </span>
                     </div>
                   </div>
