@@ -64,7 +64,7 @@ const ChatMessage = ({ msg, onReply }: any) => {
   };
 
   return (
-    <div className={`${styles.container} relative overflow-hidden`}>
+    <div className={`${styles.container} relative`}>
       {/* Reply icon sits BEHIND the bubble, revealed on swipe */}
       <motion.div
         style={{ opacity: iconOpacity, scale: iconScale }}

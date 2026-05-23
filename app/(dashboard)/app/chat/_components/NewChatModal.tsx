@@ -66,7 +66,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
-      <div className="bg-white h-full w-full  md:h-40 md:max-h-[90vh] md:max-w-112.5 rounded-xl shadow-xl overflow-hidden flex flex-col">
+      <div className="bg-white h-full w-full  md:h-40 md:max-h-[90vh] md:max-w-112.5 rounded-xl shadow-xl flex flex-col">
         {/* HEADER */}
         <div className="p-5 flex justify-between items-start">
           <div>
@@ -97,7 +97,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
         </div>
 
         {/* USERS LIST */}
-        <div className="mt-4 overflow-y-auto px-5 max-h-75">
+        <div className="mt-4 overflow-y-auto px-5 ">
           {isLoading ? (
             <div className="text-center text-sm text-gray-400">
               Loading users...
