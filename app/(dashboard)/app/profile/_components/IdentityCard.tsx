@@ -50,13 +50,15 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
   const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
     useMatch();
-  const { data: matchRequests } = useGetMatchRequests({
+  const { data } = useGetMatchRequests({
     enabled: !isOwnProfile,
   });
+  const matchRequests=data?.items ||[]
+  
 
   // CROPPER STATES
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [openCrop, setOpenCrop] = useState(false);
+  const openCrop, setOpenCrop] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
