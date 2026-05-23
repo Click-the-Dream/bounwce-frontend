@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import React, { useState, useRef } from "react";
-import userImg from "../../../../assets/buyer/user.jpg";
 import SwitchAccountCard from "./SwitchAccountCard";
 import IdentityCardSkeleton from "./IdentityCardSkeleton";
 import useMatch from "@/app/hooks/use-match";
@@ -50,15 +49,14 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
   const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
     useMatch();
-  const { data : appRewuests} = useGetMatchRequests({
+  const { data: appRewuests } = useGetMatchRequests({
     enabled: !isOwnProfile,
   });
-  const matchRequests=data?.items ||[]
-  
+  const matchRequests = data?.items || [];
 
   // CROPPER STATES
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const openCrop, setOpenCrop] = useState(false);
+  const [openCrop, setOpenCrop] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
