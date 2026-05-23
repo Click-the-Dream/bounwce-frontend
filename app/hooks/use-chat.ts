@@ -109,31 +109,6 @@ const useChat = () => {
         const userId = options.userId;
         const pageSize = options.params?.page_size || 20;
 
-        // FAST PATH: IndexedDB for page 1 only as a seed
-        // but don't let it block pagination — always fetch from server after
-        if (pageParam === 1) {
-          const cached = await chatDB.messages
-            .where("conversation_id")
-            .equals(userId)
-            .toArray();
-
-          if (cached.length > 0) {
-            // Immediately seed the UI, but still fetch server in background
-            // Return cached with a sentinel that tells getNextPageParam
-            // there are likely more pages on the server
-            return {
-              messages: {
-                items: cached,
-                page: 1,
-                total: cached.length + 1,
-                page_size: pageSize,
-                from_cache: true,
-              },
-            };
-          }
-        }
-
-        //  Server fetch
         const res = await api.get(`/chats/conversations/with/${userId}`, {
           params: {
             page: pageParam,
@@ -142,10 +117,10 @@ const useChat = () => {
         });
 
         const data = res.data?.data;
-        const items = data?.messages?.items;
 
-        // Persist to IndexedDB
-        if (items?.length) {
+        const items = data?.messages?.items || [];
+
+        if (items.length) {
           await chatDB.messages.bulkPut(
             items.map((m: any) => ({
               ...m,
@@ -158,20 +133,23 @@ const useChat = () => {
         return data;
       },
 
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 30,
+      initialPageParam: 1,
 
       getNextPageParam: (lastPage: any) => {
-        const { page, total, page_size, from_cache } = lastPage?.messages || {};
+        const messages = lastPage?.messages;
 
-        if (from_cache) return 1;
+        if (!messages) return undefined;
 
-        // Server page: standard pagination
+        const { page, total, page_size } = messages;
+
         return page * page_size < total ? page + 1 : undefined;
       },
 
-      initialPageParam: 1,
       enabled: !!options.userId,
+
+      staleTime: 1000 * 30,
+
+      gcTime: 1000 * 60 * 30,
     });
 
   const transmitMessage = async ({

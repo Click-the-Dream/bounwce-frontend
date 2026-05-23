@@ -32,8 +32,8 @@ interface FlatMessage {
 
 // CONSTANTS
 
-const SCROLL_THRESHOLD = 180; // px from bottom — auto-scroll on new message
-const LOAD_MORE_THRESHOLD = 150; // px from top — load older messages
+const SCROLL_THRESHOLD = 180;
+const LOAD_MORE_THRESHOLD = 60;
 
 const isMediaMessage = (msg: FlatMessage) =>
   (msg.media_type === "image" ||
@@ -55,7 +55,7 @@ const MessageList = () => {
     uploadAndEmitMedia,
   } = useChat();
 
-  // ─── DATA ───────────────────────────────────
+  // DATA
 
   const {
     data: messagesData,
@@ -65,32 +65,40 @@ const MessageList = () => {
     isFetchingNextPage,
   } = useGetMessages({ userId: chatId });
 
-  // ─── REFS ───────────────────────────────────
+  // REFS
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const readSet = useRef<Set<string>>(new Set());
+
   const hasScrolledInitiallyRef = useRef(false);
+
   const prevScrollHeightRef = useRef(0);
   const prevScrollTopRef = useRef(0);
+
   const loadingOlderRef = useRef(false);
 
-  // ─── STATE ──────────────────────────────────
+  const lastMessageIdRef = useRef<string | null>(null);
+
+  // STATE
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  // ─── DERIVED DATA ───────────────────────────
+  // DERIVED DATA
 
   const flatMessages: FlatMessage[] =
     messagesData?.pages?.flatMap((page: any) => page?.messages?.items || []) ||
     [];
 
-  // Deduplicate — cache + server pages can overlap
+  // Deduplicate
   const deduped = useMemo(() => {
     const seen = new Set<string>();
+
     return flatMessages.filter((m) => {
       if (seen.has(m.id)) return false;
+
       seen.add(m.id);
+
       return true;
     });
   }, [flatMessages]);
@@ -104,15 +112,21 @@ const MessageList = () => {
     [deduped],
   );
 
-  // Group by date for section headers
+  // Group by date
+
   const groupedMessages = useMemo(() => {
     const map: Record<
       string,
-      { label: string; timestamp: number; messages: FlatMessage[] }
+      {
+        label: string;
+        timestamp: number;
+        messages: FlatMessage[];
+      }
     > = {};
 
     for (const msg of sortedMessages) {
       const label = formatMessageDate(msg.created_at);
+
       if (!map[label]) {
         map[label] = {
           label,
@@ -120,15 +134,18 @@ const MessageList = () => {
           messages: [],
         };
       }
+
       map[label].messages.push(msg);
     }
 
     return Object.values(map).sort((a, b) => a.timestamp - b.timestamp);
   }, [sortedMessages]);
 
-  // Flat image list for lightbox
+  // Flat image list
+
   const mediaMessages = useMemo(() => {
     const flattened: any[] = [];
+
     for (const m of sortedMessages) {
       if (m.media_type === "image" && Array.isArray(m.media_urls)) {
         m.media_urls.forEach((url: string, index: number) => {
@@ -143,69 +160,77 @@ const MessageList = () => {
         });
       }
     }
+
     return flattened;
   }, [sortedMessages]);
 
   const mediaIndexMap = useMemo(() => {
     const map = new Map<string, number>();
-    mediaMessages.forEach((m, i) => map.set(m.src, i));
+
+    mediaMessages.forEach((m, i) => {
+      map.set(m.src, i);
+    });
+
     return map;
   }, [mediaMessages]);
 
   const isTyping = typingUsers[chatId];
 
-  // ─── SCROLL HELPERS ─────────────────────────
+  // HELPERS
 
   const isNearBottom = () => {
     const el = containerRef.current;
+
     if (!el) return true;
+
     return el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD;
   };
 
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     const el = containerRef.current;
+
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior });
+
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior,
+    });
   };
 
-  /**
-   * Finds a message element by its data-message-id, scrolls to it,
-   * and fires a highlight event so the target message flashes.
-   * Used when clicking a reply preview inside a message bubble.
-   */
   const scrollToMessage = (messageId: string) => {
     const el = containerRef.current;
+
     if (!el) return;
 
     const target = el.querySelector(
       `[data-message-id="${messageId}"]`,
     ) as HTMLElement | null;
 
-    if (!target) return; // Message not yet in DOM (paginated away)
+    if (!target) return;
 
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
 
     window.dispatchEvent(
-      new CustomEvent("highlight-message", { detail: { messageId } }),
+      new CustomEvent("highlight-message", {
+        detail: { messageId },
+      }),
     );
   };
 
-  // ─── EFFECTS: SCROLL ────────────────────────
-  useLayoutEffect(() => {
-    if (!loadingOlderRef.current) return;
+  // RESET WHEN SWITCHING CHATS
 
-    const el = containerRef.current;
-    if (!el) return;
-
-    const newScrollHeight = el.scrollHeight;
-    const diff = newScrollHeight - prevScrollHeightRef.current;
-
-    el.scrollTop = prevScrollTopRef.current + diff;
-
+  useEffect(() => {
+    hasScrolledInitiallyRef.current = false;
+    readSet.current = new Set();
+    lastMessageIdRef.current = null;
     loadingOlderRef.current = false;
-  }, [messagesData?.pages]);
+  }, [chatId]);
 
-  // Initial scroll to bottom on first load for this chat
+  // INITIAL SCROLL TO BOTTOM
+
   useLayoutEffect(() => {
     const el = containerRef.current;
 
@@ -213,50 +238,97 @@ const MessageList = () => {
     if (!sortedMessages.length) return;
     if (hasScrolledInitiallyRef.current) return;
 
-    requestAnimationFrame(() => {
+    let frame1: number;
+    let frame2: number;
+
+    const scrollNow = () => {
       el.scrollTop = el.scrollHeight;
+    };
+
+    frame1 = requestAnimationFrame(() => {
+      scrollNow();
+
+      frame2 = requestAnimationFrame(() => {
+        scrollNow();
+
+        hasScrolledInitiallyRef.current = true;
+      });
+    });
+
+    const observer = new ResizeObserver(() => {
+      if (!hasScrolledInitiallyRef.current) {
+        scrollNow();
+      }
+    });
+
+    observer.observe(el);
+
+    const timeout = setTimeout(() => {
+      observer.disconnect();
 
       hasScrolledInitiallyRef.current = true;
+
+      scrollNow();
+    }, 3000);
+
+    return () => {
+      cancelAnimationFrame(frame1);
+      cancelAnimationFrame(frame2);
+
+      observer.disconnect();
+
+      clearTimeout(timeout);
+    };
+  }, [chatId, sortedMessages.length]);
+
+  // RESTORE SCROLL AFTER PAGINATION
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+
+    if (!el) return;
+    if (!loadingOlderRef.current) return;
+
+    requestAnimationFrame(() => {
+      const newScrollHeight = el.scrollHeight;
+
+      const heightDiff = newScrollHeight - prevScrollHeightRef.current;
+
+      el.scrollTop = prevScrollTopRef.current + heightDiff;
+
+      loadingOlderRef.current = false;
     });
-  }, [sortedMessages.length, chatId]);
+  }, [messagesData?.pages?.length]);
 
-  // Reset when switching chats
-  useEffect(() => {
-    hasScrolledInitiallyRef.current = false;
-    readSet.current = new Set();
-  }, [chatId]);
+  // AUTO SCROLL ON NEW MESSAGE
 
-  // Auto-scroll on new messages when near bottom or own send
   useLayoutEffect(() => {
     if (!hasScrolledInitiallyRef.current) return;
+    if (loadingOlderRef.current) return;
 
     const lastMessage = sortedMessages.at(-1);
+
     if (!lastMessage) return;
+
+    if (lastMessage.id === lastMessageIdRef.current) return;
+
+    const previousLastId = lastMessageIdRef.current;
+
+    lastMessageIdRef.current = lastMessage.id;
+
+    // Skip hydration/update
+    if (!previousLastId) return;
 
     const isMyMessage = lastMessage.sender_id === authDetails?.user?.id;
 
     if (isMyMessage || isNearBottom()) {
-      requestAnimationFrame(() => scrollToBottom("smooth"));
+      requestAnimationFrame(() => {
+        scrollToBottom("smooth");
+      });
     }
-  }, [sortedMessages.length]);
+  }, [sortedMessages]);
 
-  // Proactively load more if content doesn't fill the container
-  useEffect(() => {
-    const el = containerRef.current;
-
-    if (!el) return;
-
-    if (
-      hasScrolledInitiallyRef.current &&
-      el.scrollHeight <= el.clientHeight &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      fetchNextPage();
-    }
-  }, [messagesData?.pages?.length]);
-
-  // ─── EFFECTS: MARK AS READ ──────────────────
+  // MARK AS READ
 
   useEffect(() => {
     if (!sortedMessages.length) return;
@@ -270,6 +342,7 @@ const MessageList = () => {
 
     for (const msg of unread) {
       readSet.current.add(msg.id);
+
       websocket.emit("chat.read", {
         recipient_id: sortedMessages[0]?.conversation_id,
         message_id: msg.id,
@@ -277,17 +350,22 @@ const MessageList = () => {
     }
   }, [sortedMessages.length, chatId]);
 
-  // ─── HANDLERS ───────────────────────────────
+  // HANDLERS
 
   const handleScroll = async () => {
     const el = containerRef.current;
 
-    if (!el || !hasNextPage || isFetchingNextPage) return;
+    if (!el) return;
 
-    if (el.scrollTop <= LOAD_MORE_THRESHOLD) {
+    if (!hasNextPage) return;
+
+    if (isFetchingNextPage) return;
+
+    if (el.scrollTop <= LOAD_MORE_THRESHOLD && !loadingOlderRef.current) {
       loadingOlderRef.current = true;
 
       prevScrollHeightRef.current = el.scrollHeight;
+
       prevScrollTopRef.current = el.scrollTop;
 
       await fetchNextPage();
@@ -306,8 +384,11 @@ const MessageList = () => {
 
   const handleOpenImage = (url: string) => {
     const index = mediaIndexMap.get(url);
+
     if (index === undefined) return;
+
     setViewerIndex(index);
+
     setViewerOpen(true);
   };
 
@@ -323,20 +404,24 @@ const MessageList = () => {
         clientId: [msg.id],
         reply_to: msg.reply_to,
       });
+
       return;
     }
 
     const files = activeUploadsRef.current.get(msg.id);
+
     if (!files) {
       console.error(
         "Original files not found in activeUploadsRef for:",
         msg.id,
       );
+
       return;
     }
 
     try {
       const getSignature = useGetChatSignature();
+
       const raw = await getSignature.mutateAsync({
         uploadType: msg.media_type!,
         count: files.length,
@@ -361,7 +446,7 @@ const MessageList = () => {
     }
   };
 
-  // ─── RENDER STATES ──────────────────────────
+  // LOADING STATE
 
   if (isLoading) {
     return (
@@ -378,6 +463,8 @@ const MessageList = () => {
     );
   }
 
+  // EMPTY STATE
+
   if (!sortedMessages.length) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
@@ -386,23 +473,27 @@ const MessageList = () => {
     );
   }
 
-  // ─── MAIN RENDER ────────────────────────────
+  // MAIN RENDER
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <div
         ref={containerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-6 pb-6 pt-2 space-y-6 bg-white"
+        onScroll={() => {
+          handleScroll();
+        }}
+        className="flex-1 overflow-y-auto px-6 pb-6 pt-2 space-y-6 bg-white overscroll-y-none"
       >
-        {/* Load older messages indicator */}
-        {isFetchingNextPage && (
-          <div className="text-center text-xs text-gray-400 py-2">
-            Loading older messages…
-          </div>
-        )}
+        {/* Load older messages */}
+        <div className="sticky top-2 z-30 flex justify-center pointer-events-none">
+          {isFetchingNextPage && (
+            <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-full px-3 py-1 text-[11px] text-gray-500 animate-in fade-in duration-200">
+              Loading messages...
+            </div>
+          )}
+        </div>
 
-        {/* Date-grouped messages */}
+        {/* Grouped messages */}
         {groupedMessages.map((group) => (
           <div key={group.label}>
             {/* Date header */}
@@ -437,14 +528,13 @@ const MessageList = () => {
           </div>
         ))}
 
-        {/* Typing indicator */}
+        {/* Typing */}
         {isTyping && <TypingDots />}
 
-        {/* Bottom spacer */}
         <div className="h-2" />
       </div>
 
-      {/* Lightbox — outside scroll container to avoid clipping */}
+      {/* Image Viewer */}
       {viewerOpen && (
         <ImageViewer
           media={mediaMessages}
