@@ -91,8 +91,7 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
 
   return (
     <div
-      className={`w-80 min-w-80 h-full flex flex-col bg-white border-r-[0.53px] border-[#00000033] 
-    h-dvh overflow-hidden
+      className={`w-80 min-w-80 h-full flex flex-col bg-white border-r-[0.53px] border-[#00000033] overflow-hidden
     ${chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-0"}`}
     >
       {/* HEADER */}
@@ -109,7 +108,7 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
       </div>
 
       {/* SEARCH */}
-      <div className="relative z-20 px-2 pb-[7.73px] my-2 border-b-[0.53px] border-[#00000033]">
+      <div className="relative z-5 px-2 pb-[7.73px] my-2 border-b-[0.53px] border-[#00000033]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9C9C9C] size-4" />
 

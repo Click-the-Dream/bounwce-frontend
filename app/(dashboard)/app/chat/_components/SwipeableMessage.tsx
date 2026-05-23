@@ -113,7 +113,7 @@ export default function SwipeableMessage({
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         animate={controls}
-        className="cursor-grab relative z-10 touch-pan-y"
+        className="cursor-grab relative z-5 touch-pan-y"
       >
         {children}
       </motion.div>
