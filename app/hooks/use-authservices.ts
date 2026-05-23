@@ -6,7 +6,7 @@ import api from "../services/api";
 import { useRouter } from "next/navigation";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage, storedUserEmail } from "../_utils/formatters";
-import { getChatDB } from "../store/chat-store";
+import { deleteChatDB, getChatDB } from "../store/chat-store";
 const useAuthServices = () => {
   const router = useRouter();
   const { authDetails, updateAuth } = useContext(AuthContext);
@@ -179,11 +179,13 @@ const useAuthServices = () => {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      if (db) {
-        await db.clearAll();
+      const userId = authDetails?.user?.id;
+
+      if (userId) {
+        await deleteChatDB(userId);
       }
 
-      queryClient.clear(); // Clear all cached data
+      queryClient.clear();
       updateAuth(null); // Reset auth state
       return null;
     },

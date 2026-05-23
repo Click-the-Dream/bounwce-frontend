@@ -31,13 +31,13 @@ export default function SwipeableMessage({
 
   const iconOpacity = useTransform(
     x,
-    isSender ? [-SWIPE_THRESHOLD, -16, 0] : [0, 16, SWIPE_THRESHOLD],
+    isSender ? [0, -16, -SWIPE_THRESHOLD] : [0, 16, SWIPE_THRESHOLD],
     [1, 0.4, 0],
   );
 
   const iconScale = useTransform(
     x,
-    isSender ? [-SWIPE_THRESHOLD, -16, 0] : [0, 16, SWIPE_THRESHOLD],
+    isSender ? [10, 16, SWIPE_THRESHOLD] : [0, 16, SWIPE_THRESHOLD],
     [1.15, 0.85, 0.6],
   );
 

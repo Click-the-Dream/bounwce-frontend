@@ -74,3 +74,13 @@ export const getChatDB = (userId: string) => {
   }
   return currentChatDB;
 };
+
+export const deleteChatDB = async (userId: string) => {
+  // Close and delete
+  if (currentChatDB) {
+    currentChatDB.close();
+    currentChatDB = null;
+  }
+  // Wipe the whole database from disk
+  await Dexie.delete(`chat_db_${userId}`);
+};

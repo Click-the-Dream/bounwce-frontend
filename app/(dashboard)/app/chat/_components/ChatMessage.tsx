@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import { getMessageLayout, renderCheck } from "@/app/_utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
@@ -5,21 +7,37 @@ import { LuClock } from "react-icons/lu";
 import SwipeableMessage from "./SwipeableMessage";
 import ReplyPreview from "./ReplyPreview";
 
-const ChatMessage = ({ msg, onReply }: any) => {
+// TYPES
+
+interface ChatMessageProps {
+  msg: any;
+  onReply?: (msg: any) => void;
+  /**
+   * Passed down from MessageList so clicking a reply preview
+   * scrolls the container to the original message.
+   */
+  onScrollToMessage?: (messageId: string) => void;
+}
+
+// COMPONENT
+
+const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
   const { authDetails } = useAuth();
   const isSender = msg.sender_id === authDetails?.user?.id;
   const styles = getMessageLayout(isSender);
 
+  // ─── STATE ──────────────────────────────────
+
   const [expanded, setExpanded] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
+  const [isHighlighted, setIsHighlighted] = useState(false);
+
   const textRef = useRef<HTMLDivElement>(null);
 
-  // Detect overflow
+  // Detect overflow to decide whether to show "Read more"
   useEffect(() => {
     const el = textRef.current;
     if (el) {
-      // If the scroll height is significantly larger than client height, we need the button
-      // Adding a small buffer (5px) to prevent false positives
       setShowReadMore(el.scrollHeight > el.clientHeight + 5);
     }
   }, [msg?.body]);
@@ -31,6 +49,27 @@ const ChatMessage = ({ msg, onReply }: any) => {
     return renderCheck("sent");
   };
 
+  // Called when this message is scrolled to as a reply target
+  const highlight = () => {
+    setIsHighlighted(true);
+    setTimeout(() => setIsHighlighted(false), 1500);
+  };
+
+  // Expose highlight via a custom data attribute + global event so
+  // MessageList can trigger it without prop drilling a ref
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      if (e.detail?.messageId === msg.id) {
+        highlight();
+      }
+    };
+    window.addEventListener("highlight-message", handler as EventListener);
+    return () =>
+      window.removeEventListener("highlight-message", handler as EventListener);
+  }, [msg.id]);
+
+  // ─── RENDER ─────────────────────────────────
+
   return (
     <SwipeableMessage
       isSender={isSender}
@@ -38,7 +77,14 @@ const ChatMessage = ({ msg, onReply }: any) => {
       className={styles.container}
     >
       <div
-        className={`${styles.bubble} relative rounded-[10px] text-[13px]`}
+        // Used by MessageList to find and scroll to this element
+        data-message-id={msg.id}
+        className={`
+          ${styles.bubble}
+          relative rounded-[10px] text-[13px]
+          transition-colors duration-300
+          ${isHighlighted ? "ring-2 ring-orange/60 bg-orange/10" : ""}
+        `}
         style={{
           boxShadow: "0px 0px 1.5px 0px #00000040",
           wordBreak: "break-word",
@@ -49,11 +95,16 @@ const ChatMessage = ({ msg, onReply }: any) => {
           borderTopRightRadius: msg.reply_to && isSender ? "0" : undefined,
         }}
       >
+        {/* Reply preview — clicking scrolls to original */}
         {msg.reply_to_message && (
-          <ReplyPreview reply={msg.reply_to_message} isSender={isSender} />
+          <ReplyPreview
+            reply={msg.reply_to_message}
+            isSender={isSender}
+            onScrollToMessage={onScrollToMessage}
+          />
         )}
 
-        {/* Message Body with dynamic line-clamp */}
+        {/* Message body */}
         <div
           ref={textRef}
           className={`pr-10 ${!expanded ? "line-clamp-4" : ""}`}
@@ -61,17 +112,19 @@ const ChatMessage = ({ msg, onReply }: any) => {
           {msg?.body}
         </div>
 
-        {/* Professional Read More Button */}
+        {/* Read more / less toggle */}
         {showReadMore && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className={`block text-[11px] mt-1 font-semibold opacity-60 hover:opacity-100 transition-opacity active:scale-95 ${isSender ? "text-black" : "text-green-800"}`}
+            className={`block text-[11px] mt-1 font-semibold opacity-60 hover:opacity-100 transition-opacity active:scale-95 ${
+              isSender ? "text-black" : "text-green-800"
+            }`}
           >
             {expanded ? "Read less" : "Read more"}
           </button>
         )}
 
-        {/* Footer (Time & Status) */}
+        {/* Footer: time + status */}
         <div className="flex justify-end mt-0.5">
           <div
             className={`flex items-center gap-1 text-[10px] opacity-70 ${styles.time}`}

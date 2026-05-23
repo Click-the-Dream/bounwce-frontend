@@ -1,48 +1,86 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { Download, RefreshCw, AlertCircle } from "lucide-react";
+import { LuClock } from "react-icons/lu";
+
 import { useAuth } from "@/app/context/AuthContext";
 import { getMessageLayout, renderCheck } from "@/app/_utils/formatters";
-import { LuClock } from "react-icons/lu";
-import SafeImage from "@/app/_components/SafeImage";
 import { getFileIcon, getRadius } from "@/app/_utils/utility";
-import { Download, RefreshCw, AlertCircle } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import SafeImage from "@/app/_components/SafeImage";
 import SwipeableMessage from "./SwipeableMessage";
+import ReplyPreview from "./ReplyPreview";
+
+// ─────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────
+
+interface ChatMediaMessageProps {
+  msg: any;
+  onOpen?: (url: string) => void;
+  onReply?: (msg: any) => void;
+  onRetry?: (msg: any) => void;
+  onScrollToMessage?: (messageId: string) => void;
+}
+
+// ─────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────
 
 const ChatMediaMessage = ({
   msg,
   onOpen,
-  mediaImages = [],
   onReply,
   onRetry,
-}: any) => {
+  onScrollToMessage,
+}: ChatMediaMessageProps) => {
   const { authDetails } = useAuth();
-  const [isFailed, setIsFailed] = useState(false);
+
+  // ─── DERIVED ────────────────────────────────
 
   const isSender = msg.sender_id === authDetails?.user?.id;
   const styles = getMessageLayout(isSender);
   const caption = msg.body || msg.caption || "";
 
+  // ─── STATE ──────────────────────────────────
+
+  const [isFailed, setIsFailed] = useState(false);
+  const [isHighlighted, setIsHighlighted] = useState(false);
+
+  // ─── EFFECTS ────────────────────────────────
+
+  // Mark as failed after 60s if still pending
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isSender && msg.pending) {
+    if (!isSender || !msg.pending) {
       setIsFailed(false);
-      timer = setTimeout(() => {
-        setIsFailed(true);
-      }, 60000);
-    } else {
-      setIsFailed(false);
+      return;
     }
+
+    setIsFailed(false);
+    const timer = setTimeout(() => setIsFailed(true), 60_000);
     return () => clearTimeout(timer);
-  }, [isSender, msg.pending]);
+  }, [isSender, msg.pending, msg.id]);
+
+  // Listen for highlight events from MessageList scroll-to-reply
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      if (e.detail?.messageId === msg.id) {
+        setIsHighlighted(true);
+        setTimeout(() => setIsHighlighted(false), 1500);
+      }
+    };
+    window.addEventListener("highlight-message", handler as EventListener);
+    return () =>
+      window.removeEventListener("highlight-message", handler as EventListener);
+  }, [msg.id]);
+
+  // ─── DERIVED FLAGS ──────────────────────────
 
   const isUploading = isSender && msg.pending && !isFailed;
 
-  const mediaUrls = useMemo(() => {
-    const raw = msg.media_urls || [];
+  const mediaUrls = useMemo(() => msg.media_urls || [], [msg.media_urls]);
 
-    return raw;
-  }, [msg.media_urls]);
+  // ─── STATUS ─────────────────────────────────
 
   const renderStatus = () => {
     if (!isSender) return null;
@@ -51,6 +89,8 @@ const ChatMediaMessage = ({
     if (msg.read_at) return renderCheck("read");
     return renderCheck("sent");
   };
+
+  // ─── UPLOAD OVERLAY ─────────────────────────
 
   const renderUploadOverlay = () => {
     if (isFailed) {
@@ -69,7 +109,9 @@ const ChatMediaMessage = ({
         </div>
       );
     }
+
     if (!isUploading) return null;
+
     return (
       <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-[10px] z-10">
         <div className="flex flex-col items-center gap-1.5">
@@ -80,26 +122,14 @@ const ChatMediaMessage = ({
     );
   };
 
-  const renderImageGrid = () => {
-    const gridClass =
-      mediaUrls.length === 1
-        ? ""
-        : mediaUrls.length === 2
-          ? "grid grid-cols-2 gap-0.5"
-          : "grid grid-cols-2 gap-0.5 auto-rows-[110px]";
+  // ─── MEDIA RENDERERS ────────────────────────
 
+  const renderImageGrid = () => {
     if (mediaUrls.length === 1) {
       return (
         <div
           className="relative cursor-pointer"
-          onClick={() => {
-            console.log("images");
-
-            if (!isUploading)
-              onOpen?.(
-                mediaImages.findIndex((m: any) => m.src === mediaUrls[0]),
-              );
-          }}
+          onClick={() => !isUploading && onOpen?.(mediaUrls[0])}
         >
           <SafeImage
             src={mediaUrls[0]}
@@ -114,19 +144,23 @@ const ChatMediaMessage = ({
       );
     }
 
+    const gridClass =
+      mediaUrls.length === 2
+        ? "grid grid-cols-2 gap-0.5"
+        : "grid grid-cols-2 gap-0.5 auto-rows-[110px]";
+
     return (
       <div className={`relative ${gridClass} rounded-[10px] overflow-hidden`}>
-        {mediaUrls?.slice(0, 4)?.map((img: string, i: number) => (
+        {mediaUrls.slice(0, 4).map((url: string, i: number) => (
           <div
             key={i}
-            className={`relative overflow-hidden cursor-pointer ${getRadius(i, mediaUrls.length)} ${mediaUrls.length === 3 && i === 2 ? "col-span-2" : ""}`}
-            onClick={() =>
-              !isUploading &&
-              onOpen?.(mediaImages.findIndex((m: any) => m.src === img))
-            }
+            className={`relative overflow-hidden cursor-pointer ${getRadius(i, mediaUrls.length)} ${
+              mediaUrls.length === 3 && i === 2 ? "col-span-2" : ""
+            }`}
+            onClick={() => !isUploading && onOpen?.(url)}
           >
             <SafeImage
-              src={img}
+              src={url}
               alt="chat"
               width={500}
               height={500}
@@ -164,7 +198,10 @@ const ChatMediaMessage = ({
           href={!isUploading ? mediaUrls[0] : "#"}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex items-center gap-3 p-3 bg-white/40 border-b border-black/5 ${isUploading ? "cursor-default" : "hover:bg-white/60 cursor-pointer"}`}
+          onClick={(e) => isUploading && e.preventDefault()}
+          className={`flex items-center gap-3 p-3 bg-white/40 border-b border-black/5 ${
+            isUploading ? "cursor-default" : "hover:bg-white/60 cursor-pointer"
+          }`}
         >
           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shrink-0">
             <FileIconComponent size={20} />
@@ -176,7 +213,9 @@ const ChatMediaMessage = ({
             <p className="text-[11px] text-gray-500 uppercase">
               {isUploading
                 ? "Sending..."
-                : `${msg.file_size || "File"} • ${msg.file_name?.split(".").pop()?.toUpperCase()}`}
+                : `${msg.file_size || "File"} • ${
+                    msg.file_name?.split(".").pop()?.toUpperCase() ?? ""
+                  }`}
             </p>
           </div>
           <div className="text-gray-400">
@@ -192,6 +231,8 @@ const ChatMediaMessage = ({
     );
   };
 
+  // ─── RENDER ─────────────────────────────────
+
   return (
     <SwipeableMessage
       isSender={isSender}
@@ -199,14 +240,36 @@ const ChatMediaMessage = ({
       className={styles.container}
     >
       <div
-        className={`${styles.bubble} p-0.5 relative w-71.25 rounded-[10px] overflow-hidden shadow-sm`}
+        data-message-id={msg.id}
+        className={`
+          ${styles.bubble}
+          p-0.5 relative w-71.25 rounded-[10px] overflow-hidden shadow-sm
+          transition-colors duration-300
+          ${isHighlighted ? "ring-2 ring-orange/60" : ""}
+        `}
       >
+        {/* Reply preview */}
+        {msg.reply_to_message && (
+          <div className="px-1.5 pt-1.5 pb-0">
+            <ReplyPreview
+              reply={msg.reply_to_message}
+              isSender={isSender}
+              onScrollToMessage={onScrollToMessage}
+            />
+          </div>
+        )}
+
+        {/* Media content */}
         {msg.media_type === "image"
           ? renderImageGrid()
           : msg.media_type === "video"
             ? renderVideo()
             : renderFile()}
+
+        {/* Caption */}
         {caption && <div className="px-2.5 py-2 text-[13px]">{caption}</div>}
+
+        {/* Time + status */}
         <span
           className={`absolute bottom-1 right-2 text-[10px] flex items-center gap-1 ${styles.time} drop-shadow-md`}
         >

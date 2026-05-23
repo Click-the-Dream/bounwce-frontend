@@ -19,25 +19,64 @@ import { useAuth } from "@/app/context/AuthContext";
 import SmartReplyPreview from "./SmartReplyPreview";
 import { useChatUtils } from "@/app/context/ChatContext";
 
-interface ChatHeaderProps {
+// ─────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────
+
+interface SendMessageProps {
   selectedChat?: User;
 }
 
-const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
+type FileAcceptType = "image" | "video" | "file" | "camera" | "all";
+
+// ─────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────
+
+const FILE_ACCEPT_MAP: Record<FileAcceptType, string> = {
+  image: "image/*,image/heic,image/heif",
+  video: "video/mp4,video/quicktime,video/x-m4v,video/*",
+  file: ".pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv",
+  camera: "image/*;capture=camera",
+  all: "image/*,video/*,.pdf,.doc,.docx,.zip",
+};
+
+// ─────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────
+
+const SendMessage = ({ selectedChat }: SendMessageProps) => {
   const { authDetails } = useAuth();
   const { replyTo, setReplyTo, activeUploadsRef } = useChatUtils();
+
+  // ─── STATE ────────────────────────────────
+
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const fileRef = useRef<HTMLInputElement | null>(null);
-  const [fileAccept, setFileAccept] = useState(
-    "image/*,video/*,.pdf,.doc,.docx,.zip",
-  );
+  const [isSendingMedia, setIsSendingMedia] = useState(false);
+  // Tracks which accept type is active so the input key forces a remount
+  const [fileAcceptType, setFileAcceptType] = useState<FileAcceptType>("all");
+
+  // ─── REFS ─────────────────────────────────
+
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
-  const [isSendingMedia, setIsSendingMedia] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // ─── HOOKS ────────────────────────────────
+
+  const {
+    transmitMessage,
+    prepareOptimisticMedia,
+    uploadAndEmitMedia,
+    useGetChatSignature,
+  } = useChat();
+
+  const getSignature = useGetChatSignature();
+
+  // ─── EFFECTS ──────────────────────────────
 
   // Auto-focus textarea when a reply is set
   useEffect(() => {
@@ -46,26 +85,31 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
     }
   }, [replyTo]);
 
+  // Cleanup typing state on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      stopTyping();
+    };
+  }, []);
+
+  // ─── HELPERS ──────────────────────────────
+
   const autoResize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
-    const maxHeight = 112;
-    el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
+    el.style.height = Math.min(el.scrollHeight, 112) + "px";
   };
 
-  const {
-    transmitMessage,
-    prepareOptimisticMedia,
-    uploadAndEmitMedia,
-    useGetChatSignature,
-  } = useChat();
-  const getSignature = useGetChatSignature();
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setPendingFiles((prev) => [...prev, ...files]);
+  const openFilePicker = (type: FileAcceptType) => {
+    setFileAcceptType(type);
     setShowMenu(false);
-    e.target.value = "";
+    // Defer click so the input remounts with the new accept attribute first
+    setTimeout(() => {
+      document.getElementById("chat-file-input")?.click();
+    }, 0);
   };
+
+  // ─── TYPING ───────────────────────────────
 
   const stopTyping = () => {
     if (!selectedChat || !isTypingRef.current) return;
@@ -92,10 +136,40 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
     typingTimeoutRef.current = setTimeout(stopTyping, 1500);
   };
 
+  // ─── FILE HANDLING ────────────────────────
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // Filter files to only those matching the expected type
+    const filtered = files.filter((file) => {
+      switch (fileAcceptType) {
+        case "image":
+        case "camera":
+          return file.type.startsWith("image/");
+        case "video":
+          return file.type.startsWith("video/");
+        case "file":
+          return (
+            !file.type.startsWith("image/") && !file.type.startsWith("video/")
+          );
+        default:
+          return true;
+      }
+    });
+
+    setPendingFiles((prev) => [...prev, ...filtered]);
+    e.target.value = "";
+  };
+
+  // ─── SEND ─────────────────────────────────
+
   const handleSend = async () => {
     if (!selectedChat) return;
 
     const recipient_id = selectedChat.id;
+
     // TEXT ONLY
     if (message.trim() && pendingFiles.length === 0) {
       await transmitMessage({
@@ -103,10 +177,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         body: message.trim(),
         reply_to: replyTo,
       });
-      setMessage("");
-      if (textareaRef.current) textareaRef.current.style.height = "auto";
-      stopTyping();
-      setReplyTo(null);
+      resetInput();
       return;
     }
 
@@ -114,83 +185,88 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
     const filesToSend = [...pendingFiles];
     const captionToSend = message.trim();
 
-    const grouped = {
-      image: [] as File[],
-      video: [] as File[],
-      file: [] as File[],
+    const grouped: Record<"image" | "video" | "file", File[]> = {
+      image: [],
+      video: [],
+      file: [],
     };
+
     filesToSend.forEach((file) => {
       if (file.type.startsWith("image/")) grouped.image.push(file);
       else if (file.type.startsWith("video/")) grouped.video.push(file);
       else grouped.file.push(file);
     });
 
-    const uploadGroup = async (
-      type: "image" | "video" | "file",
-      files: File[],
-    ) => {
-      if (!files.length) return;
-
-      const clientId = prepareOptimisticMedia({
-        files: filesToSend,
-        recipient_id,
-        type,
-        caption: captionToSend,
-        reply_to: replyTo,
-      });
-
-      activeUploadsRef.current.set(clientId, files);
-
-      const raw = await getSignature.mutateAsync({
-        uploadType: type,
-        count: files.length,
-      });
-
-      const signatureItems = (raw.items || [raw.fields]).map((item: any) => ({
-        fields: item,
-        constraints: raw.constraints,
-      }));
-
-      await uploadAndEmitMedia({
-        files,
-        type,
-        recipient_id,
-        caption: captionToSend,
-        signatures: signatureItems,
-        clientId,
-        reply_to: replyTo,
-      });
-    };
-
-    setPendingFiles([]);
-    setMessage("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-    stopTyping();
-    setReplyTo(null);
+    resetInput();
     setIsSendingMedia(true);
 
     try {
-      await Promise.all([
-        uploadGroup("image", grouped.image),
-        uploadGroup("video", grouped.video),
-        uploadGroup("file", grouped.file),
-      ]);
+      await Promise.all(
+        (["image", "video", "file"] as const)
+          .filter((type) => grouped[type].length > 0)
+          .map((type) =>
+            uploadGroup(type, grouped[type], recipient_id, captionToSend),
+          ),
+      );
     } finally {
       setIsSendingMedia(false);
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      stopTyping();
-    };
-  }, []);
+  const uploadGroup = async (
+    type: "image" | "video" | "file",
+    files: File[],
+    recipient_id: string,
+    caption: string,
+  ) => {
+    const clientId = prepareOptimisticMedia({
+      files,
+      recipient_id,
+      type,
+      caption,
+      reply_to: replyTo,
+    });
+
+    if (!clientId) return;
+
+    activeUploadsRef.current.set(clientId, files);
+
+    const raw = await getSignature.mutateAsync({
+      uploadType: type,
+      count: files.length,
+    });
+
+    const signatureItems = (raw.items || [raw.fields]).map((item: any) => ({
+      fields: item,
+      constraints: raw.constraints,
+    }));
+
+    await uploadAndEmitMedia({
+      files,
+      type,
+      recipient_id,
+      caption,
+      signatures: signatureItems,
+      clientId: [clientId],
+      reply_to: replyTo,
+    });
+  };
+
+  const resetInput = () => {
+    setPendingFiles([]);
+    setMessage("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    stopTyping();
+    setReplyTo(null);
+  };
+
+  // ─────────────────────────────────────────
 
   const canSend = message.trim().length > 0 || pendingFiles.length > 0;
 
   return (
     <div className="w-full relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
+      {/* Media preview modal */}
       {pendingFiles.length > 0 && (
         <MediaUploadModal
           files={pendingFiles}
@@ -198,7 +274,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
           setMessage={setMessage}
           setFiles={setPendingFiles}
           onSend={handleSend}
-          onAddMore={() => fileRef.current?.click()}
+          onAddMore={() => openFilePicker(fileAcceptType)}
           user={selectedChat}
           isSendingMedia={isSendingMedia}
         />
@@ -209,9 +285,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         <div className="relative px-3 pb-1 pt-1 mb-1 w-full">
           <div
             className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-[10px]"
-            style={{
-              borderLeft: "4px solid #b07b1b",
-            }}
+            style={{ borderLeft: "4px solid #b07b1b" }}
           >
             <div className="flex-1">
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
@@ -219,13 +293,12 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
                   ? "Replying to yourself"
                   : `Replying to ${selectedChat?.full_name ?? "them"}`}
               </p>
-
               <SmartReplyPreview reply={replyTo} isSender={false} />
             </div>
 
             <button
               onClick={() => setReplyTo(null)}
-              className="cursor-pointer p-2 hover:bg-black/80 rounded-full text-gray-500"
+              className="cursor-pointer p-2 hover:bg-black/10 rounded-full text-gray-500"
             >
               <X size={14} />
             </button>
@@ -233,44 +306,33 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         </div>
       )}
 
+      {/* Attachment menu */}
       {showMenu && (
         <div className="absolute bottom-16 left-3 md:left-6 w-48 bg-white rounded-xl shadow-lg border border-gray-100 p-1 flex flex-col gap-1 z-50">
           <button
-            onClick={() => {
-              setFileAccept("image/*,image/heic,image/heif");
-              fileRef.current?.click();
-              setShowMenu(false);
-            }}
-            className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
+            onClick={() => openFilePicker("image")}
+            className="flex items-center gap-2.5 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
             <Image size={12} className="text-[#007BFC]" />
             <span>Add Photos</span>
           </button>
           <button
-            onClick={() => {
-              setFileAccept("video/mp4,video/quicktime,video/x-m4v,video/*");
-              fileRef.current?.click();
-              setShowMenu(false);
-            }}
-            className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
+            onClick={() => openFilePicker("video")}
+            className="flex items-center gap-2.5 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
             <Video size={12} className="text-[#FF2E74]" />
             <span>Add Videos</span>
           </button>
           <button
-            onClick={() => {
-              setFileAccept(".pdf,.doc,.docx,.zip");
-              fileRef.current?.click();
-              setShowMenu(false);
-            }}
-            className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
+            onClick={() => openFilePicker("file")}
+            className="flex items-center gap-2.5 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
             <File size={12} className="text-[#333]" />
             <span>Files</span>
           </button>
           <button
-            onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2.75 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
+            onClick={() => openFilePicker("camera")}
+            className="flex items-center gap-2.5 px-3 py-2 hover:bg-[#f5f0f0] rounded-lg text-[13px]"
           >
             <Camera size={12} className="text-[#FF2E74]" />
             <span>Camera</span>
@@ -278,6 +340,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         </div>
       )}
 
+      {/* Input row */}
       <div className="flex items-center gap-3 bg-[#EFF3F4] border-[0.5px] border-orange rounded-[50px] px-1.5 py-2 shadow-sm">
         <button
           onClick={() => setShowMenu(!showMenu)}
@@ -307,16 +370,10 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             stopTyping();
           }}
           onKeyDown={(e) => {
-            // allow Shift + Enter for newline
             if (e.shiftKey) return;
-
-            // send on Enter
             if (e.key === "Enter") {
               e.preventDefault();
-
-              // prevent IME/composition issues
               if (e.nativeEvent.isComposing) return;
-
               handleSend();
             }
           }}
@@ -330,7 +387,7 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
             className="w-7.5 h-7.5 flex items-center justify-center bg-orange text-white rounded-full transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSendingMedia ? (
-              <Loader2 size={18} strokeWidth={1} />
+              <Loader2 size={18} strokeWidth={1} className="animate-spin" />
             ) : (
               <ArrowUp size={18} strokeWidth={1} />
             )}
@@ -338,13 +395,19 @@ const SendMessage = ({ selectedChat }: ChatHeaderProps) => {
         )}
       </div>
 
+      {/*
+        Single hidden file input — remounts via key when accept type changes.
+        This is the only reliable way to change the accept attribute on mobile.
+      */}
       <input
-        ref={fileRef}
+        key={fileAcceptType}
+        id="chat-file-input"
         type="file"
-        accept={fileAccept}
-        multiple
+        accept={FILE_ACCEPT_MAP[fileAcceptType]}
+        multiple={fileAcceptType !== "camera"}
+        capture={fileAcceptType === "camera" ? "environment" : undefined}
         className="hidden"
-        onChange={handleImageUpload}
+        onChange={handleFileChange}
       />
     </div>
   );
