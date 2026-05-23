@@ -185,7 +185,7 @@ const MessageList = () => {
     for (const msg of unread) {
       readSet.current.add(msg.id);
       websocket.emit("chat.read", {
-        conversation_id: sortedMessages[0]?.conversation_id,
+        recipient_id: sortedMessages[0]?.conversation_id,
         message_id: msg.id,
       });
     }

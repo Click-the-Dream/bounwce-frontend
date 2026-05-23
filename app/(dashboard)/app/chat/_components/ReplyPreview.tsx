@@ -92,7 +92,7 @@ export default function ReplyPreview({ reply, isSender }: Props) {
         <div
           className={`
           text-[10px] font-medium truncate
-          ${isSender ? "text-green-700/80" : "text-gray-500"}
+          ${isSender ? "text-green-700/80" : "text-orange"}
         `}
         >
           {isReplySender ? "You" : reply.sender?.full_name || "User"}
@@ -102,7 +102,9 @@ export default function ReplyPreview({ reply, isSender }: Props) {
         <div className="flex items-center gap-1 text-[12px] text-black/55 min-w-0">
           {Icon && <Icon size={12} className="shrink-0 text-black/35" />}
 
-          <span className="min-w-0 flex-1 line-clamp-2 wrap-break-word ">
+          <span
+            className={`min-w-0 flex-1 line-clamp-2 wrap-break-word ${isSender ? "text-black/55" : "text-gray-300"}`}
+          >
             {getPreviewText()}
           </span>
         </div>
