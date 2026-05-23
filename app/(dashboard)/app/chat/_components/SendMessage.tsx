@@ -186,9 +186,6 @@ const SendMessage = ({
   }, []);
 
   const canSend = message.trim().length > 0 || pendingFiles.length > 0;
-  const isTouchDevice = () =>
-    typeof window !== "undefined" &&
-    (navigator.maxTouchPoints > 1 || "ontouchstart" in window);
 
   return (
     <div className="relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
@@ -303,8 +300,16 @@ const SendMessage = ({
             stopTyping();
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !isTouchDevice()) {
+            // allow Shift + Enter for newline
+            if (e.shiftKey) return;
+
+            // send on Enter
+            if (e.key === "Enter") {
               e.preventDefault();
+
+              // prevent IME/composition issues
+              if (e.nativeEvent.isComposing) return;
+
               handleSend();
             }
           }}
