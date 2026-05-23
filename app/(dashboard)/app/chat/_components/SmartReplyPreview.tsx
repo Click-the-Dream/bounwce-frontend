@@ -29,7 +29,7 @@ export default function SmartReplyPreview({ reply, isSender }: Props) {
 
         {/* CONTENT */}
         <div className="flex-1 min-w-0">
-          <p className="truncate text-gray-400 font-medium">
+          <p className="line-clamp-1 text-gray-400 font-medium">
             {isImage
               ? "Photo"
               : isVideo

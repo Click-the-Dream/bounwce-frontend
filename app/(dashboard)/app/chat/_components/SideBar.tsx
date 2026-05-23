@@ -91,7 +91,7 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
 
   return (
     <div
-      className={`w-80 min-w-80 border-r-[0.53px] border-[#00000033] flex-col bg-white h-full ${
+      className={`w-80 min-w-80  border-r-[0.53px] border-[#00000033] flex-col bg-white h-full ${
         chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-0"
       }`}
     >

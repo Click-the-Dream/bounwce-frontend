@@ -97,7 +97,7 @@ export default function ReplyPreview({ reply, isSender }: Props) {
         <div className="flex items-center gap-1 text-[12px] text-black/55 truncate">
           {Icon && <Icon size={12} className="shrink-0 text-black/35" />}
 
-          <span className="truncate">{getPreviewText()}</span>
+          <span className="line-clamp-1">{getPreviewText()}</span>
         </div>
       </div>
     </div>

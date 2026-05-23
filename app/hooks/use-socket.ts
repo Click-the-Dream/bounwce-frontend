@@ -196,6 +196,7 @@ export const useSocketConnection = ({
           message: message.body,
           avatar: message.sender?.avatar,
           conversationId: message.conversation_id,
+          userId: otherUserId,
         });
 
         incrementUnread(otherUserId);
