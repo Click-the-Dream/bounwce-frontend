@@ -21,7 +21,6 @@ import { useChatUtils } from "@/app/context/ChatContext";
 
 interface ChatHeaderProps {
   selectedChat?: User;
-  role?: "buyer" | "vendor";
 }
 
 const SendMessage = ({ selectedChat }: ChatHeaderProps) => {

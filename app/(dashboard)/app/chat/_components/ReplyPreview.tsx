@@ -40,11 +40,11 @@ export default function ReplyPreview({ reply, isSender }: Props) {
   };
 
   const renderThumbnail = () => {
-    if (mediaType === "image" && reply.media_url?.[0]) {
+    if (mediaType === "image" && reply.media_urls?.[0]) {
       return (
         <div className="w-9 h-9 rounded-md overflow-hidden shrink-0 bg-black/5">
           <SafeImage
-            src={reply.media_url[0]}
+            src={reply.media_urls[0]}
             alt="reply"
             width={36}
             height={36}
@@ -73,11 +73,7 @@ export default function ReplyPreview({ reply, isSender }: Props) {
       flex items-start gap-2
       min-w-0
       backdrop-blur-sm
-      ${
-        isSender
-          ? "border-green-500 bg-black/40"
-          : "border-gray-300 bg-black/60"
-      }
+      ${isSender ? "bg-white/80" : "bg-black/80"}
     `}
       style={{
         borderLeft: "4px solid #bbb",
@@ -103,7 +99,7 @@ export default function ReplyPreview({ reply, isSender }: Props) {
           {Icon && <Icon size={12} className="shrink-0 text-black/35" />}
 
           <span
-            className={`min-w-0 flex-1 line-clamp-2 wrap-break-word ${isSender ? "text-black/55" : "text-gray-300"}`}
+            className={`min-w-0 flex-1 line-clamp-2 wrap-break-word ${isSender ? "text-black/80" : "text-gray-300"}`}
           >
             {getPreviewText()}
           </span>

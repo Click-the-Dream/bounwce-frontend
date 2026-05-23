@@ -65,7 +65,7 @@ const ChatMessage = ({ msg, onReply }: any) => {
         {showReadMore && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="block text-[11px] mt-1 font-semibold opacity-60 hover:opacity-100 transition-opacity active:scale-95"
+            className={`block text-[11px] mt-1 font-semibold opacity-60 hover:opacity-100 transition-opacity active:scale-95 ${isSender ? "text-black" : "text-green-800"}`}
           >
             {expanded ? "Read less" : "Read more"}
           </button>

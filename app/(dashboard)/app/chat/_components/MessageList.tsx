@@ -138,7 +138,6 @@ const MessageList = () => {
         reply_to: msg.reply_to,
       });
     } else {
-      // SCENARIO B: Upload failed. We must re-upload.
       const files = activeUploadsRef.current.get(msg.id);
 
       if (files) {

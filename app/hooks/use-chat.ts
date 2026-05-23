@@ -177,7 +177,7 @@ const useChat = () => {
       recipient_id,
       body,
       currentUser,
-      reply_to,
+      reply_to_message: reply_to,
     });
 
     queryClient.setQueryData(["messages", recipient_id], (old: any) =>
@@ -254,6 +254,7 @@ const useChat = () => {
       file_name: files.length === 1 ? files[0].name : `${files.length} files`,
       file_size: formatBytes(files.reduce((a, f) => a + f.size, 0)),
       reply_to_message_id: reply_to?.id,
+      reply_to_message: reply_to,
     });
 
     queryClient.setQueryData(["messages", recipient_id], (old: any) =>
