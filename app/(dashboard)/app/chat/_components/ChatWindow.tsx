@@ -72,7 +72,7 @@ const ChatWindow = ({
   }
   return (
     <div
-      className={`w-full flex-1 flex-col bg-white pb-2 ${chatId ? "flex" : "hidden md:flex"}`}
+      className={`w-full flex-1 flex-col bg-white ${chatId ? "flex" : "hidden md:flex"}`}
     >
       {/* Header */}
       <ChatHeader selectedChat={selectedUser} role={role} />

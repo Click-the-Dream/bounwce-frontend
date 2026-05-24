@@ -329,6 +329,9 @@ const MessageList = () => {
   }, [sortedMessages]);
 
   // MARK AS READ
+  const lastUnreadId = sortedMessages.findLast(
+    (msg) => msg.sender_id !== authDetails?.user?.id && !msg.read_at,
+  )?.id;
 
   useEffect(() => {
     if (!sortedMessages.length) return;
@@ -342,14 +345,12 @@ const MessageList = () => {
 
     for (const msg of unread) {
       readSet.current.add(msg.id);
-      const otherUserId = msg.sender_id;
-
       websocket.emit("chat.read", {
-        recipient_id: otherUserId,
+        recipient_id: msg.sender_id,
         message_id: msg.id,
       });
     }
-  }, [sortedMessages.length, chatId]);
+  }, [lastUnreadId, chatId]);
 
   // HANDLERS
 
@@ -477,7 +478,7 @@ const MessageList = () => {
   // MAIN RENDER
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 pb-4 overflow-hidden">
       <div
         ref={containerRef}
         onScroll={() => {
