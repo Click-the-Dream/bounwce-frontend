@@ -42,24 +42,10 @@ const ChatMediaMessage = ({
   const styles = getMessageLayout(isSender);
   const caption = msg.body || msg.caption || "";
 
-  // ─── STATE ──────────────────────────────────
-
-  const [isFailed, setIsFailed] = useState(false);
+  // ─── STATE ────────────────────────────────
   const [isHighlighted, setIsHighlighted] = useState(false);
 
   // ─── EFFECTS ────────────────────────────────
-
-  // Mark as failed after 60s if still pending
-  useEffect(() => {
-    if (!isSender || !msg.pending) {
-      setIsFailed(false);
-      return;
-    }
-
-    setIsFailed(false);
-    const timer = setTimeout(() => setIsFailed(true), 60_000);
-    return () => clearTimeout(timer);
-  }, [isSender, msg.pending, msg.id]);
 
   // Listen for highlight events from MessageList scroll-to-reply
   useEffect(() => {
@@ -76,23 +62,36 @@ const ChatMediaMessage = ({
 
   // ─── DERIVED FLAGS ──────────────────────────
 
-  const isUploading = isSender && msg.pending && !isFailed;
-
+  const isUploading = msg.delivery_status === "uploading";
+  const isSending = msg.delivery_status === "sending";
+  const isFailed = msg.delivery_status === "failed";
+  const isSent = msg.delivery_status === "sent";
+  const isRead = !!msg.read_at;
   const mediaUrls = useMemo(() => msg.media_urls || [], [msg.media_urls]);
 
   // ─── STATUS ─────────────────────────────────
 
   const renderStatus = () => {
     if (!isSender) return null;
+
+    if (isUploading) return <LuClock size={10} className="animate-pulse" />;
+
     if (isFailed) return <AlertCircle size={12} className="text-red-500" />;
-    if (msg.pending) return <LuClock size={10} />;
-    if (msg.read_at) return renderCheck("read");
-    return renderCheck("sent");
+
+    if (isSending) return <LuClock size={10} />;
+
+    if (isRead) return renderCheck("read");
+
+    if (isSent) return renderCheck("sent");
+    return <LuClock size={10} className="animate-pulse" />;
   };
 
   // ─── UPLOAD OVERLAY ─────────────────────────
 
   const renderUploadOverlay = () => {
+    const base =
+      "absolute inset-0 flex items-center justify-center rounded-[10px] z-10 bg-black/40";
+
     if (isFailed) {
       return (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-[10px] z-10">
@@ -110,16 +109,20 @@ const ChatMediaMessage = ({
       );
     }
 
-    if (!isUploading) return null;
-
-    return (
-      <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-[10px] z-10">
-        <div className="flex flex-col items-center gap-1.5">
-          <div className="w-8 h-8 rounded-full animate-spin border-2 border-emerald-100 border-t-emerald-600" />
-          <span className="text-white text-[10px]">Sending...</span>
+    if (isUploading || isSending) {
+      return (
+        <div className={base}>
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="w-8 h-8 rounded-full animate-spin border-2 border-emerald-100 border-t-emerald-600" />
+            <span className="text-white text-[10px]">
+              {isUploading ? "Uploading..." : "Sending..."}
+            </span>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    return null;
   };
 
   // ─── MEDIA RENDERERS ────────────────────────
@@ -190,43 +193,117 @@ const ChatMediaMessage = ({
     </div>
   );
 
+  /**
+   * Extract filename from URL (before query params)
+   * e.g., "https://res.cloudinary.com/.../abc123.pdf" → "abc123.pdf"
+   */
+  const getFileNameFromUrl = (url: string): string => {
+    try {
+      const path = new URL(url).pathname;
+      const parts = path.split("/");
+      const filename = parts[parts.length - 1];
+      return filename || "File";
+    } catch {
+      return "File";
+    }
+  };
+
+  /**
+   * Extract file extension from URL
+   */
+  const getFileExtension = (url: string): string => {
+    const filename = getFileNameFromUrl(url);
+    const ext = filename.split(".").pop()?.toUpperCase() || "";
+    return ext;
+  };
+
   const renderFile = () => {
-    const FileIconComponent = getFileIcon(msg.file_name || "");
+    // Single file
+    if (mediaUrls.length === 1) {
+      const FileIconComponent = getFileIcon(mediaUrls[0]);
+      const fileName = getFileNameFromUrl(mediaUrls[0]);
+      const fileExt = getFileExtension(mediaUrls[0]);
+
+      return (
+        <div className="relative">
+          <a
+            href={!isUploading ? mediaUrls[0] : "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => isUploading && e.preventDefault()}
+            className={`flex items-center gap-3 p-3 bg-white/40 border border-black/5 rounded-[10px] ${
+              isUploading
+                ? "cursor-default"
+                : "hover:bg-white/60 cursor-pointer"
+            }`}
+          >
+            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shrink-0">
+              <FileIconComponent size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-medium text-gray-900 truncate">
+                {fileName}
+              </p>
+              <p className="text-[11px] text-gray-500 uppercase">
+                {isUploading ? "Sending..." : `${fileExt || "File"}`}
+              </p>
+            </div>
+            <div className="text-gray-400">
+              {isUploading ? (
+                <div className="w-4 h-4 rounded-full animate-spin border-2 border-emerald-100 border-t-emerald-600" />
+              ) : (
+                <Download size={16} />
+              )}
+            </div>
+          </a>
+        </div>
+      );
+    }
+
+    // Multiple files — render as list
     return (
       <div className="relative">
-        <a
-          href={!isUploading ? mediaUrls[0] : "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => isUploading && e.preventDefault()}
-          className={`flex items-center gap-3 p-3 bg-white/40 border-b border-black/5 ${
-            isUploading ? "cursor-default" : "hover:bg-white/60 cursor-pointer"
-          }`}
-        >
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shrink-0">
-            <FileIconComponent size={20} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-gray-900 truncate">
-              {msg.file_name || "Document"}
-            </p>
-            <p className="text-[11px] text-gray-500 uppercase">
-              {isUploading
-                ? "Sending..."
-                : `${msg.file_size || "File"} • ${
-                    msg.file_name?.split(".").pop()?.toUpperCase() ?? ""
-                  }`}
-            </p>
-          </div>
-          <div className="text-gray-400">
-            {isUploading ? (
-              <div className="w-4 h-4 rounded-full animate-spin border-2 border-emerald-100 border-t-emerald-600" />
-            ) : (
-              <Download size={16} />
-            )}
-          </div>
-        </a>
-        {renderUploadOverlay()}
+        <div className="space-y-1 p-1">
+          {mediaUrls.map((url: string, index: number) => {
+            const FileIconComponent = getFileIcon(url);
+            const fileName = getFileNameFromUrl(url);
+            const fileExt = getFileExtension(url);
+
+            return (
+              <a
+                key={index}
+                href={!isUploading ? url : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => isUploading && e.preventDefault()}
+                className={`flex items-center gap-2 p-2 bg-white/40 border border-black/5 rounded-lg ${
+                  isUploading
+                    ? "cursor-default"
+                    : "hover:bg-white/60 cursor-pointer"
+                }`}
+              >
+                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shrink-0">
+                  <FileIconComponent size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium text-gray-900 truncate">
+                    {fileName}
+                  </p>
+                  <p className="text-[10px] text-gray-500 uppercase">
+                    {isUploading ? "Sending..." : fileExt}
+                  </p>
+                </div>
+                <div className="text-gray-400">
+                  {isUploading ? (
+                    <div className="w-3 h-3 rounded-full animate-spin border border-emerald-100 border-t-emerald-600" />
+                  ) : (
+                    <Download size={14} />
+                  )}
+                </div>
+              </a>
+            );
+          })}
+        </div>
       </div>
     );
   };

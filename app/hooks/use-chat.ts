@@ -241,19 +241,26 @@ const useChat = () => {
       media_urls: localUrls,
       local_urls: localUrls,
       currentUser,
+      delivery_status: "uploading",
       file_name: files.length === 1 ? files[0].name : `${files.length} files`,
       file_size: formatBytes(files.reduce((a, f) => a + f.size, 0)),
       reply_to_message_id: reply_to?.id,
       reply_to_message: reply_to,
     });
 
+    // Store client_id so socket handler can match optimistic → server response
+    const messageWithClientId = {
+      ...optimistic,
+      client_id: optimistic.id,
+    };
+
     queryClient.setQueryData(["messages", recipient_id], (old: any) =>
-      mergeIntoQuery(old, optimistic),
+      mergeIntoQuery(old, messageWithClientId),
     );
 
-    chatDB.messages.put(optimistic);
+    chatDB.messages.put(messageWithClientId);
 
-    return optimistic.id;
+    return messageWithClientId.id;
   };
 
   // Step 2: background — upload and emit socket event
@@ -286,16 +293,60 @@ const useChat = () => {
 
       const media_urls = uploads.map((u) => u.secure_url);
 
+      queryClient.setQueryData(["messages", recipient_id], (old: any) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            messages: {
+              ...page.messages,
+              items: page.messages.items.map((m: any) =>
+                clientId.includes(m.id)
+                  ? {
+                      ...m,
+                      media_urls,
+                      delivery_status: "sending",
+                    }
+                  : m,
+              ),
+            },
+          })),
+        };
+      });
+
       websocket.emit("chat.upload_media", {
         recipient_id,
         media_urls,
         body: caption,
-        client_id: clientId,
+        client_id: clientId[0], // Send the client_id so server can echo it back
         media_type: type,
         reply_to_message_id: reply_to?.id,
       });
     } catch (err) {
       console.error("Media upload failed:", err);
+      queryClient.setQueryData(["messages", recipient_id], (old: any) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            messages: {
+              ...page.messages,
+              items: page.messages.items.map((m: any) =>
+                clientId.includes(m.id)
+                  ? {
+                      ...m,
+                      delivery_status: "failed",
+                    }
+                  : m,
+              ),
+            },
+          })),
+        };
+      });
     }
   };
 
@@ -316,7 +367,7 @@ const useChat = () => {
       recipient_id,
       media_urls,
       body: caption,
-      client_id: clientId,
+      client_id: clientId[0],
       reply_to_message_id: reply_to?.id,
     });
   };

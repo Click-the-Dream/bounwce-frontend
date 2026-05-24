@@ -80,24 +80,37 @@ export const useSocketConnection = ({
         );
 
         // 2. Replace optimistic media message by client_id
+        // The optimistic message was created with client_id = optimistic.id
+        // When server echoes it back with the same client_id, we match and replace
         if (message.client_id) {
-          const optimisticIndex = filtered.findIndex(
+          const index = filtered.findIndex(
             (m: any) => m.client_id === message.client_id,
           );
 
-          if (optimisticIndex !== -1) {
-            filtered = [
-              ...filtered.slice(0, optimisticIndex),
-              { ...message, local_url: undefined },
-              ...filtered.slice(optimisticIndex + 1),
-            ];
+          if (index !== -1) {
+            const oldMsg = filtered[index];
+
+            filtered[index] = {
+              ...oldMsg,
+              ...message,
+              local_url: undefined,
+              local_urls: undefined,
+              delivery_status: "sent",
+              pending: false,
+            };
 
             pages[0] = {
               ...pages[0],
-              messages: { ...pages[0].messages, items: filtered },
+              messages: {
+                ...pages[0].messages,
+                items: filtered,
+              },
             };
 
-            return { ...old, pages };
+            return {
+              ...old,
+              pages,
+            };
           }
         }
 
@@ -109,17 +122,20 @@ export const useSocketConnection = ({
           ...pages[0],
           messages: {
             ...pages[0].messages,
-            items: [...filtered, message],
+            items: [...filtered, { ...message, delivery_status: "sent" }],
           },
         };
 
-        return { ...old, pages };
+        return {
+          ...old,
+          pages,
+        };
       });
 
       // ---------------- INDEXEDDB ----------------
 
+      // If this was an optimistic message (had client_id), delete the old one
       if (message.client_id) {
-        // Media message: swap optimistic row for real one
         await chatDB.messages.delete(message.client_id);
       }
 

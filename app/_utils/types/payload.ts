@@ -8,6 +8,7 @@ export interface NewsletterPayload {
 export interface SuggestedCandidate {
   user_id: string;
   full_name: string;
+  username?: string;
   score: number;
   score_explanation: string;
   distance_km?: number;

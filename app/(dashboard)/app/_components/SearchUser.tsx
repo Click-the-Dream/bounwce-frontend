@@ -43,7 +43,7 @@ const SearchUser = ({ item }: { item: SuggestedCandidate }) => {
           {item?.full_name}
         </span>
         <span className="text-[13px] text-[#747474]">
-          @{item?.user_id?.slice(0, 10) || "N/A"}
+          @{item?.username || item?.user_id?.slice(0, 10) || "N/A"}
         </span>
       </div>
     </div>

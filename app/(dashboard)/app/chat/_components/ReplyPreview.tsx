@@ -128,14 +128,14 @@ export default function ReplyPreview({
         <div className="flex items-center gap-1 text-[12px] text-black/55 min-w-0">
           {Icon && (
             <Icon
-              size={12}
+              size={14}
               className={`shrink-0 ${
                 isSender ? "text-black/80" : "text-gray-300"
               }`}
             />
           )}
           <span
-            className={`min-w-0 flex-1 line-clamp-2 wrap-break-word ${
+            className={`min-w-0 flex-1 line-clamp-2 wrap-break-word leading-tight ${
               isSender ? "text-black/80" : "text-gray-300"
             }`}
           >

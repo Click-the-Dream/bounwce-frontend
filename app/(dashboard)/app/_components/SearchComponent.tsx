@@ -5,9 +5,11 @@ import SafeImage from "@/app/_components/SafeImage";
 import SearchUser from "./SearchUser";
 import useMatch from "@/app/hooks/use-match";
 import { SuggestedCandidate } from "@/app/_utils/types/payload";
+import { useAuth } from "@/app/context/AuthContext";
 
 const SearchComponent = () => {
   const { useGetMatches, useGetSuggestedCandidates } = useMatch();
+  const { authDetails } = useAuth();
   const [isFocused, setIsFocused] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { data: matches } = useGetMatches();
@@ -16,33 +18,33 @@ const SearchComponent = () => {
   // Memoized filtering logic based on name, handle, or tags
   const filteredResults = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
-
     const keywords = query.split(/\s+/);
+    const myId = authDetails?.user?.id;
 
-    const filterFn = (item: any) => {
-      const name = item.full_name?.toLowerCase?.() || "";
-      const handle = item.handle?.toLowerCase?.() || "";
-      const tags =
-        item.shared_interests?.map((t: string) => t.toLowerCase()) || [];
+    // Filter for Matches (Nested structure: user / target_user)
+    const matchFilter = (item: any) => {
+      const otherUser = item.user.id === myId ? item.target_user : item.user;
+      const name = otherUser.full_name?.toLowerCase?.() || "";
+      const username = otherUser.username?.toLowerCase?.() || "";
 
       return keywords.every(
-        (word) =>
-          name.includes(word) ||
-          handle.includes(word) ||
-          tags.some((tag: string) => tag.includes(word)),
+        (word) => name.includes(word) || username.includes(word),
       );
     };
 
-    if (!query) {
-      return {
-        matched: matches ?? [],
-        suggestions: suggestions ?? [],
-      };
-    }
+    // Filter for Suggestions (Flat structure)
+    const suggestionFilter = (item: any) => {
+      const name = item.full_name?.toLowerCase?.() || "";
+      const username = item.username?.toLowerCase?.() || "";
+
+      return keywords.every(
+        (word) => name.includes(word) || username.includes(word),
+      );
+    };
 
     return {
-      matched: (matches ?? []).filter(filterFn),
-      suggestions: (suggestions ?? []).filter(filterFn),
+      matched: (matches ?? []).filter(matchFilter),
+      suggestions: (suggestions ?? []).filter(suggestionFilter),
     };
   }, [searchTerm, matches, suggestions]);
 
@@ -83,11 +85,17 @@ const SearchComponent = () => {
                   Matched
                 </h4>
                 <div className="space-y-1 px-6">
-                  {filteredResults.matched.map(
-                    (item: SuggestedCandidate, idx: number) => (
-                      <SearchUser key={idx} item={item} />
-                    ),
-                  )}
+                  {filteredResults.matched.map((item: any, idx: number) => {
+                    // Extract the user that IS NOT you
+                    const partner =
+                      item.user.id === authDetails?.user?.id
+                        ? item.target_user
+                        : item.user;
+
+                    return (
+                      <SearchUser key={item.match_id || idx} item={partner} />
+                    );
+                  })}
                 </div>
               </section>
             )}

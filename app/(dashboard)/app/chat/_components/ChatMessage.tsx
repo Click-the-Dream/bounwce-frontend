@@ -44,8 +44,14 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
 
   const renderStatus = () => {
     if (!isSender) return null;
-    if (msg.pending) return <LuClock size={10} />;
+
+    if (msg.status === "sending") return <LuClock size={10} />;
+
+    if (msg.status === "failed")
+      return <span className="text-red-500 text-[10px]">!</span>;
+
     if (msg.read_at) return renderCheck("read");
+
     return renderCheck("sent");
   };
 
@@ -55,8 +61,6 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
     setTimeout(() => setIsHighlighted(false), 1500);
   };
 
-  // Expose highlight via a custom data attribute + global event so
-  // MessageList can trigger it without prop drilling a ref
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       if (e.detail?.messageId === msg.id) {
