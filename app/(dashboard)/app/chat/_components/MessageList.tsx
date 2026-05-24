@@ -478,13 +478,13 @@ const MessageList = () => {
   // MAIN RENDER
 
   return (
-    <div className="flex flex-col flex-1 pb-6 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden">
       <div
         ref={containerRef}
         onScroll={() => {
           handleScroll();
         }}
-        className="flex-1 overflow-y-auto px-6 pb-6 pt-2 space-y-6 bg-white overscroll-y-none"
+        className="flex-1 overflow-y-auto px-6 pt-2 space-y-6 pb-6 bg-white overscroll-y-none"
       >
         {/* Load older messages */}
         <div className="sticky top-2 z-30 flex justify-center pointer-events-none">

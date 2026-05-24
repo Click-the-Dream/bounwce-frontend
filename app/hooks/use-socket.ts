@@ -83,9 +83,6 @@ export const useSocketConnection = ({
             ),
         );
 
-        // 2. Replace optimistic media message by client_id
-        // The optimistic message was created with client_id = optimistic.id
-        // When server echoes it back with the same client_id, we match and replace
         if (message.client_id) {
           const index = filtered.findIndex(
             (m: any) => m.client_id === message.client_id,
@@ -207,6 +204,8 @@ export const useSocketConnection = ({
           conversation_id: message.conversation_id,
           sender_id: message.sender_id,
           sender_name: message.sender?.full_name,
+          username: message.sender?.username,
+          profile_pic: message?.sender?.profile_pic,
           body: message.body,
           created_at: message.created_at,
         });
@@ -216,7 +215,8 @@ export const useSocketConnection = ({
           message: message.body,
           avatar: message.sender?.avatar,
           conversationId: message.conversation_id,
-          userId: otherUserId,
+          profile_pic: message?.sender?.profile_pic,
+          userId: message.sender_id,
         });
 
         incrementUnread(otherUserId);

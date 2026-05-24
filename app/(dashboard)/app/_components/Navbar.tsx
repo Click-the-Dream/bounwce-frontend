@@ -6,14 +6,37 @@ import { useMarketStore } from "@/app/context/StoreContext";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useAuth } from "@/app/context/AuthContext";
 import SafeImage from "@/app/_components/SafeImage";
+import { useEffect, useRef, useState } from "react";
+import { NotificationPanel } from "@/app/_components/NotificationPanel";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
   const { totalUnread } = useNotifications();
   const { authDetails } = useAuth();
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Close panel when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(event.target as Node)
+      ) {
+        setIsPanelOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <header className="h-13.75 flex items-center justify-between py-2.25 px-4 md:px-6 lg:px-8 bg-white border-b border-[#00000033] sticky top-0 z-10">
+    <header
+      className="h-13.75 flex items-center justify-between py-2.25 px-4 md:px-6 lg:px-8 bg-white border-b border-[#00000033] sticky top-0"
+      style={{
+        zIndex: "50",
+      }}
+    >
       {/* LEFT SECTION */}
       <div className="flex items-center gap-3 w-full">
         {/* Mobile Menu Button */}
@@ -48,8 +71,12 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           )}
         </Link>
 
-        <div className="relative cursor-pointer">
-          <Bell strokeWidth={1.5} className="size-5" />
+        <div ref={panelRef} className="relative cursor-pointer">
+          <Bell
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+            strokeWidth={1.5}
+            className="size-5 cursor-pointer"
+          />
           {totalUnread > 0 && (
             <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">
               {totalUnread}
@@ -67,6 +94,12 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           />
         </Link>
       </div>
+
+      {isPanelOpen && (
+        <div className="absolute z-10000 right-0 top-full mt-2">
+          <NotificationPanel onClose={() => setIsPanelOpen(false)} />
+        </div>
+      )}
     </header>
   );
 };

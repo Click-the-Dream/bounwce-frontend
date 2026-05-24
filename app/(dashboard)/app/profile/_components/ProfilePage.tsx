@@ -10,6 +10,7 @@ import profileBg from "../../../../assets/buyer/profile-bg.jpg";
 import { profileHelper } from "@/app/helpers/profile-helper";
 import useUser from "@/app/hooks/use-user";
 import useInterest from "@/app/hooks/use-interest";
+import ProfileBanner from "./ProfileBanner";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("Posts");
@@ -66,6 +67,7 @@ export default function ProfilePage() {
     badges: user?.badges_count ?? 0,
     tags,
     profile_pic: user?.profile_pic,
+    profile_banner: user?.profile_banner,
   };
 
   return (
@@ -97,20 +99,12 @@ export default function ProfilePage() {
       <div className="md:flex-1 space-y-6 max-w-143 w-full">
         <div className="bg-white">
           {/* HEADER IMAGE */}
-          <div className="relative md:block hidden">
-            <Image
-              src={profileBg.src}
-              alt="profile-banner"
-              width={500}
-              height={130}
-              className="w-full h-31.25 object-cover"
-            />
-            {isOwnProfile && (
-              <div className="w-5 h-5 absolute top-1.25 right-2 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center">
-                <ImageIcon size={10} className="text-black" />
-              </div>
-            )}
-          </div>
+          <ProfileBanner
+            user={{
+              profile_banner: userData?.profile_banner,
+            }}
+            isOwnProfile={isOwnProfile}
+          />
 
           {/* CONTENT */}
           <div className="px-4 md:pl-8.75 py-5">

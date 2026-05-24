@@ -41,7 +41,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
               <SocketConnect>{children}</SocketConnect>
 
               <ToastContainer
-                position="bottom-right"
+                position="top-right"
                 stacked
                 autoClose={2000}
                 hideProgressBar
@@ -57,7 +57,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
                   "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible"
                 }
                 style={{
-                  bottom: "1.5rem",
+                  top: "5rem",
                   right: "0.5rem",
                   paddingTop: "1rem",
                 }}

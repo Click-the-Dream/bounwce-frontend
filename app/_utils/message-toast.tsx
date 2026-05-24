@@ -1,12 +1,12 @@
 "use client";
 
 import { toast } from "react-toastify";
-import { motion } from "framer-motion";
 import { useEffect } from "react";
 import audioController from "./audioController";
 import { useRouter } from "next/navigation";
+import UserImage from "../(dashboard)/app/_components/UserImage";
 
-const MessageToast = ({ senderName, message, avatar, onDismiss }: any) => {
+const MessageToast = ({ senderName, message, profile_pic, userId }: any) => {
   // play sound ONCE when toast mounts
   useEffect(() => {
     audioController.play("/audio/bell.mp3");
@@ -19,19 +19,21 @@ const MessageToast = ({ senderName, message, avatar, onDismiss }: any) => {
   return (
     <div className="w-65 h-12 flex items-center gap-2.5 px-2.5 rounded-lg bg-slate-100">
       {/* avatar */}
-      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-400">
-        {avatar ? (
-          <img src={avatar} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-xs font-bold">
-            {senderName?.[0]}
-          </div>
-        )}
-      </div>
+      <UserImage
+        user={{
+          id: userId,
+          full_name: senderName,
+          profile_pic: profile_pic,
+        }}
+        size={32}
+        rounded="w-full h-full object-cover rounded-full"
+      />
 
       {/* text */}
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-semibold truncate">{senderName}</p>
+        <p className="text-[12px] font-semibold truncate text-black">
+          {senderName}
+        </p>
 
         <p className="text-[11px] truncate text-gray-500">{message}</p>
       </div>
@@ -39,7 +41,7 @@ const MessageToast = ({ senderName, message, avatar, onDismiss }: any) => {
   );
 };
 
-const ToastContent = ({ senderName, message, avatar, userId }: any) => {
+const ToastContent = ({ senderName, message, userId, profile_pic }: any) => {
   const router = useRouter();
 
   return (
@@ -50,7 +52,12 @@ const ToastContent = ({ senderName, message, avatar, userId }: any) => {
       }}
       className="cursor-pointer active:scale-[0.98] transition-transform"
     >
-      <MessageToast senderName={senderName} message={message} avatar={avatar} />
+      <MessageToast
+        senderName={senderName}
+        message={message}
+        userId={userId}
+        profile_pic={profile_pic}
+      />
     </div>
   );
 };
@@ -58,26 +65,33 @@ const ToastContent = ({ senderName, message, avatar, userId }: any) => {
 export const onMessageToast = ({
   senderName,
   message,
-  avatar,
   userId,
   conversationId,
-}: any) => {
+  profile_pic,
+}: {
+  senderName: string;
+  message: string;
+  avatar: string;
+  userId: string;
+  conversationId: string;
+  profile_pic: {
+    url: string;
+  };
+}) => {
   toast(
     <ToastContent
       senderName={senderName}
       message={message}
-      avatar={avatar}
       userId={userId}
+      profile_pic={profile_pic}
     />,
     {
       toastId: `${conversationId}-${Date.now()}`,
-      position: "top-right",
       autoClose: 3500,
       hideProgressBar: true,
       closeButton: false,
       pauseOnHover: true,
       draggable: true,
-      className: "!bg-transparent !shadow-none !p-0",
     },
   );
 };

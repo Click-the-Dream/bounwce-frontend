@@ -289,9 +289,15 @@ const useUser = () => {
   });
 
   const uploadProfilePicture = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({
+      file,
+      fieldName = "picture",
+    }: {
+      file: File;
+      fieldName: string;
+    }) => {
       const formData = new FormData();
-      formData.append("picture", file);
+      formData.append(fieldName, file); // Dynamic field name
 
       const res = await client.put("/users/profile-picture", formData, {
         headers: {
@@ -316,12 +322,7 @@ const useUser = () => {
           data: updatedUser,
         };
       });
-      onSuccess({
-        title: "Profile Updated",
-        message: "Your profile has been updated successfully.",
-      });
     },
-
     onError: (error: any) =>
       onFailure({
         title: "Upload Failed",

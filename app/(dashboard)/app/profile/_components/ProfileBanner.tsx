@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import UserImage from "../../_components/UserImage";
+import Image from "next/image";
 import {
-  Camera,
+  ImageIcon,
   Loader2,
   X,
   ZoomIn,
@@ -10,23 +10,34 @@ import {
   Check,
 } from "lucide-react";
 import Cropper from "react-easy-crop";
-import { onFailure, onSuccess } from "@/app/_utils/notification";
+import { onSuccess } from "@/app/_utils/notification";
 import useUser from "@/app/hooks/use-user";
+
+import profileBg from "../../../../assets/buyer/profile-bg.jpg";
 import { Portal } from "@/app/protocols/Portal";
 
-const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
-  const { uploadProfilePicture } = useUser();
+type ProfileBannerProps = {
+  user: { profile_banner?: string | null };
+  isOwnProfile: boolean;
+};
+
+const BANNER_ASPECT = 500 / 130; // matches your h-31.25 / w-full ratio (~3.85:1)
+
+const ProfileBanner = ({ user, isOwnProfile }: ProfileBannerProps) => {
+  const { uploadProfilePicture } = useUser(); // wire up your mutation here
+
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [openCrop, setOpenCrop] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
-
-  const handlePickImage = (e: any) => {
+  const handlePickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isOwnProfile) return;
     const file = e.target.files?.[0];
     if (!file) return;
+    // Reset input so the same file can be re-selected after cancel
+    e.target.value = "";
     const reader = new FileReader();
     reader.onload = () => {
       setImageSrc(reader.result as string);
@@ -70,21 +81,20 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
         croppedAreaPixels.height,
       );
       const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b as Blob), "image/jpeg"),
+        canvas.toBlob((b) => resolve(b as Blob), "image/jpeg", 0.92),
       );
-      const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
-      await uploadProfilePicture.mutateAsync(
-        { file, fieldName: "picture" },
-        {
-          onSuccess: () => {
-            setOpenCrop(false);
-            setImageSrc(null);
-            onSuccess({ title: "Updated", message: "Profile photo updated" });
-          },
-        },
-      );
+      const file = new File([blob], "banner.jpg", { type: "image/jpeg" });
+      await uploadProfilePicture.mutateAsync({
+        file,
+        fieldName: "profile_banner",
+      });
+      setOpenCrop(false);
+      setImageSrc(null);
+      onSuccess({ title: "Updated", message: "Banner photo updated" });
     } catch {}
   };
+
+  const bannerSrc = user?.profile_banner ?? profileBg.src;
 
   return (
     <>
@@ -96,23 +106,22 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
         onChange={handlePickImage}
       />
 
-      {/* AVATAR + CAMERA BUTTON */}
-      <div className="relative w-fit mb-3.25">
-        <UserImage
-          user={{
-            id: user.id,
-            full_name: user?.name,
-            profile_pic: user?.profile_pic,
-          }}
-          size={size}
+      {/* BANNER + EDIT BUTTON */}
+      <div className="relative">
+        <Image
+          src={bannerSrc}
+          alt="profile-banner"
+          width={500}
+          height={130}
+          className="w-full h-31.25 object-cover"
         />
         {isOwnProfile && (
           <button
             onClick={() => fileRef.current?.click()}
-            className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-[#f5f5f5] transition-colors cursor-pointer"
-            aria-label="Change profile photo"
+            className="w-5 h-5 absolute top-1.25 right-2 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center hover:bg-white transition-colors cursor-pointer"
+            aria-label="Change banner photo"
           >
-            <Camera size={10} className="text-[#555]" />
+            <ImageIcon size={10} className="text-black" />
           </button>
         )}
       </div>
@@ -121,18 +130,18 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
       {isOwnProfile && openCrop && (
         <Portal>
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-1000 flex items-center justify-center p-4"
             style={{
               background: "rgba(0,0,0,0.6)",
               backdropFilter: "blur(6px)",
             }}
           >
-            <div className="w-full max-w-sm bg-white rounded-2xl overflow-hidden shadow-2xl">
+            <div className="w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-2xl">
               {/* MODAL HEADER */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.07]">
                 <div>
                   <h3 className="text-[14px] font-semibold text-[#111]">
-                    Adjust photo
+                    Adjust banner
                   </h3>
                   <p className="text-[11px] text-[#888] mt-0.5">
                     Drag to reposition · Pinch or scroll to zoom
@@ -147,17 +156,17 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
                 </button>
               </div>
 
-              {/* CROP AREA */}
+              {/* CROP AREA — wider, banner-shaped */}
               <div
                 className="relative w-full bg-[#111]"
-                style={{ height: 300 }}
+                style={{ height: 240 }}
               >
                 <Cropper
                   image={imageSrc || ""}
                   crop={crop}
                   zoom={zoom}
-                  aspect={1}
-                  cropShape="round"
+                  aspect={BANNER_ASPECT}
+                  cropShape="rect"
                   showGrid={false}
                   onCropChange={setCrop}
                   onZoomChange={setZoom}
@@ -248,7 +257,7 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
                   ) : (
                     <>
                       <Check size={13} />
-                      Apply photo
+                      Apply banner
                     </>
                   )}
                 </button>
@@ -261,4 +270,4 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
   );
 };
 
-export default ProfileImage;
+export default ProfileBanner;

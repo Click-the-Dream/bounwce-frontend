@@ -316,7 +316,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
       </p>
 
       {/* SWITCH ACCOUNT */}
-      {isOwnProfile && <SwitchAccountCard />}
+      {/* {isOwnProfile && <SwitchAccountCard />} */}
 
       <EditProfileModal
         open={openEditProfile}

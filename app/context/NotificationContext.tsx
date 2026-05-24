@@ -15,6 +15,10 @@ type Notification = {
   body: string;
   sender_name: string;
   created_at: string;
+  profile_pic: {
+    url: string;
+  };
+  username: string;
 };
 
 type UnreadMap = Record<string, number>;
