@@ -458,7 +458,7 @@ const MessageList = () => {
             key={i}
             className={`flex ${i % 2 ? "justify-start" : "justify-end"}`}
           >
-            <div className="animate-pulse bg-gray-200 rounded-2xl w-1/2 h-10" />
+            <div className="animate-pulse bg-gray-200 rounded-xl w-1/2 h-10" />
           </div>
         ))}
       </div>

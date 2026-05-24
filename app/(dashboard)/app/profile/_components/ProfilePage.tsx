@@ -61,7 +61,7 @@ export default function ProfilePage() {
     id: user?.id,
     name: user?.full_name,
     handle: user?.username,
-    bio: user?.bio ?? "Better to be woke and broke than sleep and creep",
+    bio: user?.bio,
     followers: user?.followers_count ?? 0,
     badges: user?.badges_count ?? 0,
     tags,
@@ -85,7 +85,7 @@ export default function ProfilePage() {
         )}
       </div>
       {/* Left Column */}
-      <div className="w-full md:max-w-76.25 relative md:sticky md:top-0">
+      <div className="w-full md:max-w-76.25 relative md:sticky md:top-0 z-10">
         <IdentityCard
           data={userData}
           isOwnProfile={isOwnProfile}

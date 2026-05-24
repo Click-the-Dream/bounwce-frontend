@@ -73,6 +73,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
+  const updateUser = (userPatch: any) => {
+    setAuthDetails((prev: any) => {
+      if (!prev) return prev;
+
+      const updated = {
+        ...prev,
+        user: {
+          ...prev.user,
+          ...userPatch,
+        },
+      };
+
+      localStorage.setItem("authUser", JSON.stringify(updated));
+
+      return updated;
+    });
+  };
+
   useEffect(() => {
     updateAuthRef.current = updateAuth;
   });
@@ -164,6 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLogoutSignal,
         getCurrentUser,
         isLoading,
+        updateUser,
       }}
     >
       {children}

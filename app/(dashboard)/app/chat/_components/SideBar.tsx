@@ -88,10 +88,9 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
       container.removeEventListener("scroll", handleScroll);
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
   return (
     <div
-      className={`w-80 min-w-80 h-full flex flex-col bg-white border-r-[0.53px] border-[#00000033] overflow-hidden
+      className={`w-80 min-w-80 h-full min-h-0 flex flex-col bg-white border-r-[0.53px] border-[#00000033] overflow-hidden
     ${chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-0"}`}
     >
       {/* HEADER */}

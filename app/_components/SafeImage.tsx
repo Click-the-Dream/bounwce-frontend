@@ -55,7 +55,7 @@ const SafeImage = ({
 
       <Image
         src={src}
-        alt={alt}
+        alt={alt || "image"}
         width={width}
         height={height}
         unoptimized

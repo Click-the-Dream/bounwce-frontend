@@ -12,7 +12,7 @@ import { getChatDB } from "../store/chat-store";
 import { User } from "../_utils/types/buyer";
 
 const useUser = () => {
-  const { updateAuth, authDetails } = useAuth();
+  const { updateUser, authDetails } = useAuth();
   const db = authDetails?.user?.id ? getChatDB(authDetails.user.id) : null;
 
   const client = api;
@@ -100,17 +100,34 @@ const useUser = () => {
     });
 
   const updateCurrentUser = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async (data: any) => {
       const res = await client.put(`/users/me`, data);
-      return res.data;
+      return res.data.data; // 👈 IMPORTANT: return ONLY user object
     },
-    onSuccess: () => {
+
+    onSuccess: async (updatedUser) => {
+      const userId = authDetails?.user?.id;
+      if (db) {
+        await db.users.update(userId, updatedUser);
+      }
       onSuccess({
         title: "Profile Updated",
         message: "Your profile has been updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+
+      queryClient.setQueryData(["currentUser"], (old: any) => {
+        if (!old) return { data: updatedUser };
+
+        return {
+          ...old,
+          data: updatedUser,
+        };
+      });
+
+      // 2. optional: update auth if needed
+      updateUser(updatedUser);
     },
+
     onError: (error: any) =>
       onFailure({
         title: "Update Failed",
@@ -282,21 +299,23 @@ const useUser = () => {
         },
       });
 
-      return res.data;
+      return res.data?.data;
     },
 
-    onSuccess: (response: any) => {
-      const updatedUser = response?.data;
+    onSuccess: async (updatedUser) => {
+      const userId = authDetails?.user?.id;
+      if (db) {
+        await db.users.update(userId, updatedUser);
+      }
 
-      // Update auth context immediately
-      updateAuth((prev: any) => ({
-        ...prev,
-        user: updatedUser,
-      }));
+      queryClient.setQueryData(["currentUser"], (old: any) => {
+        if (!old) return { data: updatedUser };
 
-      // Update query cache
-      queryClient.setQueryData(["currentUser"], response);
-
+        return {
+          ...old,
+          data: updatedUser,
+        };
+      });
       onSuccess({
         title: "Profile Updated",
         message: "Your profile has been updated successfully.",

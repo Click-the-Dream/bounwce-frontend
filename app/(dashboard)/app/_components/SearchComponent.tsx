@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import SafeImage from "@/app/_components/SafeImage";
 import SearchUser from "./SearchUser";
 import useMatch from "@/app/hooks/use-match";
@@ -67,6 +67,18 @@ const SearchComponent = () => {
           onBlur={() => setTimeout(() => setIsFocused(false), 200)}
           className="w-full bg-white border-[0.53px] border-[#0000004D] rounded-[10px] py-2 pl-10 pr-4 text-sm focus:outline-none focus:rounded-b-none focus:border-0 focus:border-b focus:pb-3 placeholder:text-[#9C9C9C] transition-all duration-200"
         />
+        {(searchTerm || isFocused) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchTerm("");
+              setIsFocused(false);
+            }}
+            className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#9C9C9C] bg-gray-100 hover:bg-gray-200 hover:text-black transition-all"
+          >
+            <X className="size-4" />
+          </button>
+        )}
       </div>
 
       {/* --- DROPDOWN RESULTS --- */}
@@ -89,8 +101,8 @@ const SearchComponent = () => {
                     // Extract the user that IS NOT you
                     const partner =
                       item.user.id === authDetails?.user?.id
-                        ? item.target_user
-                        : item.user;
+                        ? { ...item.target_user, user_id: item.target_user?.id }
+                        : { ...item.user, user_id: item.user?.id };
 
                     return (
                       <SearchUser key={item.match_id || idx} item={partner} />
