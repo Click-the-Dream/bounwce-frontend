@@ -6,6 +6,8 @@ import { useParams } from "next/navigation";
 import { User } from "@/app/_utils/types/buyer";
 import { useEffect } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
+import { useAuth } from "@/app/context/AuthContext";
+import { usePendingMessageRecovery } from "@/app/hooks/Usependingmessagerecovery";
 
 interface ChatWindowProps {
   selectedUser?: User;
@@ -18,8 +20,12 @@ const ChatWindow = ({
   isConversationLoading,
   role = "buyer",
 }: ChatWindowProps) => {
+  const { authDetails } = useAuth();
   const { chatId } = useParams<{ chatId: string }>();
   const { resetUnread } = useNotifications();
+
+  usePendingMessageRecovery(authDetails?.user?.id);
+
   useEffect(() => {
     if (!chatId) return;
 

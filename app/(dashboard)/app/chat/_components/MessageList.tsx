@@ -342,9 +342,10 @@ const MessageList = () => {
 
     for (const msg of unread) {
       readSet.current.add(msg.id);
+      const otherUserId = msg.sender_id;
 
       websocket.emit("chat.read", {
-        recipient_id: sortedMessages[0]?.conversation_id,
+        recipient_id: otherUserId,
         message_id: msg.id,
       });
     }

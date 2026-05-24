@@ -17,6 +17,7 @@ export interface CachedMessage {
   media_type?: string;
   media_url?: string;
   local_url?: string;
+  delivery_status?: string;
 }
 
 export interface CachedConversation {

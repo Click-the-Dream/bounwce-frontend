@@ -24,6 +24,10 @@ export const useSocketConnection = ({
 
   const setTypingUsersRef = useRef(setTypingUsers);
   const setOnlineUsersRef = useRef(setOnlineUsers);
+  const readQueue = useRef<
+    Record<string, Array<{ message_id: string; read: boolean }>>
+  >({});
+  const flushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setTypingUsersRef.current = setTypingUsers;
@@ -250,35 +254,43 @@ export const useSocketConnection = ({
 
     const handleReadUpdated = (data: any) => {
       const { reader_id, message_id, read } = data;
-
       if (!reader_id || !message_id) return;
 
-      if (read) {
-        decrementUnread(reader_id);
-      }
+      if (read) decrementUnread(reader_id);
 
-      queryClient.setQueryData(["messages", reader_id], (old: any) => {
-        if (!old) return old;
+      // Queue instead of writing immediately
+      if (!readQueue.current[reader_id]) readQueue.current[reader_id] = [];
+      readQueue.current[reader_id].push({ message_id, read });
 
-        return {
-          ...old,
-          pages: old.pages.map((page: any) => ({
-            ...page,
-            messages: {
-              ...page.messages,
-              items: page.messages.items.map((msg: any) =>
-                msg.id === message_id
-                  ? {
+      if (flushRef.current) clearTimeout(flushRef.current);
+      flushRef.current = setTimeout(() => {
+        Object.entries(readQueue.current).forEach(([reader_id, updates]) => {
+          queryClient.setQueryData(["messages", reader_id], (old: any) => {
+            if (!old) return old;
+
+            return {
+              ...old,
+              pages: old.pages.map((page: any) => ({
+                ...page,
+                messages: {
+                  ...page.messages,
+                  items: page.messages.items.map((msg: any) => {
+                    const update = updates.find((u) => u.message_id === msg.id);
+                    if (!update) return msg;
+                    return {
                       ...msg,
-                      read_at: read ? new Date().toISOString() : null,
-                      status: read ? "read" : "sent",
-                    }
-                  : msg,
-              ),
-            },
-          })),
-        };
-      });
+                      read_at: update.read ? new Date().toISOString() : null,
+                      status: update.read ? "read" : "sent",
+                    };
+                  }),
+                },
+              })),
+            };
+          });
+        });
+
+        readQueue.current = {}; // clear after flush
+      }, 50);
     };
 
     const handleOnlineSnapshot = (data: any) => {
