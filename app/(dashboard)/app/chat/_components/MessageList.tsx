@@ -478,7 +478,7 @@ const MessageList = () => {
   // MAIN RENDER
 
   return (
-    <div className="flex flex-col flex-1 pb-4 overflow-hidden">
+    <div className="flex flex-col flex-1 pb-6 overflow-hidden">
       <div
         ref={containerRef}
         onScroll={() => {
