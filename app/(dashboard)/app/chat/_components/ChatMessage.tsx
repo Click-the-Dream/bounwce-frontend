@@ -6,6 +6,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { LuClock } from "react-icons/lu";
 import SwipeableMessage from "./SwipeableMessage";
 import ReplyPreview from "./ReplyPreview";
+import { AlertCircle } from "lucide-react";
 
 // TYPES
 
@@ -42,17 +43,27 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
     }
   }, [msg?.body]);
 
+  const isUploading = msg.delivery_status === "uploading";
+  const isSending = msg.delivery_status === "sending";
+  const isFailed = msg.delivery_status === "failed";
+  const isSent = msg.delivery_status === "sent";
+  const isRead = !!msg.read_at;
+
+  // ─── STATUS ─────────────────────────────────
+
   const renderStatus = () => {
     if (!isSender) return null;
 
-    if (msg.status === "sending") return <LuClock size={10} />;
+    if (isUploading) return <LuClock size={10} className="animate-pulse" />;
 
-    if (msg.status === "failed")
-      return <span className="text-red-500 text-[10px]">!</span>;
+    if (isFailed) return <AlertCircle size={12} className="text-red-500" />;
 
-    if (msg.read_at) return renderCheck("read");
+    if (isSending) return <LuClock size={10} />;
 
-    return renderCheck("sent");
+    if (isRead) return renderCheck("read");
+
+    if (isSent) return renderCheck("sent");
+    return <LuClock size={10} className="" />;
   };
 
   // Called when this message is scrolled to as a reply target
