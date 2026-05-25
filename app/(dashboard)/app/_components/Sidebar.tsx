@@ -38,7 +38,7 @@ const Sidebar = ({
         name: "Requests",
         href: "/app/requests",
         icon: UserPlus,
-        badge: data.total,
+        badge: data?.total,
       },
       { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
     ];
