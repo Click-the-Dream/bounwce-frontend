@@ -72,7 +72,7 @@ const Navbar = () => {
             )}
 
             {/* Mobile Toggle */}
-            {/* <button
+            <button
               onClick={() => setIsOpen(!isOpen)}
               className="md:hidden flex items-center justify-center w-8.5 h-8.5 rounded-lg border-2 border-black bg-white transition-all active:scale-90"
             >

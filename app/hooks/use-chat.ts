@@ -11,6 +11,7 @@ import { websocket } from "../services/websocket";
 import { getChatDB } from "../store/chat-store";
 import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
 import { ReplyTarget } from "../_utils/types/buyer";
+import { useEffect } from "react";
 
 const mergeIntoQuery = (old: any, message: any) => {
   if (!old) {
@@ -58,99 +59,138 @@ const useChat = () => {
 
   const chatDB = getDB();
 
-  const useGetConversations = (params = {}) =>
-    useInfiniteQuery({
+  const useGetConversations = (params: any = {}) => {
+    const queryClient = useQueryClient();
+    const chatDB = getDB();
+
+    // 1. Hydrate Conversations from IndexedDB
+    useEffect(() => {
+      const hydrateConversations = async () => {
+        const cached = await chatDB.conversations
+          .orderBy("updated_at")
+          .reverse()
+          .toArray();
+
+        if (cached.length > 0) {
+          queryClient.setQueryData(["conversations"], {
+            pages: [
+              {
+                items: cached,
+                page: 1,
+                total: cached.length,
+                page_size: cached.length,
+              },
+            ],
+            pageParams: [1],
+          });
+        }
+      };
+      hydrateConversations();
+    }, [queryClient]);
+
+    // 2. Infinite Query for Conversations
+    return useInfiniteQuery({
       queryKey: ["conversations"],
       queryFn: async ({ pageParam = 1 }) => {
-        // 1. FAST PATH: Load from IndexedDB
-        if (pageParam === 1) {
-          const cached = await chatDB.conversations
-            .orderBy("updated_at")
-            .reverse()
-            .toArray();
-          if (cached.length > 0) {
-            return {
-              items: cached,
-              page: 1,
-              total: cached.length,
-              page_size: cached.length,
-            };
+        try {
+          const res = await api.get("/chats/conversations", {
+            params: { ...params, page: pageParam },
+          });
+
+          const data = res.data?.data;
+          const items = data?.items;
+
+          // Persist fresh server data to IndexedDB
+          if (items && pageParam === 1) {
+            await chatDB.conversations.clear(); // Clear old list to sync perfectly
+            await chatDB.conversations.bulkPut(items);
           }
+
+          return data;
+        } catch (err) {
+          console.error("Failed to sync conversations:", err);
+          return null; // Return null to preserve existing cache
         }
-
-        // 2. Fallback to API
-        const res = await api.get("/chats/conversations", {
-          params: { ...params, page: pageParam },
-        });
-
-        const data = res.data?.data;
-        const items = data?.items;
-
-        // 3. Persist to IndexedDB
-        if (items && pageParam === 1) {
-          await chatDB.conversations.bulkPut(items);
-        }
-
-        return data;
       },
       getNextPageParam: (lastPage: any) => {
+        if (!lastPage) return undefined;
         const { page, total, page_size } = lastPage;
         return page * page_size < total ? page + 1 : undefined;
       },
       initialPageParam: 1,
+      staleTime: 1000 * 60, // Conversations change less frequently than messages
     });
+  };
 
   // ---------------- MESSAGES ----------------
-  const useGetMessages = (options: any = {}) =>
-    useInfiniteQuery({
-      queryKey: ["messages", options.userId],
+  const useGetMessages = (options: {
+    userId: string;
+    params?: { page_size?: number };
+  }) => {
+    const chatDB = getDB();
 
-      queryFn: async ({ pageParam = 1 }) => {
-        const userId = options.userId;
-        const pageSize = options.params?.page_size || 20;
+    // 1. Pre-populate cache from IndexedDB
+    useEffect(() => {
+      const hydrateCache = async () => {
+        if (!options.userId) return;
+        const cached = await chatDB.messages
+          .where("conversation_id")
+          .equals(options.userId)
+          .toArray();
 
-        const res = await api.get(`/chats/conversations/with/${userId}`, {
-          params: {
-            page: pageParam,
-            page_size: pageSize,
-          },
-        });
-
-        const data = res.data?.data;
-
-        const items = data?.messages?.items || [];
-
-        if (items.length) {
-          await chatDB.messages.bulkPut(
-            items.map((m: any) => ({
-              ...m,
-              conversation_id: userId,
-              synced: true,
-            })),
-          );
+        if (cached.length > 0) {
+          queryClient.setQueryData(["messages", options.userId], {
+            pages: [{ messages: { items: cached } }],
+            pageParams: [1],
+          });
         }
+      };
+      hydrateCache();
+    }, [options.userId, queryClient]);
 
-        return data;
+    return useInfiniteQuery({
+      queryKey: ["messages", options.userId],
+      queryFn: async ({ pageParam = 1 }) => {
+        try {
+          const res = await api.get(
+            `/chats/conversations/with/${options.userId}`,
+            {
+              params: {
+                page: pageParam,
+                page_size: options.params?.page_size || 20,
+              },
+            },
+          );
+
+          const data = res.data?.data;
+          const items = data?.messages?.items || [];
+
+          if (items.length) {
+            await chatDB.messages.bulkPut(
+              items.map((m: any) => ({
+                ...m,
+                conversation_id: options.userId,
+                synced: true,
+              })),
+            );
+          }
+          return data;
+        } catch (err) {
+          console.error("Background sync failed, keeping cache:", err);
+          return null; // Return null to prevent TanStack Query from clearing existing data
+        }
       },
-
       initialPageParam: 1,
-
       getNextPageParam: (lastPage: any) => {
         const messages = lastPage?.messages;
-
         if (!messages) return undefined;
-
         const { page, total, page_size } = messages;
-
         return page * page_size < total ? page + 1 : undefined;
       },
-
       enabled: !!options.userId,
-
-      staleTime: 1000 * 30,
-
-      gcTime: 1000 * 60 * 30,
+      staleTime: 1000 * 30, // Background re-fetch every 30s
     });
+  };
 
   const transmitMessage = async ({
     recipient_id,
