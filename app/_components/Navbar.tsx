@@ -59,19 +59,6 @@ const Navbar = () => {
             />
           </div>
 
-          {/* Desktop Links */}
-          <div className="ml-auto mr-2 hidden md:flex items-center gap-6 text-gray-700 text-[13px] font-medium">
-            {navLinks.map((link: { name: string; path: string }) => (
-              <Link
-                key={link.name}
-                href={link.path}
-                className="hover:text-black cursor-pointer transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
-          </div>
-
           {/* Right Actions */}
           <div className="flex items-center gap-3">
             {!user && (
@@ -85,7 +72,7 @@ const Navbar = () => {
             )}
 
             {/* Mobile Toggle */}
-            <button
+            {/* <button
               onClick={() => setIsOpen(!isOpen)}
               className="md:hidden flex items-center justify-center w-8.5 h-8.5 rounded-lg border-2 border-black bg-white transition-all active:scale-90"
             >
