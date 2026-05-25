@@ -49,7 +49,7 @@ const Input = React.forwardRef<HTMLInputElement, any>(
     };
 
     return (
-      <div className="w-full relative " ref={dropdownRef}>
+      <div className="w-full relative text-left" ref={dropdownRef}>
         {/* Input or custom dropdown container */}
         <div
           className={`flex items-center justify-between gap-2 border ${

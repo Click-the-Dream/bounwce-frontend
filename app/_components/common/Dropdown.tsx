@@ -183,7 +183,10 @@ const Dropdown = ({
     (searchResults.length > 0 || isSearching);
 
   return (
-    <div ref={dropdownRef} className={`relative w-full ${containerClass}`}>
+    <div
+      ref={dropdownRef}
+      className={`relative w-full text-left ${containerClass}`}
+    >
       {/* Select Box */}
       <div
         tabIndex={0}
@@ -198,7 +201,7 @@ const Dropdown = ({
       >
         {icon && <span className="text-gray-400 shrink-0">{icon}</span>}
 
-        <div className="flex-1 text-gray-700 truncate">
+        <div className="flex-1 text-gray-700 truncate text-left">
           {selectedLabel ? (
             selectedLabel
           ) : (
