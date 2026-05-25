@@ -18,7 +18,7 @@ export const metadata = generatePageMetadata({
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [page, setPage] = useState<Page>("overview");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const pendingCount =
     VENDORS.filter((v) => v.status === "pending").length +
@@ -28,12 +28,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     <SecureRoute>
       <NotificationProvider>
         <ChatProvider>
-          <div
-            className="flex h-screen bg-slate-50 overflow-hidden"
-            style={{
-              fontFamily: "'DM Sans', ui-sans-serif, system-ui, sans-serif",
-            }}
-          >
+          <div className="flex h-screen bg-slate-50 overflow-hidden">
             {/* ── Sidebar ── */}
             <AdminSidebar onClose={() => setSidebarOpen(false)} />
 
@@ -100,7 +95,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               </header>
 
               {/* Content */}
-              <main className="flex-1 overflow-y-auto p-6">{children}</main>
+              <main className="flex-1 overflow-y-auto p-2">{children}</main>
             </div>
           </div>
         </ChatProvider>

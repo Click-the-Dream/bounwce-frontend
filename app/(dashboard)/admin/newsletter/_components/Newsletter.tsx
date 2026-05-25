@@ -43,12 +43,12 @@ export default function CampaignStudio() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] text-stone-900 font-sans antialiased">
+    <div className="min-h-screen bg-[#fafaf9] text-stone-900 antialiased">
       {!isEditorOpen ? (
-        <div className="max-w-7xl mx-auto py-20 px-8">
+        <div className="max-w-7xl mx-auto py-20 px-6">
           <header className="flex flex-wrap gap-4 justify-between items-end mb-12">
             <div>
-              <h1 className="text-5xl font-semibold tracking-tighter">
+              <h1 className="text-4xl font-semibold tracking-tighter">
                 Newsletters
               </h1>
               <p className="text-stone-500 mt-3 text-lg font-medium">

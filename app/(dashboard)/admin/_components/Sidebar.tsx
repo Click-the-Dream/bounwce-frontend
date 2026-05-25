@@ -8,6 +8,7 @@ import {
   Settings,
   X,
   LogOut,
+  Newspaper,
 } from "lucide-react";
 
 import Image from "next/image";
@@ -24,6 +25,7 @@ import logoIcon from "../../../assets/bouwnce-icon.png";
 import useAuthServices from "@/app/hooks/use-authservices";
 import { STORES, VENDORS } from "@/app/_utils/mock";
 import { useAuth } from "@/app/context/AuthContext";
+import { TbMessageBolt } from "react-icons/tb";
 
 const AdminSidebar = ({
   isMobile,
@@ -69,6 +71,16 @@ const AdminSidebar = ({
       icon: Receipt,
     },
     {
+      name: "Newsletter",
+      href: "/admin/newsletter",
+      icon: Newspaper,
+    },
+    {
+      name: "Messaging",
+      href: "/admin/messages",
+      icon: TbMessageBolt,
+    },
+    {
       name: "Settings",
       href: "/admin/settings",
       icon: Settings,
@@ -90,7 +102,7 @@ const AdminSidebar = ({
         shrink-0 h-screen bg-white flex flex-col
         border-r-[0.53px] border-[#00000033]
 
-        ${isMobile ? "flex" : "hidden lg:flex"}
+        ${isMobile ? "flex" : "hidden md:flex"}
       `}
     >
       {/* HEADER */}
@@ -176,7 +188,7 @@ const AdminSidebar = ({
         {/* COLLAPSE */}
         <button
           onClick={onToggleCollapse}
-          className="cursor-pointer absolute -right-3.75 top-10 z-50 hidden lg:flex h-7 w-7 items-center justify-center border-[0.53px] border-[#00000022] bg-white transition-all hover:bg-[#F5F5F5] hover:scale-110 active:scale-95"
+          className="cursor-pointer absolute -right-3.75 top-10 z-50 hidden md:flex h-7 w-7 items-center justify-center border-[0.53px] border-[#00000022] bg-white transition-all hover:bg-[#F5F5F5] hover:scale-110 active:scale-95"
         >
           <motion.div
             animate={{ rotate: collapsed ? 180 : 0 }}

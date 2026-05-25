@@ -59,3 +59,25 @@ export interface Order {
   items: number;
   date: string;
 }
+
+export type AdminMessage = {
+  id: string;
+  content: string;
+  sentAt: string;
+  type: "admin" | "system";
+};
+
+export type Conversation = {
+  id: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    joinedAt: string;
+    initials: string;
+    avatarColor: string;
+  };
+  messages: AdminMessage[];
+  lastMessageAt: string;
+  unread: boolean;
+};

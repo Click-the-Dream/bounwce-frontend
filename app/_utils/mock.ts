@@ -6,7 +6,14 @@ import {
   Store as StoreIcon,
   Users,
 } from "lucide-react";
-import type { User, Vendor, Store, Order, Page } from "./types/admin";
+import type {
+  User,
+  Vendor,
+  Store,
+  Order,
+  Page,
+  Conversation,
+} from "./types/admin";
 
 export const USERS: User[] = [
   {
@@ -365,3 +372,128 @@ export const PAGE_TITLES: Record<Page, string> = {
   orders: "Orders",
   settings: "Settings",
 };
+
+export const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: "1",
+    user: {
+      id: "u1",
+      name: "Ade Okafor",
+      email: "ade@example.com",
+      joinedAt: "Jan 2025",
+      initials: "AO",
+      avatarColor: "bg-purple-100 text-purple-800",
+    },
+    messages: [
+      {
+        id: "m1",
+        content:
+          "👋 Welcome to the platform, Ade! Let us know if you have any questions.",
+        sentAt: new Date(Date.now() - 7200000).toISOString(),
+        type: "system",
+      },
+      {
+        id: "m2",
+        content:
+          "Hi Ade, your account has been verified successfully. You now have full access.",
+        sentAt: new Date(Date.now() - 3600000).toISOString(),
+        type: "admin",
+      },
+      {
+        id: "m3",
+        content:
+          "Reminder: please complete your profile to unlock all features.",
+        sentAt: new Date(Date.now() - 120000).toISOString(),
+        type: "admin",
+      },
+    ],
+    lastMessageAt: new Date(Date.now() - 120000).toISOString(),
+    unread: false,
+  },
+  {
+    id: "2",
+    user: {
+      id: "u2",
+      name: "Fatima Malik",
+      email: "fatima@example.com",
+      joinedAt: "Mar 2025",
+      initials: "FM",
+      avatarColor: "bg-emerald-100 text-emerald-800",
+    },
+    messages: [
+      {
+        id: "m4",
+        content:
+          "We noticed unusual activity on your account. Please review your recent logins.",
+        sentAt: new Date(Date.now() - 3600000).toISOString(),
+        type: "admin",
+      },
+    ],
+    lastMessageAt: new Date(Date.now() - 3600000).toISOString(),
+    unread: true,
+  },
+  {
+    id: "3",
+    user: {
+      id: "u3",
+      name: "Kofi Entsie",
+      email: "kofi@example.com",
+      joinedAt: "Feb 2025",
+      initials: "KE",
+      avatarColor: "bg-orange-100 text-orange-800",
+    },
+    messages: [
+      {
+        id: "m5",
+        content: "Welcome to the platform!",
+        sentAt: new Date(Date.now() - 10800000).toISOString(),
+        type: "system",
+      },
+    ],
+    lastMessageAt: new Date(Date.now() - 10800000).toISOString(),
+    unread: false,
+  },
+  {
+    id: "4",
+    user: {
+      id: "u4",
+      name: "Ngozi Bello",
+      email: "ngozi@example.com",
+      joinedAt: "Dec 2024",
+      initials: "NB",
+      avatarColor: "bg-pink-100 text-pink-800",
+    },
+    messages: [
+      {
+        id: "m6",
+        content: "Your subscription has renewed successfully.",
+        sentAt: new Date(Date.now() - 86400000).toISOString(),
+        type: "admin",
+      },
+    ],
+    lastMessageAt: new Date(Date.now() - 86400000).toISOString(),
+    unread: false,
+  },
+  {
+    id: "5",
+    user: {
+      id: "u5",
+      name: "Tunde James",
+      email: "tunde@example.com",
+      joinedAt: "Apr 2025",
+      initials: "TJ",
+      avatarColor: "bg-blue-100 text-blue-800",
+    },
+    messages: [
+      {
+        id: "m7",
+        content:
+          "Action required on your account — please verify your email address.",
+        sentAt: new Date(Date.now() - 172800000).toISOString(),
+        type: "admin",
+      },
+    ],
+    lastMessageAt: new Date(Date.now() - 172800000).toISOString(),
+    unread: true,
+  },
+];

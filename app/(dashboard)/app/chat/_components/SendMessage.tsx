@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ReplyTarget, User } from "@/app/_utils/types/buyer";
+import { User } from "@/app/_utils/types/buyer";
 import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
@@ -60,7 +60,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
 
   const getSignature = useGetChatSignature();
 
-  // EFFECTS───────────────────────────
+  // EFFECTS
 
   // Auto-focus textarea when a reply is set
   useEffect(() => {
@@ -77,7 +77,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     };
   }, []);
 
-  // HELPERS───────────────────────────
+  // HELPERS
 
   const autoResize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
@@ -93,7 +93,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     }, 0);
   };
 
-  // TYPING────────────────────────────
+  // TYPING─
 
   const stopTyping = () => {
     if (!selectedChat || !isTypingRef.current) return;
@@ -156,7 +156,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
 
     // TEXT ONLY
     if (message.trim() && pendingFiles.length === 0) {
-      await transmitMessage({
+      transmitMessage({
         recipient: selectedChat,
         body: message.trim(),
         reply_to: replyTo,
@@ -203,7 +203,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     recipient: User,
     caption: string,
   ) => {
-    const clientId = prepareOptimisticMedia({
+    const clientId = await prepareOptimisticMedia({
       files,
       recipient,
       type,
@@ -216,7 +216,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     activeUploadsRef.current.set(clientId, files);
 
     const raw = await getSignature.mutateAsync({
-      uploadType: type,
+      upload_type: type,
       count: files.length,
     });
 
@@ -239,9 +239,9 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
   const resetInput = () => {
     setPendingFiles([]);
     setMessage("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
     stopTyping();
     setReplyTo(null);
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
   const canSend = message.trim().length > 0 || pendingFiles.length > 0;

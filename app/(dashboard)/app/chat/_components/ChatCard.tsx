@@ -79,7 +79,9 @@ const ChatCard = ({ chat }: any) => {
       <UserImage user={chatUser} />
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline">
-          <h4 className="font-medium text-sm truncate">{chatUser.full_name}</h4>
+          <h4 className="font-medium text-sm truncate pr-10 ">
+            {chatUser.full_name}
+          </h4>
           <span className="text-[10px] text-gray-400">
             {formatTime(lastMessageTime)}
           </span>
