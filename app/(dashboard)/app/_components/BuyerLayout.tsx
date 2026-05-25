@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import InterestSelector from "./InterestSelector";
+import { Portal } from "@/app/protocols/Portal";
 
 const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,28 +16,30 @@ const BuyerLayout = ({ children }: { children: React.ReactNode }) => {
         <Sidebar />
 
         {/* Mobile Sidebar */}
-        <div
-          className={`fixed inset-0 z-40 lg:hidden transition ${
-            sidebarOpen ? "visible" : "invisible"
-          }`}
-        >
-          {/* Overlay */}
+        <Portal>
           <div
-            className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity ${
-              sidebarOpen ? "opacity-100" : "opacity-0"
-            }`}
-            onClick={() => setSidebarOpen(false)}
-          />
-
-          {/* Drawer */}
-          <div
-            className={`absolute left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform ${
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            className={`fixed inset-0 z-100 lg:hidden transition ${
+              sidebarOpen ? "visible" : "invisible"
             }`}
           >
-            <Sidebar isMobile onClose={() => setSidebarOpen(false)} />
+            {/* Overlay */}
+            <div
+              className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity ${
+                sidebarOpen ? "opacity-100" : "opacity-0"
+              }`}
+              onClick={() => setSidebarOpen(false)}
+            />
+
+            {/* Drawer */}
+            <div
+              className={`absolute left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform ${
+                sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
+            >
+              <Sidebar isMobile onClose={() => setSidebarOpen(false)} />
+            </div>
           </div>
-        </div>
+        </Portal>
 
         {/* Main Content */}
         <div className="w-full h-full flex-1 flex flex-col overflow-y-auto">

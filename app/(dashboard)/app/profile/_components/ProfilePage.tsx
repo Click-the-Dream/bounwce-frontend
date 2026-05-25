@@ -73,18 +73,12 @@ export default function ProfilePage() {
   return (
     <main className="w-full relative h-screen md:h-full justify-start mx-auto flex flex-col gap-2 md:gap-0 md:flex-row md:justify-center p-4 md:p-8 md:pt-4.75 overflow-y-auto bg-white">
       <div className="relative md:hidden">
-        <Image
-          src={profileBg.src}
-          alt="profile-banner"
-          width={500}
-          height={130}
-          className="w-full h-31.25 object-cover"
+        <ProfileBanner
+          user={{
+            profile_banner: userData?.profile_banner,
+          }}
+          isOwnProfile={isOwnProfile}
         />
-        {isOwnProfile && (
-          <div className="w-5 h-5 absolute top-1.25 right-2 bg-[#D9D9D9] p-1.5 rounded-md shadow-md border border-white flex items-center justify-center">
-            <ImageIcon size={10} className="text-black" />
-          </div>
-        )}
       </div>
       {/* Left Column */}
       <div className="w-full md:max-w-76.25 relative md:sticky md:top-0 z-10">
@@ -99,12 +93,14 @@ export default function ProfilePage() {
       <div className="md:flex-1 space-y-6 max-w-143 w-full">
         <div className="bg-white">
           {/* HEADER IMAGE */}
-          <ProfileBanner
-            user={{
-              profile_banner: userData?.profile_banner,
-            }}
-            isOwnProfile={isOwnProfile}
-          />
+          <div className="relative hidden md:block">
+            <ProfileBanner
+              user={{
+                profile_banner: userData?.profile_banner,
+              }}
+              isOwnProfile={isOwnProfile}
+            />
+          </div>
 
           {/* CONTENT */}
           <div className="px-4 md:pl-8.75 py-5">

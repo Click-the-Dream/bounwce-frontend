@@ -6,17 +6,16 @@ import {
   Lock,
   Check,
   AtSign,
-  Building2,
   BadgeCheck,
   User,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import useUser from "@/app/hooks/use-user";
-import { onFailure, onSuccess } from "@/app/_utils/notification";
 import { useQueryClient } from "@tanstack/react-query";
 import ProfileImage from "./ProfileImage";
 import InterestSelector from "../../_components/InterestSelector";
+import { Portal } from "@/app/protocols/Portal";
 
 interface Props {
   open: boolean;
@@ -76,18 +75,7 @@ export default function EditProfileModal({
   const handleSubmit = () => {
     updateCurrentUser.mutate(form, {
       onSuccess: () => {
-        onSuccess({
-          title: "Profile Updated",
-          message: "Your profile has been updated successfully",
-        });
-        queryClient.invalidateQueries();
         onClose();
-      },
-      onError: () => {
-        onFailure({
-          title: "Update Failed",
-          message: "Please try again",
-        });
       },
     });
   };
@@ -99,7 +87,7 @@ export default function EditProfileModal({
   const bioRemaining = BIO_LIMIT - form.bio.length;
 
   return (
-    <>
+    <Portal>
       <div
         ref={backdropRef}
         onClick={handleBackdropClick}
@@ -165,37 +153,34 @@ export default function EditProfileModal({
 
           {/* ── BODY ── */}
           <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
-            {/* Full name + Username */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-[#888] mb-1.5 block">
-                  Full name
-                </label>
-                <div className="relative">
-                  <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[#bbb]" />
-                  <input
-                    name="full_name"
-                    value={form.full_name}
-                    onChange={handleChange}
-                    placeholder="Jane Doe"
-                    className="w-full h-9 rounded-xl border border-black/10 pl-8 pr-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all bg-white"
-                  />
-                </div>
+            <div>
+              <label className="text-[10px] font-semibold uppercase text-[#888] mb-1.5 block">
+                Full name
+              </label>
+              <div className="relative">
+                <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[#bbb]" />
+                <input
+                  name="full_name"
+                  value={form.full_name}
+                  onChange={handleChange}
+                  placeholder="Jane Doe"
+                  className="w-full h-9 rounded-[10px] border border-black/10 pl-8 pr-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all bg-white"
+                />
               </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase text-[#888] mb-1.5 block">
-                  Username
-                </label>
-                <div className="relative">
-                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[#bbb]" />
-                  <input
-                    name="username"
-                    value={form.username}
-                    onChange={handleChange}
-                    placeholder="janedoe"
-                    className="w-full h-9 rounded-xl border border-black/10 pl-8 pr-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all bg-white"
-                  />
-                </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold uppercase text-[#888] mb-1.5 block">
+                Username
+              </label>
+              <div className="relative">
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[#bbb]" />
+                <input
+                  name="username"
+                  value={form.username}
+                  onChange={handleChange}
+                  placeholder="janedoe"
+                  className="w-full h-9 rounded-[10px] border border-black/10 pl-8 pr-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all bg-white"
+                />
               </div>
             </div>
 
@@ -219,12 +204,12 @@ export default function EditProfileModal({
                 onChange={handleChange}
                 rows={3}
                 placeholder="Tell people a little about yourself…"
-                className="w-full rounded-xl border border-black/10 p-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none resize-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all leading-relaxed bg-white"
+                className="w-full rounded-[10px] border border-black/10 p-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none resize-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all leading-relaxed bg-white"
               />
             </div>
 
             {/* ── INTERESTS ROW ── */}
-            <div className="flex items-center justify-between py-3 px-4 rounded-xl border border-black/[0.07] bg-[#fafafa]">
+            <div className="flex items-center justify-between py-3 px-4 rounded-[10px] border border-black/[0.07] bg-[#fafafa]">
               <div className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center">
                   <Sparkles className="size-3.5 text-orange-500" />
@@ -253,7 +238,7 @@ export default function EditProfileModal({
               <Lock className="size-3" />
               Visible on your public profile
             </p>
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex flex-wrap items-center gap-2 ml-auto">
               <button
                 onClick={onClose}
                 className="h-9 px-4 rounded-full border border-black/10 text-[13px] text-[#555] hover:bg-[#f5f5f5] transition-colors"
@@ -263,7 +248,7 @@ export default function EditProfileModal({
               <button
                 onClick={handleSubmit}
                 disabled={updateCurrentUser.isPending}
-                className="w-max h-9 px-5 rounded-full bg-[#111] text-white text-[13px] font-medium hover:bg-[#333] transition-colors disabled:opacity-60 flex items-center gap-2"
+                className="cursor-pointer w-max h-9 px-5 rounded-full bg-[#111] text-white text-[13px] font-medium hover:bg-[#333] transition-colors disabled:opacity-60 flex items-center gap-2"
               >
                 {updateCurrentUser.isPending ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -282,6 +267,6 @@ export default function EditProfileModal({
         open={interestOpen}
         onClose={() => setInterestOpen(false)}
       />
-    </>
+    </Portal>
   );
 }
