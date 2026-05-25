@@ -38,7 +38,7 @@ const Sidebar = ({
         name: "Requests",
         href: "/app/requests",
         icon: UserPlus,
-        badge: data?.total,
+        badge: data.total,
       },
       { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
     ];
@@ -140,11 +140,11 @@ const Sidebar = ({
                   </motion.span>
                 )}
               </AnimatePresence>
-              {item?.badge && item?.badge > 0 && (
+              {typeof item.badge === "number" && item.badge > 0 ? (
                 <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
                   {item.badge}
                 </span>
-              )}
+              ) : null}
             </Link>
           );
         })}
