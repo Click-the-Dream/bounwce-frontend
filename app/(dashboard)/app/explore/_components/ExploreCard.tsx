@@ -108,10 +108,10 @@ const ExploreCard = ({
           </p> */}
         </div>
       </div>
-      <div className="flex-1 flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
+      {/*<div className="flex-1 flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
         <p className="text-xs text-[#888888]">Followers:</p>{" "}
         <span className="font-medium text-[13px]">{Math.max(0, score)}</span>
-      </div>
+      </div>*/}
       <div className="flex-1 flex flex-wrap gap-2 mt-3.5 mb-5.75 px-4">
         {shared_interests?.length > 0 ? (
           shared_interests.slice(0, 3)?.map((interest, index) => (
