@@ -8,8 +8,22 @@ const useAdmin = () => {
   const client = api;
 
   const broadcastMessage = useMutation({
-    mutationFn: async (payload: { user_ids: string[]; body: string }) => {
-      const { data } = await client.post("/admin/bouwnce/messages", payload);
+    mutationFn: async ({
+      all_users = false,
+      user_ids,
+      body,
+    }: {
+      all_users: boolean;
+      user_ids: string[] | null;
+      body: string;
+    }) => {
+      const { data } = await client.post(
+        `/admin/bouwnce/messages?all_users=${all_users}`,
+        {
+          user_ids,
+          body,
+        },
+      );
       return data;
     },
     onSuccess: () => {

@@ -6,9 +6,6 @@ import ConversationSidebar from "./_components/ConversationSidebar";
 import BroadcastModal from "./_components/BroadcastModal";
 import { Conversation } from "@/app/_utils/types/admin";
 
-// ─── Placeholder empty state ───────────────────────────────────────────────────
-// Replace with your real useGetConversations hook when the direct chat is ready
-
 function BroadcastEmptyState({ onNew }: { onNew: () => void }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8">
@@ -82,44 +79,17 @@ function BroadcastLogView({ convo }: { convo: Conversation }) {
   );
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
-
-// Replace MOCK_CONVERSATIONS with your real data from useGetConversations
-const INITIAL_CONVERSATIONS: Conversation[] = [];
-
-// Replace with your real user list from useGetUsers or similar
-const MOCK_USERS = [
-  { id: "u1", full_name: "Ade Okafor", email: "ade@example.com" },
-  { id: "u2", full_name: "Fatima Malik", email: "fatima@example.com" },
-  { id: "u3", full_name: "Kofi Entsie", email: "kofi@example.com" },
-  { id: "u4", full_name: "Ngozi Bello", email: "ngozi@example.com" },
-  { id: "u5", full_name: "Tunde James", email: "tunde@example.com" },
-];
-
 export default function AdminMessagesPage() {
-  const [conversations, setConversations] = useState<Conversation[]>(
-    INITIAL_CONVERSATIONS,
-  );
-  const [activeId, setActiveId] = useState<string | null>(
-    conversations[0]?.id ?? null,
-  );
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-
-  const activeConvo = conversations.find((c) => c.id === activeId) ?? null;
-
-  // After a successful broadcast, optimistically add it to the log
-  const handleBroadcastSent = () => {
-    // In production: invalidate your conversations query here
-    // queryClient.invalidateQueries({ queryKey: ["admin-conversations"] })
-  };
 
   return (
     <>
       <div className="flex h-full overflow-hidden">
         {/* Sidebar */}
         <ConversationSidebar
-          conversations={conversations}
+          conversations={[]}
           activeId={activeId ?? ""}
           onSelect={setActiveId}
           search={search}
@@ -128,20 +98,12 @@ export default function AdminMessagesPage() {
         />
 
         {/* Main panel */}
-        {activeConvo ? (
-          <BroadcastLogView convo={activeConvo} />
-        ) : (
-          <BroadcastEmptyState onNew={() => setShowModal(true)} />
-        )}
+
+        <BroadcastEmptyState onNew={() => setShowModal(true)} />
       </div>
 
       {/* Broadcast modal */}
-      {showModal && (
-        <BroadcastModal
-          onClose={() => setShowModal(false)}
-          onSent={handleBroadcastSent}
-        />
-      )}
+      {showModal && <BroadcastModal onClose={() => setShowModal(false)} />}
     </>
   );
 }

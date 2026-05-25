@@ -44,3 +44,11 @@ export interface ReplyTarget {
     full_name: string;
   };
 }
+
+export interface UserOption {
+  id: string;
+  full_name: string;
+  email?: string;
+  username?: string;
+  profile_pic?: { url: string };
+}
