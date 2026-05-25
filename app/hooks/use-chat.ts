@@ -8,9 +8,9 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { websocket } from "../services/websocket";
-import { getChatDB } from "../store/chat-store";
+import { CachedConversation, getChatDB } from "../store/chat-store";
 import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
-import { ReplyTarget } from "../_utils/types/buyer";
+import { ReplyTarget, User } from "../_utils/types/buyer";
 import { useEffect } from "react";
 
 const mergeIntoQuery = (old: any, message: any) => {
@@ -192,33 +192,119 @@ const useChat = () => {
     });
   };
 
+  const addConversationIfMissing = async ({
+    recipient,
+    message,
+  }: {
+    recipient: CachedConversation["user"];
+    message: any;
+  }) => {
+    // CHECK DB
+    const existingInDB = await chatDB.conversations
+      .filter((c) => c.user.id === recipient.id)
+      .first();
+
+    if (existingInDB) return;
+
+    const conversation: CachedConversation = {
+      id: recipient.id,
+      user: {
+        id: recipient.id,
+        full_name: recipient.full_name,
+        username: recipient.username,
+        profile_pic: recipient.profile_pic,
+      },
+      last_message: {
+        body: message.body || "",
+        caption: message.caption || "",
+        media_type: message.media_type || "",
+        media_url: message.media_urls?.[0] || message.media_url || "",
+        sender_id: currentUser?.id || "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    // SAVE TO DB
+    await chatDB.conversations.put(conversation);
+
+    // UPDATE CACHE
+    queryClient.setQueryData(["conversations"], (old: any) => {
+      // CACHE EXISTS
+      if (old) {
+        const existsInCache = old.pages.some((page: any) =>
+          page.items.some(
+            (c: CachedConversation) => c.user.id === recipient.id,
+          ),
+        );
+
+        if (existsInCache) return old;
+
+        const pages = [...old.pages];
+
+        pages[0] = {
+          ...pages[0],
+          items: [conversation, ...pages[0].items],
+        };
+
+        return {
+          ...old,
+          pages,
+        };
+      }
+
+      // NO CACHE YET
+      return {
+        pages: [
+          {
+            items: [conversation],
+            page: 1,
+            total: 1,
+            page_size: 10,
+          },
+        ],
+        pageParams: [1],
+      };
+    });
+  };
+
   const transmitMessage = async ({
-    recipient_id,
+    recipient,
     body,
     reply_to,
   }: {
-    recipient_id: string;
+    recipient: User;
     body: string;
     reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return;
 
     const message = buildOptimisticMessage({
-      recipient_id,
+      recipient_id: recipient.id,
       body,
       currentUser,
       reply_to_message: reply_to,
     });
 
-    queryClient.setQueryData(["messages", recipient_id], (old: any) =>
+    queryClient.setQueryData(["messages", recipient.id], (old: any) =>
       mergeIntoQuery(old, message),
     );
 
     await chatDB.messages.put(message);
 
-    // 3. WebSocket
+    await addConversationIfMissing({
+      recipient: {
+        id: recipient.id,
+        full_name: recipient.full_name,
+        username: recipient.username,
+        profile_pic: recipient.profile_pic,
+      },
+      message,
+    });
+    // WebSocket
     websocket.emit("chat.send", {
-      recipient_id,
+      recipient_id: recipient.id,
       body,
       reply_to_message_id: reply_to?.id,
     });
@@ -257,15 +343,15 @@ const useChat = () => {
   };
 
   // Step 1: instant — puts optimistic message in cache and returns the id
-  const prepareOptimisticMedia = ({
+  const prepareOptimisticMedia = async ({
     files,
-    recipient_id,
+    recipient,
     type,
     caption = "",
     reply_to,
   }: {
     files: File[];
-    recipient_id: string;
+    recipient: User;
     type: "image" | "video" | "file";
     caption?: string;
     reply_to?: ReplyTarget | null;
@@ -275,7 +361,7 @@ const useChat = () => {
     const localUrls = files.map((file) => URL.createObjectURL(file));
 
     const optimistic = buildOptimisticMessage({
-      recipient_id,
+      recipient_id: recipient.id,
       body: caption,
       media_type: type,
       media_urls: localUrls,
@@ -294,11 +380,15 @@ const useChat = () => {
       client_id: optimistic.id,
     };
 
-    queryClient.setQueryData(["messages", recipient_id], (old: any) =>
+    queryClient.setQueryData(["messages", recipient.id], (old: any) =>
       mergeIntoQuery(old, messageWithClientId),
     );
 
     chatDB.messages.put(messageWithClientId);
+    await addConversationIfMissing({
+      recipient,
+      message: messageWithClientId,
+    });
 
     return messageWithClientId.id;
   };

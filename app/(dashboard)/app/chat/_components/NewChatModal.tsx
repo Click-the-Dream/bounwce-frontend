@@ -161,7 +161,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
         </div>
 
         {/* FOOTER */}
-        <div className="p-5 grid grid-cols-2 gap-2.25">
+        <div className="p-5 grid grid-cols-2 gap-2.25 mt-auto">
           <button
             onClick={onClose}
             className="cursor-pointer py-2 border rounded-[10px]"

@@ -18,21 +18,13 @@ import MediaUploadModal from "./MediaUploadViewer";
 import { useAuth } from "@/app/context/AuthContext";
 import SmartReplyPreview from "./SmartReplyPreview";
 import { useChatUtils } from "@/app/context/ChatContext";
-
-// ─────────────────────────────────────────────
 // TYPES
-// ─────────────────────────────────────────────
-
 interface SendMessageProps {
   selectedChat?: User;
 }
 
 type FileAcceptType = "image" | "video" | "file" | "camera" | "all";
-
-// ─────────────────────────────────────────────
 // CONSTANTS
-// ─────────────────────────────────────────────
-
 const FILE_ACCEPT_MAP: Record<FileAcceptType, string> = {
   image: "image/*,image/heic,image/heif",
   video: "video/mp4,video/quicktime,video/x-m4v,video/*",
@@ -40,17 +32,10 @@ const FILE_ACCEPT_MAP: Record<FileAcceptType, string> = {
   camera: "image/*;capture=camera",
   all: "image/*,video/*,.pdf,.doc,.docx,.zip",
 };
-
-// ─────────────────────────────────────────────
 // COMPONENT
-// ─────────────────────────────────────────────
-
 const SendMessage = ({ selectedChat }: SendMessageProps) => {
   const { authDetails } = useAuth();
   const { replyTo, setReplyTo, activeUploadsRef } = useChatUtils();
-
-  // ─── STATE ────────────────────────────────
-
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
@@ -59,13 +44,12 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
   // Tracks which accept type is active so the input key forces a remount
   const [fileAcceptType, setFileAcceptType] = useState<FileAcceptType>("all");
 
-  // ─── REFS ─────────────────────────────────
-
+  // REFS
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // ─── HOOKS ────────────────────────────────
+  // HOOKS
 
   const {
     transmitMessage,
@@ -76,7 +60,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
 
   const getSignature = useGetChatSignature();
 
-  // ─── EFFECTS ──────────────────────────────
+  // EFFECTS───────────────────────────
 
   // Auto-focus textarea when a reply is set
   useEffect(() => {
@@ -93,7 +77,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     };
   }, []);
 
-  // ─── HELPERS ──────────────────────────────
+  // HELPERS───────────────────────────
 
   const autoResize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
@@ -109,7 +93,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     }, 0);
   };
 
-  // ─── TYPING ───────────────────────────────
+  // TYPING────────────────────────────
 
   const stopTyping = () => {
     if (!selectedChat || !isTypingRef.current) return;
@@ -136,7 +120,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     typingTimeoutRef.current = setTimeout(stopTyping, 1500);
   };
 
-  // ─── FILE HANDLING ────────────────────────
+  // FILE HANDLING─────────────────────
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -163,17 +147,17 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     e.target.value = "";
   };
 
-  // ─── SEND ─────────────────────────────────
+  // SEND─
 
   const handleSend = async () => {
     if (!selectedChat) return;
 
-    const recipient_id = selectedChat.id;
+    const recipient = selectedChat;
 
     // TEXT ONLY
     if (message.trim() && pendingFiles.length === 0) {
       await transmitMessage({
-        recipient_id,
+        recipient: selectedChat,
         body: message.trim(),
         reply_to: replyTo,
       });
@@ -205,7 +189,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
         (["image", "video", "file"] as const)
           .filter((type) => grouped[type].length > 0)
           .map((type) =>
-            uploadGroup(type, grouped[type], recipient_id, captionToSend),
+            uploadGroup(type, grouped[type], recipient, captionToSend),
           ),
       );
     } finally {
@@ -216,12 +200,12 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
   const uploadGroup = async (
     type: "image" | "video" | "file",
     files: File[],
-    recipient_id: string,
+    recipient: User,
     caption: string,
   ) => {
     const clientId = prepareOptimisticMedia({
       files,
-      recipient_id,
+      recipient,
       type,
       caption,
       reply_to: replyTo,
@@ -244,7 +228,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     await uploadAndEmitMedia({
       files,
       type,
-      recipient_id,
+      recipient_id: recipient.id,
       caption,
       signatures: signatureItems,
       clientId: [clientId],
@@ -259,8 +243,6 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
     stopTyping();
     setReplyTo(null);
   };
-
-  // ─────────────────────────────────────────
 
   const canSend = message.trim().length > 0 || pendingFiles.length > 0;
 
