@@ -42,7 +42,7 @@ const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
               {selectedChat?.full_name}
             </span>
             <span className={"text-[10px] text-green-600 font-medium"}>
-              {isTyping ? "Typing..." : isOnline ? "Online" : "Offline"}
+              {isTyping ? "Typing..." : isOnline ? "Online" : ""}
             </span>
           </div>
         </>
