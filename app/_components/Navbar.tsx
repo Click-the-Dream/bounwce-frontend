@@ -72,7 +72,7 @@ const Navbar = () => {
             )}
 
             {/* Mobile Toggle */}
-            <button
+            {/* <button
               onClick={() => setIsOpen(!isOpen)}
               className="md:hidden flex items-center justify-center w-8.5 h-8.5 rounded-lg border-2 border-black bg-white transition-all active:scale-90"
             >
@@ -81,7 +81,7 @@ const Navbar = () => {
               ) : (
                 <Menu size={18} strokeWidth={2.5} />
               )}
-            </button>
+            </button> */}
 
             {user && <ProfileDropdown />}
           </div>
@@ -104,7 +104,7 @@ const Navbar = () => {
                       href="/waitlist"
                       className="text-[13px] w-full h-11.25 flex justify-center items-center gap-2 bg-orange text-black font-bold rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                     >
-                      Join Us <Play size={12} fill="#FFC501" />
+                      Sign Up <Play size={12} fill="#FFC501" />
                     </Link>
                   )}
                 </li>
