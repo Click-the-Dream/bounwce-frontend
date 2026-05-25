@@ -425,7 +425,7 @@ const MessageList = () => {
       const getSignature = useGetChatSignature();
 
       const raw = await getSignature.mutateAsync({
-        uploadType: msg.media_type!,
+        upload_type: msg.media_type!,
         count: files.length,
       });
 
