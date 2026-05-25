@@ -66,7 +66,7 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
-      <div className="bg-white h-full w-full  md:min-h-40 md:max-h-[90vh] md:max-w-112.5 md:rounded-xl shadow-xl flex flex-col">
+      <div className="bg-white h-full w-full md:min-h-40 md:max-h-[90vh] md:max-w-112.5 md:rounded-xl shadow-xl flex flex-col">
         {/* HEADER */}
         <div className="p-5 flex justify-between items-start">
           <div>
