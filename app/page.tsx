@@ -1,3 +1,4 @@
+"use client";
 import AboutSection from "./_components/AboutSection";
 import ExploreSection from "./_components/ExploreSection";
 import Footer from "./_components/Footer";
