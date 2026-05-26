@@ -75,7 +75,7 @@ export default function SwipeableMessage({
   };
 
   return (
-    <div className={`relative w-fit max-w-[70%] group ${className}`}>
+    <div className={`relative w-fit max-w-[80%] group ${className}`}>
       {/* Reply icon (hover + swipe hybrid) */}
       <div
         onClick={onReply}
