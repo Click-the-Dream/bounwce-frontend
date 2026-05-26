@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useEffect,
 } from "react";
 import useNotificationServices from "../hooks/use-notification";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -46,11 +47,40 @@ export const NotificationProvider = ({
   const { data } = unreadSummary();
   const { data: count } = getNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [totalUnread, setTotalUnread] = useState(0);
 
   // PUSH NOTIFICATION
   const pushNotification = useCallback((n: Notification) => {
     setNotifications((prev) => [n, ...prev]);
   }, []);
+
+  useEffect(() => {
+    const computeTotal = () => {
+      const data = queryClient.getQueryData<any>(["conversations"]);
+      if (!data?.pages) return 0;
+      return data.pages.reduce((acc: number, page: any) => {
+        return (
+          acc +
+          (page.items?.reduce(
+            (sum: number, item: any) => sum + (item.unread_count || 0),
+            0,
+          ) || 0)
+        );
+      }, 0);
+    };
+
+    // Run once on mount
+    setTotalUnread(computeTotal());
+
+    // Subscribe to any cache change on conversations
+    const unsub = queryClient.getQueryCache().subscribe((event) => {
+      if (event?.query?.queryKey?.[0] === "conversations") {
+        setTotalUnread(computeTotal());
+      }
+    });
+
+    return unsub;
+  }, [queryClient]);
 
   // INCREMENT UNREAD
   const incrementUnread = useCallback(
@@ -129,22 +159,6 @@ export const NotificationProvider = ({
     queryFn: () => null,
     enabled: false,
   });
-
-  const totalUnread = useMemo(() => {
-    const data =
-      conversationData || queryClient.getQueryData<any>(["conversations"]);
-
-    if (!data?.pages) return 0;
-
-    return data.pages.reduce((acc: number, page: any) => {
-      const pageTotal =
-        page.items?.reduce(
-          (sum: number, item: any) => sum + (item.unread_count || 0),
-          0,
-        ) || 0;
-      return acc + pageTotal;
-    }, 0);
-  }, [conversationData, queryClient]);
 
   return (
     <NotificationContext.Provider
