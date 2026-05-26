@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const { profileId, isOwnProfile } = profileHelper();
 
   const { useGetCurrentUser, useGetUserById } = useUser();
-  const { useGetUserInterests } = useInterest();
+  const { useGetUserInterests, useGetUserInterestsById } = useInterest();
 
   const userQuery = isOwnProfile
     ? useGetCurrentUser()
@@ -32,12 +32,19 @@ export default function ProfilePage() {
   const isNotFound = !isLoading && !isError && !user;
 
   const { data: userInterests = [], isLoading: isLoadingInterests } =
-    useGetUserInterests();
+    isOwnProfile
+      ? useGetUserInterests()
+      : useGetUserInterestsById(profileId ?? "");
 
   const tags = useMemo(() => {
-    return isOwnProfile ? userInterests : [];
+    return userInterests;
   }, [isOwnProfile, userInterests]);
-  const isTagsReady = isOwnProfile ? !isLoadingInterests : true;
+
+  const isTagsReady = isOwnProfile
+    ? !isLoadingInterests
+    : profileId
+      ? !isLoadingInterests
+      : true;
 
   if (isNotFound) {
     return (

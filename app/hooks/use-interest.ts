@@ -6,9 +6,7 @@ const useInterest = () => {
   const { authDetails } = useAuth();
   const queryClient = useQueryClient();
 
-  // =========================
   // GET: Available Interests
-  // =========================
   const useGetAvailableInterests = (hasInterests: boolean) => {
     return useQuery({
       queryKey: ["interests", "available"],
@@ -20,12 +18,9 @@ const useInterest = () => {
     });
   };
 
-  // =========================
-  // GET: User Interests
-  // =========================
   const useGetUserInterests = () => {
     return useQuery({
-      queryKey: ["interests", "user"],
+      queryKey: ["my-interests"],
       queryFn: async () => {
         const res = await api.get("/interests/user");
         return res?.data?.data?.interests || [];
@@ -34,35 +29,40 @@ const useInterest = () => {
     });
   };
 
-  // =========================
+  const useGetUserInterestsById = (userId: string) => {
+    return useQuery({
+      queryKey: ["interests", userId],
+      queryFn: async () => {
+        const res = await api.get(`/interests/user/${userId}`);
+        return res?.data?.data?.interests || [];
+      },
+      enabled: !!authDetails?.access_token && !!userId,
+    });
+  };
+
   // POST: Add Interests
-  // =========================
   const addUserInterests = useMutation({
     mutationFn: async (payload: { interests: string[] }) => {
       const res = await api.post("/interests/user", payload);
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["interests", "user"] });
+      queryClient.invalidateQueries({ queryKey: ["my-interests"] });
     },
   });
 
-  // =========================
   // PUT: Update Interests
-  // =========================
   const updateUserInterests = useMutation({
     mutationFn: async (payload: { interests: string[] }) => {
       const res = await api.put("/interests/user", payload);
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["interests", "user"] });
+      queryClient.invalidateQueries({ queryKey: ["my-interests"] });
     },
   });
 
-  // =========================
   // DELETE: Remove Interest
-  // =========================
   const useRemoveUserInterest = () => {
     return useMutation({
       mutationFn: async (interestId: string) => {
@@ -72,7 +72,7 @@ const useInterest = () => {
         return res.data;
       },
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["interests", "user"] });
+        queryClient.invalidateQueries({ queryKey: ["my-interests"] });
       },
     });
   };
@@ -80,6 +80,7 @@ const useInterest = () => {
   return {
     useGetAvailableInterests,
     useGetUserInterests,
+    useGetUserInterestsById,
     addUserInterests,
     updateUserInterests,
     useRemoveUserInterest,
