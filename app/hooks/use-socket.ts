@@ -199,17 +199,7 @@ export const useSocketConnection = ({
       // ---------------- NOTIFICATIONS ----------------
 
       if (!isMyMessage && !isActiveChat) {
-        pushNotification({
-          id: message.id,
-          conversation_id: message.conversation_id,
-          sender_id: message.sender_id,
-          sender_name: message.sender?.full_name,
-          username: message.sender?.username,
-          profile_pic: message?.sender?.profile_pic,
-          body: message.body,
-          created_at: message.created_at,
-        });
-
+        incrementUnread(otherUserId);
         onMessageToast({
           senderName: message.sender?.full_name,
           message: message.body,
@@ -218,8 +208,6 @@ export const useSocketConnection = ({
           profile_pic: message?.sender?.profile_pic,
           userId: message.sender_id,
         });
-
-        incrementUnread(otherUserId);
       }
     };
 

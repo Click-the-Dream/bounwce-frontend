@@ -1,10 +1,10 @@
-import SafeImage from "@/app/_components/SafeImage";
+import Link from "next/link";
 import UserImage from "../(dashboard)/app/_components/UserImage";
 import { timeAgo } from "../_utils/formatters";
-import Link from "next/link";
+import { Notification } from "../_utils/types/notification";
 
 interface Props {
-  notification: any; // Use your Notification type here
+  notification: Notification;
   isSelected?: boolean;
   onClose: () => void;
 }
@@ -14,32 +14,52 @@ export const NotificationItem = ({
   isSelected,
   onClose,
 }: Props) => {
+  const isChat = notification.event_type === "chat_message";
+
+  // Dynamic content based on notification type
+  const renderContent = () => {
+    if (isChat) {
+      return (
+        <>
+          <p className="text-sm font-medium text-black line-clamp-1">
+            {notification.title}
+          </p>
+          <p className="text-xs text-gray-700">
+            <span>@{notification.payload?.sender?.username}</span> sent a
+            message
+          </p>
+        </>
+      );
+    }
+    // System notification layout
+    return (
+      <>
+        <p className="text-sm font-medium text-black">{notification.title}</p>
+        <p className="text-xs text-gray-600 line-clamp-2">
+          {notification.body}
+        </p>
+      </>
+    );
+  };
+
   return (
     <Link
-      href={`/app/chat/${notification.sender_id}`}
+      href={isChat ? `/app/chat/${notification.payload?.sender?.id}` : "#"}
       onClick={onClose}
-      className={`flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-300 ${isSelected ? "bg-gray-50" : "bg-white"}`}
+      className={`flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 ${isSelected ? "bg-gray-50" : "bg-white"}`}
     >
-      <div className="relative">
+      {isChat && (
         <UserImage
           user={{
-            id: notification?.sender_id,
-            full_name: notification.sender_name,
-            profile_pic: notification.profile_pic,
+            id: notification.payload?.sender?.id,
+            full_name: notification.title,
+            profile_pic: notification.payload?.sender?.profile_pic,
           }}
           size={40}
         />
-      </div>
-
+      )}
       <div className="flex-1">
-        <p className="text-sm font-medium text-black line-clamp-1">
-          {notification.sender_name}
-        </p>
-
-        <p className="text-xs text-gray-700">
-          <span className="">@{notification.username}</span>{" "}
-          <span className="text-gray-600">sent a new message</span>
-        </p>
+        {renderContent()}
         <span className="text-[10px] text-gray-400 mt-1 block">
           {timeAgo(notification.created_at)}
         </span>

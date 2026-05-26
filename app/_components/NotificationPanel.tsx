@@ -6,8 +6,8 @@ export const NotificationPanel = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <div className="w-80 md:w-96 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
-      <div className="px-4 py-2 border-b border-gray-100">
-        <h2 className="text-sm font-bold">Notification</h2>
+      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <h2 className="text-sm font-bold text-gray-900">Notifications</h2>
       </div>
 
       <div className="max-h-[50vh] overflow-y-auto">
@@ -16,12 +16,12 @@ export const NotificationPanel = ({ onClose }: { onClose: () => void }) => {
             No notifications yet
           </div>
         ) : (
-          notifications.map((n, index) => (
-            // The middle item in your design is highlighted (index 1)
+          notifications.map((n) => (
             <NotificationItem
               key={n.id}
               notification={n}
-              isSelected={index === 1}
+              // Highlight if not read yet
+              isSelected={!n.read_at}
               onClose={onClose}
             />
           ))
