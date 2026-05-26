@@ -181,77 +181,7 @@ const useGetMessages = (options: {
   });
 };
 
-  // ---------------- MESSAGES ----------------
-  const useGetMessages = (options: {
-    userId: string;
-    params?: { page_size?: number };
-  }) => {
-    const chatDB = getDB();
-
-    // 1. Pre-populate cache from IndexedDB
-    useEffect(() => {
-      const hydrateCache = async () => {
-        if (!options.userId) return;
-        const cached = await chatDB.messages
-          .where("conversation_id")
-          .equals(options.userId)
-          .toArray();
-
-        if (cached.length > 0) {
-          queryClient.setQueryData(["messages", options.userId], {
-            pages: [{ messages: { items: cached } }],
-            pageParams: [1],
-          });
-        }
-      };
-      hydrateCache();
-    }, [options.userId, queryClient]);
-
-    return useInfiniteQuery({
-      queryKey: ["messages", options.userId],
-      queryFn: async ({ pageParam = 1 }) => {
-        try {
-          const res = await api.get(
-            `/chats/conversations/with/${options.userId}`,
-            {
-              params: {
-                page: pageParam,
-                page_size: options.params?.page_size || 20,
-              },
-            },
-          );
-
-          const data = res.data?.data;
-          const items = data?.messages?.items || [];
-
-          if (items.length) {
-            await chatDB.messages.bulkPut(
-              items.map((m: any) => ({
-                ...m,
-                conversation_id: options.userId,
-                synced: true,
-                delivery_status: m.delivery_status || "sent",
-              })),
-            );
-          }
-          return data;
-        } catch (err) {
-          console.error("Background sync failed, keeping cache:", err);
-          return null; // Return null to prevent TanStack Query from clearing existing data
-        }
-      },
-      initialPageParam: 1,
-      getNextPageParam: (lastPage: any) => {
-        const messages = lastPage?.messages;
-        if (!messages) return undefined;
-        const { page, total, page_size } = messages;
-        return page * page_size < total ? page + 1 : undefined;
-      },
-      enabled: !!options.userId,
-      staleTime: 1000 * 30, // Background re-fetch every 30s
-    });
-  };
-
+  
   const addConversationIfMissing = async ({
     recipient,
     message,
