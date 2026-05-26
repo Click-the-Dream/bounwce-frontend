@@ -4,12 +4,6 @@ import { websocket } from "../services/websocket";
 import { getChatDB } from "../store/chat-store";
 import useChat from "./use-chat";
 
-/**
- * Monitors websocket reconnection and auto-recovers messages in stuck states:
- * - "uploading" → retry upload
- * - "sending" → retry emit
- * - "failed" → optionally auto-retry after delay
- */
 export const usePendingMessageRecovery = (userId: string | undefined) => {
   const queryClient = useQueryClient();
   const chatDB = getChatDB(userId || "");
