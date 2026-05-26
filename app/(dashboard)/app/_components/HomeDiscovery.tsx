@@ -125,7 +125,7 @@ const HomeDiscovery = () => {
               : "flex-wrap justify-center"
           }`}
         >
-          {userInterests.slice(0, 6).map((tag: string, i: number) => (
+          {userInterests?.slice(0, 6)?.map((tag: string, i: number) => (
             <button
               key={i}
               onClick={() => {
