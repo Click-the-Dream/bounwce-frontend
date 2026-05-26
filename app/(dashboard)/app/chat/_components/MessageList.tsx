@@ -285,20 +285,16 @@ const MessageList = () => {
 
   useLayoutEffect(() => {
     const el = containerRef.current;
+    if (!el || !loadingOlderRef.current) return;
 
-    if (!el) return;
-    if (!loadingOlderRef.current) return;
+    // Calculate new height after items were prepended
+    const newScrollHeight = el.scrollHeight;
+    const heightDiff = newScrollHeight - prevScrollHeightRef.current;
 
-    requestAnimationFrame(() => {
-      const newScrollHeight = el.scrollHeight;
-
-      const heightDiff = newScrollHeight - prevScrollHeightRef.current;
-
-      el.scrollTop = prevScrollTopRef.current + heightDiff;
-
-      loadingOlderRef.current = false;
-    });
-  }, [messagesData?.pages?.length]);
+    // Maintain scroll position relative to the loaded messages
+    el.scrollTop = prevScrollTopRef.current + heightDiff;
+    loadingOlderRef.current = false;
+  }, [messagesData?.pages]); // Trigger only when page list actually changes
 
   // AUTO SCROLL ON NEW MESSAGE
 

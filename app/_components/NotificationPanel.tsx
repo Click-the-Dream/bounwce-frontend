@@ -3,6 +3,7 @@ import { NotificationItem } from "./NotificationItem";
 
 export const NotificationPanel = ({ onClose }: { onClose: () => void }) => {
   const { notifications } = useNotifications();
+  console.log(notifications);
 
   return (
     <div className="w-80 md:w-96 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
