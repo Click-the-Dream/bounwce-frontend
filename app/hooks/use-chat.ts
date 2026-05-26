@@ -59,8 +59,71 @@ const useChat = () => {
 
   const chatDB = getDB();
 
-  
-        const normalizeMessage = (message: any) => ({
+  const useGetConversations = (params: any = {}) => {
+    const queryClient = useQueryClient();
+    const chatDB = getDB();
+
+    // 1. Hydrate Conversations from IndexedDB
+    useEffect(() => {
+      const hydrateConversations = async () => {
+        const cached = await chatDB.conversations
+          .orderBy("updated_at")
+          .reverse()
+          .toArray();
+
+        if (cached.length > 0) {
+          queryClient.setQueryData(["conversations"], {
+            pages: [
+              {
+                items: cached,
+                page: 1,
+                total: cached.length,
+                page_size: cached.length,
+              },
+            ],
+            pageParams: [1],
+          });
+        }
+      };
+      hydrateConversations();
+    }, [queryClient]);
+
+    // 2. Infinite Query for Conversations
+    return useInfiniteQuery({
+      queryKey: ["conversations"],
+      queryFn: async ({ pageParam = 1 }) => {
+        try {
+          const res = await api.get("/chats/conversations", {
+            params: { ...params, page: pageParam },
+          });
+
+          const data = res.data?.data;
+          const items = data?.items;
+
+          // Persist fresh server data to IndexedDB
+          if (items && pageParam === 1) {
+            await chatDB.conversations.clear(); // Clear old list to sync perfectly
+            await chatDB.conversations.bulkPut(items);
+          }
+
+          return data;
+        } catch (err) {
+          console.error("Failed to sync conversations:", err);
+          return null; // Return null to preserve existing cache
+        }
+      },
+      getNextPageParam: (lastPage: any) => {
+        if (!lastPage) return undefined;
+        const { page, total, page_size } = lastPage;
+        return page * page_size < total ? page + 1 : undefined;
+      },
+      initialPageParam: 1,
+      staleTime: 1000 * 60, // Conversations change less frequently than messages
+    });
+  };
+
+  // ---------------- MESSAGES ----------------
+const normalizeMessage = (message: any) => ({
   ...message,
   delivery_status: message.delivery_status ?? "sent",
   synced: message.synced ?? true,
@@ -181,7 +244,6 @@ const useGetMessages = (options: {
   });
 };
 
-  
   const addConversationIfMissing = async ({
     recipient,
     message,
@@ -368,7 +430,6 @@ const useGetMessages = (options: {
     const messageWithClientId = {
       ...optimistic,
       client_id: optimistic.id,
-      delivery_status: "sending",
     };
 
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
