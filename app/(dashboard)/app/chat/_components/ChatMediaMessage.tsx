@@ -193,10 +193,6 @@ const ChatMediaMessage = ({
     </div>
   );
 
-  /**
-   * Extract filename from URL (before query params)
-   * e.g., "https://res.cloudinary.com/.../abc123.pdf" → "abc123.pdf"
-   */
   const getFileNameFromUrl = (url: string): string => {
     try {
       const path = new URL(url).pathname;
@@ -208,9 +204,6 @@ const ChatMediaMessage = ({
     }
   };
 
-  /**
-   * Extract file extension from URL
-   */
   const getFileExtension = (url: string): string => {
     const filename = getFileNameFromUrl(url);
     const ext = filename.split(".").pop()?.toUpperCase() || "";
@@ -320,7 +313,7 @@ const ChatMediaMessage = ({
         data-message-id={msg.id}
         className={`
           ${styles.bubble}
-          p-0.5 relative w-71.25 rounded-[10px] overflow-hidden shadow-sm
+          p-0.5 relative rounded-[10px] overflow-hidden shadow-sm
           transition-colors duration-300
           ${isHighlighted ? "ring-2 ring-orange/60" : ""}
         `}

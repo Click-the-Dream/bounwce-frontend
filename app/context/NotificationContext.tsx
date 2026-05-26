@@ -78,21 +78,16 @@ export const NotificationProvider = ({
   );
 
   // RESET UNREAD (when chat is opened)
-  const resetUnread = useCallback((userId: string) => {
+  const resetUnread = useCallback(async (userId: string) => {
+    await queryClient.cancelQueries({ queryKey: ["conversations"] });
     queryClient.setQueryData(["conversations"], (old: any) => {
       if (!old) return old;
-
       return {
         ...old,
         pages: old.pages.map((page: any) => ({
           ...page,
           items: page.items.map((c: any) =>
-            c.user?.id === userId
-              ? {
-                  ...c,
-                  unread_count: 0,
-                }
-              : c,
+            c.user?.id === userId ? { ...c, unread_count: 0 } : c,
           ),
         })),
       };
