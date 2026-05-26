@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import NewChatModal from "./NewChatModal";
 import useChat from "@/app/hooks/use-chat";
 import { User } from "@/app/_utils/types/buyer";
+import { ChatUser } from "@/app/_utils/types/chat";
 
 interface ChatSidebarProps {
   selectedUser?: User;
@@ -131,23 +132,9 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
             Loading chats...
           </div>
         ) : filteredConversations.length > 0 ? (
-          filteredConversations.map(
-            (chat: {
-              user: {
-                full_name: string;
-                id: string;
-                username: string;
-                profile_pic?: { url: string };
-              };
-              last_message: {
-                body: string;
-                caption: string;
-                media_type: string;
-                media_url: string;
-                sender_id: string;
-              };
-            }) => <ChatCard key={chat?.user?.id} chat={chat} />,
-          )
+          filteredConversations.map((chat: ChatUser) => (
+            <ChatCard key={chat?.user?.id} chat={chat} />
+          ))
         ) : (
           <div className="text-center mt-10 text-gray-400 text-sm">
             No chats found

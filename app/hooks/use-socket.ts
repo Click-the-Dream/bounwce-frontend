@@ -256,7 +256,9 @@ export const useSocketConnection = ({
       const { reader_id, message_id, read } = data;
       if (!reader_id || !message_id) return;
 
-      if (read) decrementUnread(reader_id);
+      if (read && reader_id !== authUserRef.current) {
+        decrementUnread(reader_id);
+      }
 
       // Queue instead of writing immediately
       if (!readQueue.current[reader_id]) readQueue.current[reader_id] = [];
@@ -277,10 +279,10 @@ export const useSocketConnection = ({
                   items: page.messages.items.map((msg: any) => {
                     const update = updates.find((u) => u.message_id === msg.id);
                     if (!update) return msg;
+                    if (update.read) return msg;
                     return {
                       ...msg,
                       read_at: update.read ? new Date().toISOString() : null,
-                      status: update.read ? "read" : "sent",
                     };
                   }),
                 },
@@ -315,6 +317,7 @@ export const useSocketConnection = ({
     websocket.off("user.online", handleUserOnline);
     websocket.off("user.online.snapshot", handleOnlineSnapshot);
     websocket.off("chat.read.updated", handleReadUpdated);
+    websocket.off("chat.read.ack", handleReadUpdated);
 
     websocket.on("chat.message", handleMessage);
     websocket.on("chat.sent", handleMessage);
@@ -322,6 +325,7 @@ export const useSocketConnection = ({
     websocket.on("user.online", handleUserOnline);
     websocket.on("user.online.snapshot", handleOnlineSnapshot);
     websocket.on("chat.read.updated", handleReadUpdated);
+    websocket.on("chat.read.ack", handleReadUpdated);
 
     return () => {
       websocket.off("chat.message", handleMessage);
@@ -330,6 +334,7 @@ export const useSocketConnection = ({
       websocket.off("user.online", handleUserOnline);
       websocket.off("user.online.snapshot", handleOnlineSnapshot);
       websocket.off("chat.read.updated", handleReadUpdated);
+      websocket.off("chat.read.ack", handleReadUpdated);
     };
   }, [authUserId]);
 };

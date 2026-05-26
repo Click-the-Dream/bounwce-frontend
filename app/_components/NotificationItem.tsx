@@ -18,7 +18,7 @@ export const NotificationItem = ({
     <Link
       href={`/app/chat/${notification.sender_id}`}
       onClick={onClose}
-      className={`flex items-start gap-3 p-4 border-b border-gray-100 ${isSelected ? "bg-gray-50" : "bg-white"}`}
+      className={`flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-300 ${isSelected ? "bg-gray-50" : "bg-white"}`}
     >
       <div className="relative">
         <UserImage
@@ -32,7 +32,7 @@ export const NotificationItem = ({
       </div>
 
       <div className="flex-1">
-        <p className="text-sm font-medium text-black">
+        <p className="text-sm font-medium text-black line-clamp-1">
           {notification.sender_name}
         </p>
 

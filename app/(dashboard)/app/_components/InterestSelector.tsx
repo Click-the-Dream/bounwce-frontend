@@ -28,9 +28,6 @@ const InterestSelector = ({ open: openProp, onClose }: Props) => {
   } = useGetUserInterests();
 
   const hasInterests = userInterests.length > 0;
-
-  console.log(userInterests);
-
   const {
     data: availableData,
     isLoading: isLoadingAvailable,

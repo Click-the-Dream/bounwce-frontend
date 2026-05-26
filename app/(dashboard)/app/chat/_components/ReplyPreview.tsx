@@ -4,9 +4,7 @@ import SafeImage from "@/app/_components/SafeImage";
 import { useAuth } from "@/app/context/AuthContext";
 import { Video, Image as ImageIcon, File } from "lucide-react";
 
-// ─────────────────────────────────────────────
 // TYPES
-// ─────────────────────────────────────────────
 
 interface ReplyPreviewProps {
   reply: any;
@@ -18,9 +16,7 @@ interface ReplyPreviewProps {
   onScrollToMessage?: (messageId: string) => void;
 }
 
-// ─────────────────────────────────────────────
 // HELPERS
-// ─────────────────────────────────────────────
 
 const getMediaIcon = (mediaType?: string) => {
   if (mediaType === "image") return ImageIcon;
@@ -37,9 +33,7 @@ const getPreviewText = (reply: any) => {
   return "Message";
 };
 
-// ─────────────────────────────────────────────
 // COMPONENT
-// ─────────────────────────────────────────────
 
 export default function ReplyPreview({
   reply,
@@ -100,9 +94,9 @@ export default function ReplyPreview({
         isClickable ? (e) => e.key === "Enter" && handleClick() : undefined
       }
       className={`
-        mb-1 px-2.5 py-2 rounded-md w-full
-        flex items-start gap-2
-        min-w-0
+        mb-1 px-2.5 py-2 rounded-md
+        flex items-start gap-2 w-full
+        min-w-0 max-w-full
         backdrop-blur-sm
         transition-opacity
         ${isSender ? "bg-white/80" : "bg-black/80"}

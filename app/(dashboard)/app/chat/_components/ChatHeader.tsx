@@ -38,7 +38,7 @@ const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
           />
 
           <div className="flex flex-col">
-            <span className="font-medium text-sm text-black leading-none">
+            <span className="font-medium text-sm text-black leading-none line-clamp-2">
               {selectedChat?.full_name}
             </span>
             <span className={"text-[10px] text-green-600 font-medium"}>

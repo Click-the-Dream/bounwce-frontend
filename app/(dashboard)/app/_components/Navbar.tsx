@@ -11,7 +11,7 @@ import { NotificationPanel } from "@/app/_components/NotificationPanel";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
-  const { totalUnread } = useNotifications();
+  const { totalUnread, notifications } = useNotifications();
   const { authDetails } = useAuth();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -77,9 +77,9 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
             strokeWidth={1.5}
             className="size-5 cursor-pointer"
           />
-          {totalUnread > 0 && (
+          {notifications?.length > 0 && (
             <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">
-              {totalUnread}
+              {notifications?.length}
             </span>
           )}
         </div>

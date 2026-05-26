@@ -34,8 +34,8 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <NotificationProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <NotificationProvider>
           <ChatProvider>
             <StoreProvider>
               <SocketConnect>{children}</SocketConnect>
@@ -57,15 +57,14 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
                   "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible"
                 }
                 style={{
-                  top: "5rem",
+                  top: "3rem",
                   right: "0.5rem",
-                  paddingTop: "1rem",
                 }}
               />
             </StoreProvider>
           </ChatProvider>
-        </AuthProvider>
-      </NotificationProvider>
+        </NotificationProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };

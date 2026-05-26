@@ -27,7 +27,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
   const isSender = msg.sender_id === authDetails?.user?.id;
   const styles = getMessageLayout(isSender);
 
-  // ─── STATE ──────────────────────────────────
+  // ─── STATE─
 
   const [expanded, setExpanded] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
@@ -49,7 +49,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
   const isSent = msg.delivery_status === "sent";
   const isRead = !!msg.read_at;
 
-  // ─── STATUS ─────────────────────────────────
+  // ─── STATUS
 
   const renderStatus = () => {
     if (!isSender) return null;
@@ -83,7 +83,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
       window.removeEventListener("highlight-message", handler as EventListener);
   }, [msg.id]);
 
-  // ─── RENDER ─────────────────────────────────
+  // ─── RENDER
 
   return (
     <SwipeableMessage

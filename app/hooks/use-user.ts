@@ -102,7 +102,7 @@ const useUser = () => {
   const updateCurrentUser = useMutation({
     mutationFn: async (data: any) => {
       const res = await client.put(`/users/me`, data);
-      return res.data.data; // 👈 IMPORTANT: return ONLY user object
+      return res.data.data;
     },
 
     onSuccess: async (updatedUser) => {

@@ -2,17 +2,18 @@
 import { LuImage, LuVideo, LuFile, LuMic } from "react-icons/lu";
 import { formatTime } from "@/app/_utils/formatters";
 import { useChatUtils } from "@/app/context/ChatContext";
-import { useNotifications } from "@/app/context/NotificationContext";
 import { useParams, useRouter } from "next/navigation";
 import UserImage from "../../_components/UserImage";
 import { useAuth } from "@/app/context/AuthContext";
+import { ChatUser } from "@/app/_utils/types/chat";
+import { useNotifications } from "@/app/context/NotificationContext";
 
-const ChatCard = ({ chat }: any) => {
+const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const { chatId } = useParams();
   const router = useRouter();
   const { authDetails } = useAuth();
+  const { resetUnread } = useNotifications();
   const { typingUsers } = useChatUtils();
-  const { unreadCount } = useNotifications();
   const chatUser = chat?.user;
   const currentUserId = authDetails?.user?.id;
 
@@ -37,7 +38,7 @@ const ChatCard = ({ chat }: any) => {
         return (
           <span className={mediaClass}>
             <LuImage className="text-[13px]" />
-            <span>{caption || "Photo"}</span>
+            <span className="truncate">{caption || "Photo"}</span>
           </span>
         );
 
@@ -45,7 +46,7 @@ const ChatCard = ({ chat }: any) => {
         return (
           <span className={mediaClass}>
             <LuVideo className="text-[13px]" />
-            <span>{caption || "Video"}</span>
+            <span className="truncate">{caption || "Video"}</span>
           </span>
         );
 
@@ -53,7 +54,7 @@ const ChatCard = ({ chat }: any) => {
         return (
           <span className={mediaClass}>
             <LuFile className="text-[13px]" />
-            <span>{caption || body || "Document"}</span>
+            <span className="truncate">{caption || body || "Document"}</span>
           </span>
         );
 
@@ -61,20 +62,26 @@ const ChatCard = ({ chat }: any) => {
         return (
           <span className={mediaClass}>
             <LuMic className="text-[13px]" />
-            <span>{caption || "Voice message"}</span>
+            <span className="truncate">{caption || "Voice message"}</span>
           </span>
         );
 
       default:
-        return body || caption || "Message";
+        return <span className="truncate">{body || caption || "Message"}</span>;
     }
   };
 
+  const goToChat = () => {
+    if (chat.unread_count > 0) {
+      resetUnread(chatUser.id);
+    }
+    router.push(`/app/chat/${chatUser.id}`);
+  };
   return (
     <div
-      onClick={() => router.push(`/app/chat/${chatUser.id}`)}
+      onClick={goToChat}
       key={chatUser?.id}
-      className={`flex items-center gap-3 pt-3.25 pb-4.75 px-1 cursor-pointer hover:bg-gray-50 border-b-[0.53px] border-[#00000033] h-15.75 ${chatId === chatUser.id ? "bg-gray-100" : ""}`}
+      className={`relative flex items-center gap-3 pt-3.25 pb-4.75 px-1 cursor-pointer hover:bg-gray-50 border-b-[0.53px] border-[#00000033] h-15.75 ${chatId === chatUser.id ? "bg-gray-100" : ""}`}
     >
       <UserImage user={chatUser} />
       <div className="flex-1 min-w-0">
@@ -85,9 +92,9 @@ const ChatCard = ({ chat }: any) => {
           <span className="text-[10px] text-gray-400">
             {formatTime(lastMessageTime)}
           </span>
-          {unreadCount[chatUser.id] > 0 && (
-            <span className="bg-red-500 text-white text-[10px] px-1 min-w-4 h-4 rounded-full flex items-center justify-center">
-              {unreadCount[chatUser.id]}
+          {chat?.unread_count > 0 && (
+            <span className="absolute right-0 bottom-5 bg-red-500 text-white text-[10px] px-1 min-w-4 h-4 rounded-full flex items-center justify-center">
+              {chat.unread_count}
             </span>
           )}
         </div>
@@ -99,7 +106,7 @@ const ChatCard = ({ chat }: any) => {
           {isTyping ? (
             "typing..."
           ) : lastMessage ? (
-            <span className="flex items-center gap-1 line-clamp-1">
+            <span className="flex items-center gap-1">
               {isMine && <span className="text-gray-600">You: </span>}
               {renderLastMessage()}
             </span>

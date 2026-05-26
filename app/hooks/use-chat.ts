@@ -171,6 +171,7 @@ const useChat = () => {
                 ...m,
                 conversation_id: options.userId,
                 synced: true,
+                delivery_status: m.delivery_status || "sent",
               })),
             );
           }
