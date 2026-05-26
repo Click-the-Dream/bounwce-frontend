@@ -247,7 +247,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
   const canSend = message.trim().length > 0 || pendingFiles.length > 0;
 
   return (
-    <div className="w-full fixed bottom-0 z-10 md:relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
+    <div className="w-full z-10 relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
       {/* Media preview modal */}
       {pendingFiles.length > 0 && (
         <MediaUploadModal
