@@ -59,68 +59,127 @@ const useChat = () => {
 
   const chatDB = getDB();
 
-  const useGetConversations = (params: any = {}) => {
-    const queryClient = useQueryClient();
-    const chatDB = getDB();
+  
+        const normalizeMessage = (message: any) => ({
+  ...message,
+  delivery_status: message.delivery_status ?? "sent",
+  synced: message.synced ?? true,
+});
 
-    // 1. Hydrate Conversations from IndexedDB
-    useEffect(() => {
-      const hydrateConversations = async () => {
-        const cached = await chatDB.conversations
-          .orderBy("updated_at")
-          .reverse()
-          .toArray();
+const useGetMessages = (options: {
+  userId: string;
+  params?: { page_size?: number };
+}) => {
+  const chatDB = getDB();
 
-        if (cached.length > 0) {
-          queryClient.setQueryData(["conversations"], {
-            pages: [
-              {
+  // HYDRATE FROM INDEXED DB
+  useEffect(() => {
+    const hydrateCache = async () => {
+      if (!options.userId) return;
+
+      const cached = (
+        await chatDB.messages
+          .where("conversation_id")
+          .equals(options.userId)
+          .toArray()
+      ).map(normalizeMessage);
+
+      if (cached.length > 0) {
+        queryClient.setQueryData(["messages", options.userId], {
+          pages: [
+            {
+              messages: {
                 items: cached,
                 page: 1,
                 total: cached.length,
                 page_size: cached.length,
               },
-            ],
-            pageParams: [1],
-          });
+            },
+          ],
+          pageParams: [1],
+        });
+      }
+    };
+
+    hydrateCache();
+  }, [options.userId, queryClient]);
+
+  return useInfiniteQuery({
+    queryKey: ["messages", options.userId],
+
+    queryFn: async ({ pageParam = 1 }) => {
+      try {
+        const res = await api.get(
+          `/chats/conversations/with/${options.userId}`,
+          {
+            params: {
+              page: pageParam,
+              page_size: options.params?.page_size || 20,
+            },
+          },
+        );
+
+        const data = res.data?.data;
+
+        const items = (data?.messages?.items || []).map((m: any) =>
+          normalizeMessage({
+            ...m,
+            conversation_id:
+              m.conversation_id || options.userId,
+            synced: true,
+          }),
+        );
+
+        // SAVE TO INDEXED DB
+        if (items.length) {
+          await chatDB.messages.bulkPut(items);
         }
-      };
-      hydrateConversations();
-    }, [queryClient]);
 
-    // 2. Infinite Query for Conversations
-    return useInfiniteQuery({
-      queryKey: ["conversations"],
-      queryFn: async ({ pageParam = 1 }) => {
-        try {
-          const res = await api.get("/chats/conversations", {
-            params: { ...params, page: pageParam },
-          });
+        return {
+          ...data,
+          messages: {
+            ...data.messages,
+            items,
+          },
+        };
+      } catch (err) {
+        console.error(
+          "Background sync failed, keeping cache:",
+          err,
+        );
 
-          const data = res.data?.data;
-          const items = data?.items;
+        // RETURN EXISTING CACHE INSTEAD OF NULL
+        const existing = queryClient.getQueryData([
+          "messages",
+          options.userId,
+        ]);
 
-          // Persist fresh server data to IndexedDB
-          if (items && pageParam === 1) {
-            await chatDB.conversations.clear(); // Clear old list to sync perfectly
-            await chatDB.conversations.bulkPut(items);
-          }
+        return existing || null;
+      }
+    },
 
-          return data;
-        } catch (err) {
-          console.error("Failed to sync conversations:", err);
-          return null; // Return null to preserve existing cache
-        }
-      },
-      getNextPageParam: (lastPage: any) => {
-        if (!lastPage) return undefined;
-        const { page, total, page_size } = lastPage;
-        return page * page_size < total ? page + 1 : undefined;
-      },
-      initialPageParam: 1,
-      staleTime: 1000 * 60, // Conversations change less frequently than messages
-    });
-  };
+    initialPageParam: 1,
+
+    getNextPageParam: (lastPage: any) => {
+      const messages = lastPage?.messages;
+
+      if (!messages) return undefined;
+
+      const { page, total, page_size } = messages;
+
+      return page * page_size < total
+        ? page + 1
+        : undefined;
+    },
+
+    enabled: !!options.userId,
+
+    staleTime: 1000 * 30,
+
+    // PREVENT FLASHING EMPTY DATA
+    placeholderData: (prev) => prev,
+  });
+};
 
   // ---------------- MESSAGES ----------------
   const useGetMessages = (options: {
@@ -379,6 +438,7 @@ const useChat = () => {
     const messageWithClientId = {
       ...optimistic,
       client_id: optimistic.id,
+      delivery_status: "sending",
     };
 
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
