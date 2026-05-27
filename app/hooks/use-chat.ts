@@ -135,23 +135,9 @@ const useChat = () => {
   }) => {
     const chatDB = getDB();
 
-    // 1. Dedicated query for IndexedDB hydration
-    const { data: cachedItems } = useQuery({
-      queryKey: ["messages-db", options.userId],
-      queryFn: async () => {
-        const cached = await chatDB.messages
-          .where("conversation_id")
-          .equals(options.userId)
-          .toArray();
-        return cached.map(normalizeMessage);
-      },
-      enabled: !!options.userId,
-      staleTime: Infinity, // Keep in memory
-    });
-
-    // 2. Infinite query with initialData
     return useInfiniteQuery({
       queryKey: ["messages", options.userId],
+
       queryFn: async ({ pageParam = 1 }) => {
         try {
           const res = await api.get(
@@ -168,7 +154,7 @@ const useChat = () => {
           const items = (data?.messages?.items || []).map((m: any) =>
             normalizeMessage({
               ...m,
-              conversation_id: m.conversation_id || options.userId,
+              conversation_id: options.userId,
               synced: true,
             }),
           );
@@ -177,38 +163,24 @@ const useChat = () => {
 
           return { ...data, messages: { ...data.messages, items } };
         } catch (err) {
-          // Fallback to cache on error
-          const existing = queryClient.getQueryData([
-            "messages",
-            options.userId,
-          ]);
-          return existing || null;
+          console.error("Background sync failed, keeping cache:", err);
+          // Return null — React Query keeps existing pages intact.
+          // User still sees IndexedDB data. No messages disappear.
+          return null;
         }
       },
+
       initialPageParam: 1,
-      initialData: cachedItems
-        ? {
-            pages: [
-              {
-                messages: {
-                  items: cachedItems,
-                  page: 1,
-                  total: cachedItems.length,
-                  page_size: cachedItems.length,
-                },
-              },
-            ],
-            pageParams: [1],
-          }
-        : undefined,
       getNextPageParam: (lastPage: any) => {
         if (!lastPage?.messages) return undefined;
         const { page, total, page_size } = lastPage.messages;
         return page * page_size < total ? page + 1 : undefined;
       },
+
       enabled: !!options.userId,
       staleTime: 1000 * 30,
-      retry: 3, // Automatically handle the timeouts you experienced
+      placeholderData: (prev: any) => prev,
+      retry: false, // Don't retry 60s timeouts — IndexedDB data is already shown
     });
   };
 
@@ -311,7 +283,15 @@ const useChat = () => {
       mergeIntoQuery(old, message),
     );
 
-    await chatDB.messages.put(message);
+    const messageToSave = {
+      ...message,
+      // Force the ID mapping here at the point of entry
+      conversation_id:
+        message.recipient_id === currentUser.id
+          ? message.sender_id
+          : message.recipient_id,
+    };
+    await chatDB.messages.put(messageToSave);
 
     await addConversationIfMissing({
       recipient: {
@@ -404,7 +384,15 @@ const useChat = () => {
       mergeIntoQuery(old, messageWithClientId),
     );
 
-    chatDB.messages.put(messageWithClientId);
+    const messageToSave = {
+      ...messageWithClientId,
+      // Force the ID mapping here at the point of entry
+      conversation_id:
+        messageWithClientId.recipient_id === currentUser.id
+          ? messageWithClientId.sender_id
+          : messageWithClientId.recipient_id,
+    };
+    chatDB.messages.put(messageToSave);
     await addConversationIfMissing({
       recipient,
       message: messageWithClientId,

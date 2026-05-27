@@ -1,26 +1,37 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+
 import { queryClient } from "../services/query-client";
 import api from "../services/api";
-import { onFailure, onSuccess } from "../_utils/notification";
+import { onFailure } from "../_utils/notification";
 import { extractErrorMessage } from "../_utils/formatters";
 import { useAuth } from "../context/AuthContext";
 
 const useNotificationServices = () => {
   const client = api;
   const { authDetails } = useAuth();
-
-  // ─── Get Notifications ────────
+  // GET NOTIFICATIONS (INFINITE)
   const getNotifications = () =>
-    useQuery({
+    useInfiniteQuery({
       queryKey: ["notifications"],
-      queryFn: async () => {
-        const { data } = await client.get("/notifications");
+      initialPageParam: 1,
+      queryFn: async ({ pageParam = 1 }) => {
+        const { data } = await client.get(
+          `/notifications?page=${pageParam}&page_size=20`,
+        );
         return data;
       },
-      enabled: !!authDetails,
-    });
 
-  // ─── Mark Notification As Read
+      getNextPageParam: (lastPage) => {
+        const currentPage = lastPage.page;
+        const total = lastPage.total;
+        const pageSize = lastPage.page_size;
+        const totalPages = Math.ceil(total / pageSize);
+        return currentPage < totalPages ? currentPage + 1 : undefined;
+      },
+
+      enabled: !!authDetails?.access_token,
+    });
+  // MARK AS READ
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
       const { data } = await client.patch(
@@ -30,9 +41,26 @@ const useNotificationServices = () => {
       return data;
     },
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["notifications"],
+    onSuccess: (_, notificationId) => {
+      // optimistic cache update
+
+      queryClient.setQueryData(["notifications"], (old: any) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: page.items.map((item: any) =>
+              item.id === notificationId
+                ? {
+                    ...item,
+                    read_at: new Date().toISOString(),
+                  }
+                : item,
+            ),
+          })),
+        };
       });
 
       queryClient.invalidateQueries({
@@ -48,16 +76,17 @@ const useNotificationServices = () => {
       });
     },
   });
-
-  // ─── Unread Summary ───────────
+  // UNREAD SUMMARY
   const unreadSummary = () =>
     useQuery({
       queryKey: ["unread-summary"],
+
       queryFn: async () => {
         const { data } = await client.get("/events/unread");
         return data;
       },
-      enabled: !!authDetails,
+
+      enabled: !!authDetails?.access_token,
     });
 
   return {

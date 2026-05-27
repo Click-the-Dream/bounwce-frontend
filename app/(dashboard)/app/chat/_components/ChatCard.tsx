@@ -13,7 +13,7 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const router = useRouter();
   const { authDetails } = useAuth();
   const { resetUnread } = useNotifications();
-  const { typingUsers } = useChatUtils();
+  const { typingUsers, prewarmMessages } = useChatUtils();
   const chatUser = chat?.user;
   const currentUserId = authDetails?.user?.id;
 
@@ -71,7 +71,8 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
     }
   };
 
-  const goToChat = () => {
+  const goToChat = async () => {
+    await prewarmMessages(chatUser.id);
     if (chat.unread_count > 0) {
       resetUnread(chatUser.id);
     }

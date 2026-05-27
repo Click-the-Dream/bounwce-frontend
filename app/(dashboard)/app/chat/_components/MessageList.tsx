@@ -60,6 +60,7 @@ const MessageList = () => {
   const {
     data: messagesData,
     isLoading,
+    isFetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -445,8 +446,11 @@ const MessageList = () => {
   };
 
   // LOADING STATE
-
-  if (isLoading) {
+  const hasAnyCachedData =
+    (messagesData?.pages?.flatMap((p: any) => p?.messages?.items || [])
+      .length ?? 0) > 0;
+  const isInitialLoading = isLoading && !hasAnyCachedData;
+  if (isInitialLoading) {
     return (
       <div className="flex-1 p-6 space-y-4 overflow-y-auto">
         {[...Array(6)].map((_, i) => (
@@ -463,7 +467,7 @@ const MessageList = () => {
 
   // EMPTY STATE
 
-  if (!sortedMessages.length) {
+  if (!sortedMessages.length && !isFetching) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
         No messages yet

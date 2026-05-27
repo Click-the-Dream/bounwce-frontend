@@ -8,6 +8,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import SafeImage from "@/app/_components/SafeImage";
 import { useEffect, useRef, useState } from "react";
 import { NotificationPanel } from "@/app/_components/NotificationPanel";
+import { Portal } from "@/app/protocols/Portal";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
@@ -71,15 +72,14 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           )}
         </Link>
 
-        <div ref={panelRef} className="relative cursor-pointer">
-          <Bell
-            onClick={() => setIsPanelOpen(!isPanelOpen)}
-            strokeWidth={1.5}
-            className="size-5 cursor-pointer"
-          />
-          {notifications?.length > 0 && (
+        <div
+          onClick={() => setIsPanelOpen(!isPanelOpen)}
+          className="relative cursor-pointer"
+        >
+          <Bell strokeWidth={1.5} className="size-5 cursor-pointer" />
+          {notifications.filter((n) => !n.read_at).length > 0 && (
             <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">
-              {notifications?.length}
+              {notifications.filter((n) => !n.read_at).length}
             </span>
           )}
         </div>
@@ -96,9 +96,11 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
       </div>
 
       {isPanelOpen && (
-        <div className="absolute z-10000 right-0 top-full mt-2">
-          <NotificationPanel onClose={() => setIsPanelOpen(false)} />
-        </div>
+        <Portal>
+          <div ref={panelRef} className="fixed z-[10000] right-4 top-14">
+            <NotificationPanel onClose={() => setIsPanelOpen(false)} />
+          </div>
+        </Portal>
       )}
     </header>
   );

@@ -7,6 +7,7 @@ export type Notification = {
   payload?: any;
   read_at?: string | null;
   created_at: string;
+  updated_at?: string;
 };
 
 export type NotificationContextType = {
@@ -16,4 +17,7 @@ export type NotificationContextType = {
   resetUnread: (userId: string) => void;
   incrementUnread: (userId: string) => void;
   decrementUnread: (userId: string) => void;
+  fetchNextPage: any;
+  hasNextPage: any;
+  isFetchingNextPage: any;
 };

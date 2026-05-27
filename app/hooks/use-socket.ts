@@ -46,6 +46,12 @@ export const useSocketConnection = ({
     activeChatRef.current = activeConversationId;
   }, [activeConversationId]);
 
+  useEffect(() => {
+    return () => {
+      if (flushRef.current) clearTimeout(flushRef.current);
+    };
+  }, []);
+
   //  SOCKET CONNECT ONLY ON TOKEN CHANGE
   useEffect(() => {
     const handleMessage = async (raw: any) => {
@@ -199,7 +205,23 @@ export const useSocketConnection = ({
       // ---------------- NOTIFICATIONS ----------------
 
       if (!isMyMessage && !isActiveChat) {
-        incrementUnread(otherUserId);
+        pushNotification({
+          id: crypto.randomUUID(),
+          title: message.sender?.full_name || "New Message",
+          body: message.body,
+          event_type: "chat_message",
+          payload: {
+            route: "chat.conversation",
+            sender: message.sender,
+            message_id: message.id,
+            conversation_id: message.conversation_id,
+          },
+          read_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_id: authUserRef.current,
+        });
+
         onMessageToast({
           senderName: message.sender?.full_name,
           message: message.body,

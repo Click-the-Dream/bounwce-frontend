@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import audioController from "./audioController";
 import { useRouter } from "next/navigation";
 import UserImage from "../(dashboard)/app/_components/UserImage";
+import { useChatUtils } from "../context/ChatContext";
+import { useNotifications } from "../context/NotificationContext";
 
 const MessageToast = ({ senderName, message, profile_pic, userId }: any) => {
   // play sound ONCE when toast mounts
@@ -43,11 +45,14 @@ const MessageToast = ({ senderName, message, profile_pic, userId }: any) => {
 
 const ToastContent = ({ senderName, message, userId, profile_pic }: any) => {
   const router = useRouter();
-
+  const { prewarmMessages } = useChatUtils();
+  const { resetUnread } = useNotifications();
   return (
     <div
-      onClick={() => {
+      onClick={async () => {
         toast.dismiss();
+        await prewarmMessages(userId);
+        resetUnread(userId);
         router.push(`/app/chat/${userId}`);
       }}
       className="cursor-pointer active:scale-[0.98] transition-transform"

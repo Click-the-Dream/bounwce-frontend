@@ -139,7 +139,7 @@ const ChatMediaMessage = ({
             alt="chat"
             width={800}
             height={800}
-            className="w-full h-88 object-cover rounded-[10px]"
+            className="w-full h-80 object-cover rounded-[10px]"
             showLoader
           />
           {renderUploadOverlay()}
@@ -313,7 +313,7 @@ const ChatMediaMessage = ({
         data-message-id={msg.id}
         className={`
           ${styles.bubble}
-          p-0.5 relative rounded-[10px] overflow-hidden shadow-sm
+          p-0.5 relative rounded-[10px] min-w-0 max-w-full overflow-hidden shadow-sm
           transition-colors duration-300
           ${isHighlighted ? "ring-2 ring-orange/60" : ""}
         `}
