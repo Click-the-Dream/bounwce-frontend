@@ -1,41 +1,63 @@
-import { fetchClient } from "@/app/services/api";
+import api from "@/app/services/api";
 
 export const marketFetcher = async ({ filters }: any) => {
-  const params = new URLSearchParams({ ...filters, page: "1", per_page: "12" });
-  const data = await fetchClient(`/store/products/?${params.toString()}`);
+  try {
+    const { data } = await api.get("/store/products/", {
+      params: {
+        ...filters,
+        page: 1,
+        per_page: 12,
+      },
+      timeout: 10000, // prevent hanging
+    });
 
-  return data || { products: [], total: 0 };
+    return data || { products: [], total: 0 };
+  } catch (error: any) {
+    return {
+      data: [],
+      total: 0,
+      error: true,
+    };
+  }
 };
 
 export const productFetcher = async (id: string) => {
-  const data = await fetchClient(`/store/products/${id}`);
+  const { data } = await api.get(`/store/products/${id}`);
   return data?.data || {};
 };
 
 export const profileFetcher = async (userId: string) => {
-  const data = await fetchClient(`/users/${userId}`);
-  return data?.data || null;
+  try {
+    const { data } = await api.get(`/users/${userId}`);
+    return data?.data || null;
+  } catch (err) {
+    return null; // prevent build crash
+  }
 };
 
 export const allUsersFetcher = async () => {
-  let page = 1;
-  let allUsers: any[] = [];
+  try {
+    let page = 1;
+    let allUsers: any[] = [];
 
-  while (true) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      page_size: "100",
-    });
-    const data = await fetchClient(`/users?${params.toString()}`);
+    while (true) {
+      const { data } = await api.get("/users", {
+        params: { page, page_size: 100 },
+        timeout: 10000,
+      });
 
-    const result = data?.data;
-    const users = result?.users || result?.items || [];
-    allUsers = [...allUsers, ...users];
+      const result = data?.data;
+      const users = result?.users || result?.items || [];
+      allUsers = [...allUsers, ...users];
 
-    const hasMore = result?.page * result?.page_size < result?.total;
-    if (!hasMore || users.length === 0) break;
-    page++;
+      const hasMore = result?.page * result?.page_size < result?.total;
+      if (!hasMore || users.length === 0) break;
+
+      page++;
+    }
+
+    return allUsers;
+  } catch (error) {
+    return [];
   }
-
-  return allUsers;
 };
