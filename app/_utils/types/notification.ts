@@ -3,6 +3,8 @@ export type Notification = {
   user_id: string;
   title: string;
   body: string;
+  media_type?: string;
+  media_url?: string;
   event_type: string;
   payload?: any;
   read_at?: string | null;

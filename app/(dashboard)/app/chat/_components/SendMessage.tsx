@@ -270,7 +270,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
             style={{ borderLeft: "4px solid #b07b1b" }}
           >
             <div className="flex-1">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide line-clamp-1">
                 {replyTo.sender_id === authDetails?.user?.id
                   ? "Replying to yourself"
                   : `Replying to ${selectedChat?.full_name ?? "them"}`}

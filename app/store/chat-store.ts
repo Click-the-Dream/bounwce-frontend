@@ -22,6 +22,7 @@ export interface CachedMessage {
 
 export interface CachedConversation {
   id: string; // Typically the user.id or conversation unique identifier
+  user_id?: string;
   user: {
     id: string;
     full_name: string;
@@ -51,8 +52,14 @@ class ChatDB extends Dexie {
 
     this.version(1).stores({
       messages: "id, conversation_id, created_at, recipient_id",
-      conversations: "id, updated_at",
+      conversations: "id,user_id, updated_at",
       users: "id",
+    });
+
+    this.on("ready", () => {
+      this.conversations.hook("creating", (primKey, obj) => {
+        (obj as any).user_id = obj.user?.id;
+      });
     });
   }
 

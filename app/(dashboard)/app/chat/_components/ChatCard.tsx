@@ -71,16 +71,19 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
     }
   };
 
-  const goToChat = async () => {
-    await prewarmMessages(chatUser.id);
-    if (chat.unread_count > 0) {
-      resetUnread(chatUser.id);
-    }
+  const goToChat = () => {
+    resetUnread(chatUser.id);
+
     router.push(`/app/chat/${chatUser.id}`);
+
+    requestAnimationFrame(() => {
+      prewarmMessages(chatUser.id);
+    });
   };
+
   return (
     <div
-      onClick={goToChat}
+      onClick={() => goToChat()}
       key={chatUser?.id}
       className={`relative flex items-center gap-3 pt-3.25 pb-4.75 px-1 cursor-pointer hover:bg-gray-50 border-b-[0.53px] border-[#00000033] h-15.75 ${chatId === chatUser.id ? "bg-gray-100" : ""}`}
     >

@@ -1,8 +1,6 @@
 import { generatePageMetadata } from "@/app/_utils/metadata";
 import BuyerLayout from "./_components/BuyerLayout";
 import SecureRoute from "@/app/protocols/SecureRoutes";
-import { NotificationProvider } from "@/app/context/NotificationContext";
-import { ChatProvider } from "@/app/context/ChatContext";
 
 export const metadata = generatePageMetadata({
   title: "Buyer Dashboard | Bouwnce",

@@ -18,8 +18,7 @@ export const useSocketConnection = ({
   const queryClient = useQueryClient();
   const chatDB = getChatDB(authUserId);
 
-  const { pushNotification, incrementUnread, decrementUnread } =
-    useNotifications();
+  const { pushNotification, decrementUnread } = useNotifications();
   const { setTypingUsers, setOnlineUsers } = useChatUtils();
 
   const setTypingUsersRef = useRef(setTypingUsers);
@@ -209,6 +208,8 @@ export const useSocketConnection = ({
           id: crypto.randomUUID(),
           title: message.sender?.full_name || "New Message",
           body: message.body,
+          media_type: message?.media_type,
+          media_url: message?.media_url,
           event_type: "chat_message",
           payload: {
             route: "chat.conversation",
@@ -277,28 +278,32 @@ export const useSocketConnection = ({
       if (flushRef.current) clearTimeout(flushRef.current);
       flushRef.current = setTimeout(() => {
         Object.entries(readQueue.current).forEach(([reader_id, updates]) => {
-          queryClient.setQueryData(["messages", reader_id], (old: any) => {
-            if (!old) return old;
+          queryClient.setQueriesData(
+            { queryKey: ["messages", reader_id] },
+            (old: any) => {
+              if (!old) return old;
 
-            return {
-              ...old,
-              pages: old.pages.map((page: any) => ({
-                ...page,
-                messages: {
-                  ...page.messages,
-                  items: page.messages.items.map((msg: any) => {
-                    const update = updates.find((u) => u.message_id === msg.id);
-                    if (!update) return msg;
-                    if (update.read) return msg;
-                    return {
-                      ...msg,
-                      read_at: update.read ? new Date().toISOString() : null,
-                    };
-                  }),
-                },
-              })),
-            };
-          });
+              return {
+                ...old,
+                pages: old.pages.map((page: any) => ({
+                  ...page,
+                  messages: {
+                    ...page.messages,
+                    items: page.messages.items.map((msg: any) => {
+                      const update = updates.find(
+                        (u) => u.message_id === msg.id,
+                      );
+                      if (!update) return msg;
+                      return {
+                        ...msg,
+                        read_at: update.read ? new Date().toISOString() : null,
+                      };
+                    }),
+                  },
+                })),
+              };
+            },
+          );
         });
 
         readQueue.current = {}; // clear after flush

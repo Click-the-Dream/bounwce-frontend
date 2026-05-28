@@ -125,7 +125,7 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
       {/* LIST */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto overscroll-contain px-2 pb-2"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 pb-2"
       >
         {isLoading ? (
           <div className="text-center mt-10 text-gray-400 text-sm">

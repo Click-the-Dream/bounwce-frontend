@@ -24,17 +24,24 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const initDB = async () => {
       const db = getChatDB(authDetails.user.id);
       const cached = await db.conversations.toArray();
-      queryClient.setQueryData(["conversations"], {
-        pages: [
-          {
-            items: cached,
-            page: 1,
-            total: cached.length,
-            page_size: cached.length,
-          },
-        ],
-        pageParams: [1],
-      });
+      queryClient.setQueriesData(
+        { queryKey: ["conversations"] },
+        (old: any) => {
+          if (old) return old;
+
+          return {
+            pages: [
+              {
+                items: cached,
+                page: 1,
+                total: cached.length,
+                page_size: cached.length,
+              },
+            ],
+            pageParams: [1],
+          };
+        },
+      );
     };
     initDB();
   }, [authDetails]);

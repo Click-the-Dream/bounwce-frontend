@@ -72,7 +72,7 @@ const useChat = () => {
           .toArray();
 
         if (cached.length > 0) {
-          queryClient.setQueryData(["conversations"], {
+          queryClient.setQueryData(["conversations", params], {
             pages: [
               {
                 items: cached,
@@ -90,7 +90,7 @@ const useChat = () => {
 
     // 2. Infinite Query for Conversations
     return useInfiniteQuery({
-      queryKey: ["conversations"],
+      queryKey: ["conversations", params],
       queryFn: async ({ pageParam = 1 }) => {
         try {
           const res = await api.get("/chats/conversations", {
@@ -118,7 +118,7 @@ const useChat = () => {
         return page * page_size < total ? page + 1 : undefined;
       },
       initialPageParam: 1,
-      staleTime: 1000 * 60, // Conversations change less frequently than messages
+      staleTime: 1000 * 60,
     });
   };
 

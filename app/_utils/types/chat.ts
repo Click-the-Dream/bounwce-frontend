@@ -1,4 +1,5 @@
 export interface ChatUser {
+  id?: string;
   user: {
     full_name: string;
     id: string;
@@ -15,3 +16,16 @@ export interface ChatUser {
   };
   unread_count: number;
 }
+
+export type SyncConfig<T> = {
+  db: any;
+  store: string;
+
+  id: string; // single source of truth
+  idSelector: (item: T) => string;
+
+  queryClient: any;
+  queryKey: any;
+
+  updater: (item: T) => T;
+};
