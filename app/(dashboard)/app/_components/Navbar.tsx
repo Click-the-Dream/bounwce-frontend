@@ -1,4 +1,4 @@
-import { Bell, Menu, ShoppingCart, MessageCircleMore } from "lucide-react";
+import { Bell, Menu, MessageCircleMore } from "lucide-react";
 import userImg from "../../../assets/buyer/user.jpg";
 import SearchComponent from "./SearchComponent";
 import Link from "next/link";
