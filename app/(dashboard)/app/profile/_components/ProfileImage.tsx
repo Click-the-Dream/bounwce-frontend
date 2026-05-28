@@ -10,7 +10,7 @@ import {
   Check,
 } from "lucide-react";
 import Cropper from "react-easy-crop";
-import { onFailure, onSuccess } from "@/app/_utils/notification";
+import { onSuccess } from "@/app/_utils/notification";
 import useUser from "@/app/hooks/use-user";
 import { Portal } from "@/app/protocols/Portal";
 
@@ -101,7 +101,7 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
         <UserImage
           user={{
             id: user.id,
-            full_name: user?.name,
+            full_name: user?.full_name,
             profile_pic: user?.profile_pic,
           }}
           size={size}

@@ -25,7 +25,7 @@ const UserImage = ({
 }: UserImageProps) => {
   const { onlineUsers } = useChatUtils();
   const isOnline = !!user?.id && !!onlineUsers?.[user.id];
-  const initials = user.full_name?.trim()?.slice(0, 2)?.toUpperCase() || "NA";
+  const initials = user?.full_name?.trim()?.slice(0, 2)?.toUpperCase() || "NA";
 
   return (
     <div
@@ -33,10 +33,10 @@ const UserImage = ({
       className={`relative shrink-0 border border-white ${rounded}`}
       style={{ ...style, width: size, height: size }}
     >
-      {user.profile_pic?.url ? (
+      {user?.profile_pic?.url ? (
         <SafeImage
           src={user.profile_pic.url}
-          alt={user.full_name}
+          alt={user?.full_name}
           width={size}
           height={size}
           className={`w-full h-full object-cover ${rounded}`}

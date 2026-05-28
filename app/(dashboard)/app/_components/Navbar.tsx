@@ -9,6 +9,7 @@ import SafeImage from "@/app/_components/SafeImage";
 import { useEffect, useRef, useState } from "react";
 import { NotificationPanel } from "@/app/_components/NotificationPanel";
 import { Portal } from "@/app/protocols/Portal";
+import UserImage from "./UserImage";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { carts } = useMarketStore();
@@ -85,19 +86,17 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
         </div>
 
         <Link href="/app/profile" className="w-8 h-8">
-          <SafeImage
-            src={authDetails?.user?.profile_pic?.url || userImg}
-            alt="Profile"
-            width={32}
-            height={32}
-            className="rounded-md w-full h-full bg-gray-100"
+          <UserImage
+            user={authDetails?.user}
+            size={32}
+            rounded="rounded-md bg-gray-100"
           />
         </Link>
       </div>
 
       {isPanelOpen && (
         <Portal>
-          <div ref={panelRef} className="fixed z-[10000] right-4 top-14">
+          <div ref={panelRef} className="fixed z-10000 right-4 top-14">
             <NotificationPanel onClose={() => setIsPanelOpen(false)} />
           </div>
         </Portal>
