@@ -359,7 +359,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
               handleSend();
             }
           }}
-          className="flex-1 bg-transparent text-sm focus:outline-none max-h-28 resize-none overflow-hidden overflow-y-auto leading-5 py-1"
+          className="flex-1 bg-transparent text-base focus:outline-none max-h-28 resize-none overflow-hidden overflow-y-auto leading-5 py-1"
         />
 
         {(isFocused || message) && (

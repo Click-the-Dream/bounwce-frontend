@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppProvider from "./context/AppProvider";
 import { generatePageMetadata } from "./_utils/metadata";
@@ -9,6 +9,12 @@ export const metadata: Metadata = generatePageMetadata({
     "Bouwnce redefines how students experience campus life — connect, learn, and grow in a smarter digital environment designed for collaboration and success.",
   path: "/",
 });
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
 
 export default function RootLayout({
   children,

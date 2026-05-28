@@ -86,7 +86,7 @@ export const DiscoverySearchBar = ({
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="w-full px-3 py-5 outline-none bg-transparent text-sm sm:text-base relative z-10"
+            className="w-full px-3 py-5 outline-none bg-transparent text-base relative z-10"
           />
 
           {searchValue.length === 0 && text && (

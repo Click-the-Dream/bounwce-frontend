@@ -54,7 +54,7 @@ const Input = React.forwardRef<HTMLInputElement, any>(
         <div
           className={`flex items-center justify-between gap-2 border ${
             error ? "border-red-400" : "border-orange"
-          } rounded-[20px] px-3 sm:px-4 text-[clamp(12px,1vw,14px)] py-2.5 bg-white cursor-pointer relative w-full`}
+          } rounded-[20px] px-3 sm:px-4 text-[16px] md:text-[14px] py-2.5 bg-white cursor-pointer relative w-full`}
           onClick={() => variant === "select" && handleToggle()}
         >
           {/* Left icon */}
@@ -79,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, any>(
               value={value}
               placeholder={placeholder}
               onChange={onChange}
-              className="flex-1 bg-transparent focus:outline-none w-full"
+              className="flex-1 bg-transparent focus:outline-none w-full text-[16px] md:text-[14px]"
               {...rest}
             />
           )}
