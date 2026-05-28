@@ -1,12 +1,25 @@
 import { generatePageMetadata } from "@/app/_utils/metadata";
 import ProfilePage from "../_components/ProfilePage";
 import { profileFetcher } from "@/app/_utils/server_functions/fetchers";
+import { getIDFromSlug } from "@/app/_utils/slugify";
 
 export const generateMetadata = async ({ params }: any) => {
   const { userId } = await params;
 
+  // Extract and ensure it is a string
+  const result = getIDFromSlug(userId);
+  const profileID = result?.profileId;
+
+  // Add this guard clause:
+  if (!profileID) {
+    return generatePageMetadata({
+      title: "Profile Not Found",
+      noIndex: true,
+    });
+  }
+
   try {
-    const profile = await profileFetcher(userId);
+    const profile = await profileFetcher(profileID);
 
     return generatePageMetadata({
       title: `${profile?.full_name || userId}`,
