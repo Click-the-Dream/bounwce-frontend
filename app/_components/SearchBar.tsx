@@ -10,8 +10,10 @@ const SearchBar = () => {
   const [query, setQuery] = useState("");
 
   const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    router.push(`/app?q=${encodeURIComponent(query.trim())}`);
+    // setShowAuthModal(false);
+    // router.push(`/app?q=${encodeURIComponent(query.trim())}`);
+
+    router.push(`/waitlist`);
   };
 
   return (
