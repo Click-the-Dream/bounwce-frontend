@@ -117,7 +117,7 @@ const RegistrationComponent = ({
         </motion.div>
 
         {/* Institution */}
-        <motion.div variants={fadeUp}>
+        {/* <motion.div variants={fadeUp}>
           <Controller
             name="institution"
             control={control}
@@ -138,10 +138,10 @@ const RegistrationComponent = ({
               />
             )}
           />
-        </motion.div>
+        </motion.div> */}
 
         {/* Vendor */}
-        <motion.div variants={fadeUp}>
+        {/* <motion.div variants={fadeUp}>
           <Controller
             name="vendor"
             control={control}
@@ -160,7 +160,7 @@ const RegistrationComponent = ({
               />
             )}
           />
-        </motion.div>
+        </motion.div> */}
 
         <Button
           text="Create Account"
