@@ -11,6 +11,7 @@ export const generateMetadata = async ({ params }: any) => {
     return generatePageMetadata({
       title: `${profile?.full_name || userId}`,
       description: `View ${profile?.full_name || userId}'s profile on Bouwnce.`,
+      imageUrl: profile?.profile_pic?.url,
     });
   } catch {
     return generatePageMetadata({
