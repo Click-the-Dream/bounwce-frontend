@@ -14,13 +14,13 @@ import { useAuth } from "@/app/context/AuthContext";
 import { redirect } from "next/navigation";
 
 const ShoppingCart = () => {
-  const { getCurrentUser } = useAuth();
+  const { authDetails } = useAuth();
   const { carts, cartLoading, isCartError, cartError } = useMarketStore();
   const { updateCart, removeFromCart } = useCart();
   const [openItem, setOpenItem] = useState(null);
   const [pendingCartId, setPendingCartId] = useState(null);
 
-  const user = getCurrentUser(); // fetch user from session/token
+  const user = authDetails?.user; // fetch user from session/token
 
   if (!user) {
     redirect("/login");
