@@ -1,6 +1,7 @@
 "use client";
 
 import { onFailure } from "@/app/_utils/notification";
+import { useAuth } from "@/app/context/AuthContext";
 import useInterest from "@/app/hooks/use-interest";
 import { useEffect, useState } from "react";
 
@@ -10,6 +11,8 @@ interface Props {
 }
 
 const InterestSelector = ({ open: openProp, onClose }: Props) => {
+  const { authDetails } = useAuth();
+  const authUser = authDetails?.user;
   const [internalOpen, setInternalOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -52,10 +55,10 @@ const InterestSelector = ({ open: openProp, onClose }: Props) => {
   // ---------------- INIT OPEN STATE ----------------
 
   useEffect(() => {
-    if (!isControlled) {
+    if (!isControlled && authUser) {
       setInternalOpen(!hasInterests);
     }
-  }, [hasInterests, isControlled]);
+  }, [hasInterests, isControlled, authUser]);
 
   // ---------------- BUILD INITIAL STATE ONLY ONCE ----------------
 

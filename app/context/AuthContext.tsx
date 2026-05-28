@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [authDetails, setAuthDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // ---------------- GLOBAL GUARDS ----------------
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
@@ -212,6 +213,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         updateAuth,
         updateUser,
         isLoading,
+        showAuthModal,
+        setShowAuthModal,
       }}
     >
       {children}

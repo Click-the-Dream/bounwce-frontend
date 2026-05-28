@@ -21,11 +21,10 @@ const ProductCard = ({
     images: { url: string }[];
   };
 }) => {
-  const { authDetails } = useAuth();
+  const { authDetails, showAuthModal, setShowAuthModal } = useAuth();
   const { carts } = useMarketStore();
   const { addToCart, removeFromCart } = useCart();
   const router = useRouter();
-  const [showAuthModal, setShowAuthModal] = useState(false);
   // Check if user is authenticated
   const isAuthenticated = !!authDetails?.access_token;
 

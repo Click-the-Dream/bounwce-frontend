@@ -30,7 +30,7 @@ type Props = {
 };
 
 const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
-  const { authDetails } = useAuth();
+  const { authDetails, setShowAuthModal } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [openEditProfile, setOpenEditProfile] = useState(false);
@@ -73,6 +73,10 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   const isConnected = status === "accepted";
 
   const handleConnect = () => {
+    if (!authDetails?.user) {
+      setShowAuthModal(true);
+      return;
+    }
     if (relation || createMatchRequest.isPending) return;
 
     setLocalConnectStatus("loading");
@@ -102,6 +106,10 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   };
 
   const handleAccept = () => {
+    if (!authDetails?.user) {
+      setShowAuthModal(true);
+      return;
+    }
     setActionLoading("accept");
 
     respondToMatchRequest.mutate(
@@ -131,6 +139,10 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   };
 
   const handleReject = () => {
+    if (!authDetails?.user) {
+      setShowAuthModal(true);
+      return;
+    }
     setActionLoading("reject");
 
     respondToMatchRequest.mutate(
@@ -160,6 +172,10 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   };
 
   const handleShareProfile = async () => {
+    if (!authDetails?.user) {
+      setShowAuthModal(true);
+      return;
+    }
     const profileUrl = `${window.location.origin}/app/profile/${slugify(data?.name)}_${data?.id}`;
     await shareProfile({
       title: `${data.name}'s Profile`,
@@ -284,13 +300,15 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
               </button>
             )}
 
-            <button
-              onClick={() => router.push(`/app/chat/${data.id}`)}
-              className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
-            >
-              <MessageCircleReply className="size-3.5 mr-1.75" />
-              Message
-            </button>
+            {authDetails?.user && (
+              <button
+                onClick={() => router.push(`/app/chat/${data.id}`)}
+                className="cursor-pointer max-w-23.25 h-7.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
+              >
+                <MessageCircleReply className="size-3.5 mr-1.75" />
+                Message
+              </button>
+            )}
 
             {/* MORE BUTTON */}
             <button className="cursor-pointer ml-auto bg-[#D9D9D9] flex items-center justify-center text-black rounded-full hover:bg-[#c6c4c4] transition-colors w-6 h-6">
