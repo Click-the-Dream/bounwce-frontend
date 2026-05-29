@@ -12,6 +12,7 @@ import { CachedConversation, getChatDB } from "../store/chat-store";
 import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
 import { ReplyTarget, User } from "../_utils/types/buyer";
 import { useEffect } from "react";
+import { useChatUtils } from "../context/ChatContext";
 
 const mergeIntoQuery = (old: any, message: any) => {
   if (!old) {
@@ -56,7 +57,7 @@ const useChat = () => {
     if (!currentUser) throw new Error("No user authenticated");
     return getChatDB(currentUser.id);
   };
-
+  const { prewarmedCacheRef } = useChatUtils();
   const chatDB = getDB();
 
   const useGetConversations = (params: any = {}) => {
@@ -133,10 +134,14 @@ const useChat = () => {
     userId: string;
     params?: { page_size?: number };
   }) => {
+    const { prewarmedCacheRef } = useChatUtils();
     const chatDB = getDB();
 
     return useInfiniteQuery({
       queryKey: ["messages", options.userId],
+
+      // This provides the initial state from IndexedDB instantly
+      initialData: () => prewarmedCacheRef.current[options.userId],
 
       queryFn: async ({ pageParam = 1 }) => {
         try {
@@ -151,25 +156,35 @@ const useChat = () => {
           );
 
           const data = res.data?.data;
-          const items = (data?.messages?.items || []).map((m: any) =>
+
+          // 1. Define 'items' here by extracting it from the response
+          const rawItems = data?.messages?.items || [];
+          const items = rawItems.map((m: any) =>
             normalizeMessage({
               ...m,
-              conversation_id: options.userId,
+              recipient_id: options.userId,
               synced: true,
             }),
           );
 
-          if (items.length) await chatDB.messages.bulkPut(items);
+          // 2. Now 'items' is defined, and you can safely use it
+          if (pageParam === 1 && items.length > 0) {
+            await chatDB.messages.bulkPut(items);
+          }
 
-          return { ...data, messages: { ...data.messages, items } };
+          // 3. Return the object with the newly defined 'items'
+          return {
+            ...data,
+            messages: {
+              ...data.messages,
+              items,
+            },
+          };
         } catch (err) {
-          console.error("Background sync failed, keeping cache:", err);
-          // Return null — React Query keeps existing pages intact.
-          // User still sees IndexedDB data. No messages disappear.
+          console.error("Fetch failed:", err);
           return null;
         }
       },
-
       initialPageParam: 1,
       getNextPageParam: (lastPage: any) => {
         if (!lastPage?.messages) return undefined;
@@ -180,7 +195,7 @@ const useChat = () => {
       enabled: !!options.userId,
       staleTime: 1000 * 30,
       placeholderData: (prev: any) => prev,
-      retry: false, // Don't retry 60s timeouts — IndexedDB data is already shown
+      retry: false,
     });
   };
 

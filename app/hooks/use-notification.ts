@@ -42,8 +42,6 @@ const useNotificationServices = () => {
     },
 
     onSuccess: (_, notificationId) => {
-      // optimistic cache update
-
       queryClient.setQueryData(["notifications"], (old: any) => {
         if (!old) return old;
 
@@ -51,29 +49,17 @@ const useNotificationServices = () => {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            items: page.items.map((item: any) =>
-              item.id === notificationId
-                ? {
-                    ...item,
-                    read_at: new Date().toISOString(),
-                  }
-                : item,
-            ),
+            data: {
+              ...page.data,
+              items: (page.data?.items ?? []).filter(
+                (item: any) => item.id !== notificationId,
+              ),
+            },
           })),
         };
       });
 
-      queryClient.invalidateQueries({
-        queryKey: ["unread-summary"],
-      });
-    },
-
-    onError: (error: any) => {
-      onFailure({
-        title: "Update Failed",
-        message:
-          extractErrorMessage(error) || "Could not mark notification as read.",
-      });
+      queryClient.invalidateQueries({ queryKey: ["unread-summary"] });
     },
   });
   // UNREAD SUMMARY

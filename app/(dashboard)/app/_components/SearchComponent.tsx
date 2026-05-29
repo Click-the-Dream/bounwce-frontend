@@ -43,12 +43,12 @@ const SearchComponent = () => {
     };
 
     return {
-      matched: (matches ?? []).filter(matchFilter),
+      matched: (matches?.items ?? []).filter(matchFilter),
       suggestions: (suggestions ?? []).filter(suggestionFilter),
     };
-  }, [searchTerm, matches, suggestions]);
+  }, [searchTerm, matches?.items, suggestions]);
 
-  const isLoading = !matches || !suggestions;
+  const isLoading = !matches?.items || !suggestions;
 
   return (
     <div

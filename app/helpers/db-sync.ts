@@ -28,66 +28,52 @@ export const updateDBEntity = async ({
 };
 
 // React Query sync (single item)
-export const syncQueryEntity = ({
+export const syncQueryEntity = async ({
   queryClient,
   queryKey,
-  predicate,
   updater,
+  selector,
 }: {
   queryClient: any;
   queryKey: string[];
-  predicate: (item: any) => boolean;
+  selector: (old: any, updater: (item: any) => any) => any;
   updater: (item: any) => any;
 }) => {
   queryClient.setQueriesData({ queryKey }, (old: any) => {
     if (!old?.pages) return old;
+    if (typeof selector !== "function") {
+      console.error("syncQueryEntity: selector is not a function");
+      return old;
+    }
 
-    return {
-      ...old,
-      pages: old.pages.map((page: any) => ({
-        ...page,
-        items: page.items.map((item: any) =>
-          predicate(item) ? updater(item) : item,
-        ),
-      })),
-    };
+    return selector(old, updater);
   });
 };
 
-export const syncDBEntity = ({ db, store, key, keyValue, updater }: any) => {
-  return updateDBEntity({
-    db,
-    store,
-    key,
-    keyValue,
-    updater,
-  });
-};
-
-export const syncEntity = ({
+export const syncEntity = async ({
   db,
   queryClient,
   store,
   key,
   keyValue,
   queryKey,
-  predicate,
   updater,
+  selector,
 }: any) => {
-  //  INSTANT UI UPDATE (NO AWAIT)
+  // instant cache update
   syncQueryEntity({
     queryClient,
     queryKey,
-    predicate,
     updater,
+    selector,
   });
 
-  // BACKGROUND DB WRITE (NO BLOCKING)
-  syncDBEntity({
+  // async db sync
+  updateDBEntity({
     db,
     store,
     key,
     keyValue,
     updater,
-  });
+  }).catch((err) => console.error(`Failed to sync ${store}:`, err));
 };

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { NotificationItem } from "./NotificationItem";
+import { X } from "lucide-react";
 
 export const NotificationPanel = ({ onClose }: { onClose: () => void }) => {
   const { notifications, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -29,8 +30,14 @@ export const NotificationPanel = ({ onClose }: { onClose: () => void }) => {
   return (
     <div className="w-80 md:w-96 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
       {/* HEADER */}
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
         <h2 className="text-sm font-bold text-gray-900">Notifications</h2>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
+        >
+          <X className="size-4" />
+        </button>
       </div>
 
       {/* LIST */}

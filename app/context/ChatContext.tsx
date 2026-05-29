@@ -17,71 +17,39 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
 
   const activeUploadsRef = useRef(new Map<string, File[]>());
-  useEffect(() => {
-    if (!authDetails?.user) return;
-
-    // Pre-hydrate all conversations into the cache immediately on load
-    const initDB = async () => {
-      const db = getChatDB(authDetails.user.id);
-      const cached = await db.conversations.toArray();
-      queryClient.setQueriesData(
-        { queryKey: ["conversations"] },
-        (old: any) => {
-          if (old) return old;
-
-          return {
-            pages: [
-              {
-                items: cached,
-                page: 1,
-                total: cached.length,
-                page_size: cached.length,
-              },
-            ],
-            pageParams: [1],
-          };
-        },
-      );
-    };
-    initDB();
-  }, [authDetails]);
+  const prewarmedCacheRef = useRef<Record<string, any>>({});
 
   const prewarmMessages = async (userId: string) => {
     if (!authDetails?.user) return;
-
-    // Don't overwrite if this chat is already cached — it's fresh enough
-    const existing = queryClient.getQueryData(["messages", userId]);
-    if (existing) return;
-
     const db = getChatDB(authDetails.user.id);
+
     const cached = await db.messages
-      .where("conversation_id")
+      .where("recipient_id") // Ensure this matches your DB index
       .equals(userId)
       .toArray();
 
-    if (cached.length === 0) return;
+    const sorted = cached.sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
 
-    const normalized = cached.map((m: any) => ({
-      ...m,
-      delivery_status: m.delivery_status ?? "sent",
-      synced: m.synced ?? true,
-    }));
-
-    // Set cache synchronously — this runs before router.push resolves,
-    // so by the time Next.js renders MessageList the data is already there
-    queryClient.setQueryData(["messages", userId], {
+    const data = {
       pages: [
         {
           messages: {
-            items: normalized,
+            items: sorted,
             page: 1,
-            total: normalized.length,
-            page_size: normalized.length,
+            total: sorted.length,
+            page_size: sorted.length,
           },
         },
       ],
       pageParams: [1],
-    });
+    };
+
+    // Store in ref so useChat can access it immediately
+    prewarmedCacheRef.current[userId] = data;
+    return data;
   };
 
   return (
@@ -97,6 +65,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setReplyTo,
         activeUploadsRef,
         prewarmMessages,
+        prewarmedCacheRef,
       }}
     >
       {children}

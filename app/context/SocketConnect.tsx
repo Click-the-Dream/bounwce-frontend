@@ -3,6 +3,8 @@ import { useAuth } from "./AuthContext";
 import { useSocketConnection } from "../hooks/use-socket";
 import { ConnectionStatusToast } from "../_utils/ConnectionStatusToast";
 import AuthModal from "../_components/AuthModal";
+import { useEffect } from "react";
+import useLocation from "../hooks/use-location";
 
 export default function SocketConnect({
   children,
@@ -10,6 +12,11 @@ export default function SocketConnect({
   children: React.ReactNode;
 }) {
   const { authDetails, showAuthModal, setShowAuthModal } = useAuth();
+  const { syncLocation } = useLocation();
+
+  useEffect(() => {
+    if (authDetails?.user) syncLocation();
+  }, [authDetails?.user]);
 
   const params = useParams<{ chatId: string }>();
 

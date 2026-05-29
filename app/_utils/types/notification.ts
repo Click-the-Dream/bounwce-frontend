@@ -17,7 +17,6 @@ export type NotificationContextType = {
   totalUnread: number;
   pushNotification: (n: Notification) => void;
   resetUnread: (userId: string) => void;
-  incrementUnread: (userId: string) => void;
   decrementUnread: (userId: string) => void;
   fetchNextPage: any;
   hasNextPage: any;

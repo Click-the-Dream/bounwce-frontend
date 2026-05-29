@@ -21,6 +21,8 @@ import { useChatUtils } from "@/app/context/ChatContext";
 // TYPES
 interface SendMessageProps {
   selectedChat?: User;
+  showScrollButton: boolean;
+  onScrollToBottom?: any;
 }
 
 type FileAcceptType = "image" | "video" | "file" | "camera" | "all";
@@ -33,7 +35,11 @@ const FILE_ACCEPT_MAP: Record<FileAcceptType, string> = {
   all: "image/*,video/*,.pdf,.doc,.docx,.zip",
 };
 // COMPONENT
-const SendMessage = ({ selectedChat }: SendMessageProps) => {
+const SendMessage = ({
+  selectedChat,
+  showScrollButton,
+  onScrollToBottom,
+}: SendMessageProps) => {
   const { authDetails } = useAuth();
   const { replyTo, setReplyTo, activeUploadsRef } = useChatUtils();
   const [isFocused, setIsFocused] = useState(false);
@@ -323,7 +329,7 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
       )}
 
       {/* Input row */}
-      <div className="flex items-center gap-3 bg-[#EFF3F4] border-[0.5px] border-orange rounded-[50px] px-1.5 py-2 shadow-sm">
+      <div className="flex items-end gap-3 bg-[#EFF3F4] border-[0.5px] border-orange rounded-[30px] px-2.5 py-2 shadow-sm">
         <button
           onClick={() => setShowMenu(!showMenu)}
           className={`cursor-pointer w-7.5 h-7.5 flex items-center justify-center border rounded-full transition-all ${
@@ -391,6 +397,26 @@ const SendMessage = ({ selectedChat }: SendMessageProps) => {
         className="hidden"
         onChange={handleFileChange}
       />
+      {showScrollButton && (
+        <button
+          onClick={onScrollToBottom}
+          className="absolute -top-14 right-5 w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 z-50"
+        >
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };

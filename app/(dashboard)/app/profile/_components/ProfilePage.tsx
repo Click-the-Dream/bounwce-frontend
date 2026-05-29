@@ -1,23 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
-import { ImageIcon } from "lucide-react";
-
 import IdentityCard from "./IdentityCard";
-import profileBg from "../../../../assets/buyer/profile-bg.jpg";
-
 import { profileHelper } from "@/app/helpers/profile-helper";
 import useUser from "@/app/hooks/use-user";
 import useInterest from "@/app/hooks/use-interest";
 import ProfileBanner from "./ProfileBanner";
+import useMatch from "@/app/hooks/use-match";
+import ConnectionsSection from "./ConnectionSection";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("Posts");
   const [showAllTags, setShowAllTags] = useState(false);
 
   const { profileId, isOwnProfile } = profileHelper();
-
+  const { useGetMatches } = useMatch();
+  const {
+    data: connections,
+    isLoading: isConnectionLoading,
+    isError: isConnectionError,
+  } = useGetMatches();
   const { useGetCurrentUser, useGetUserById } = useUser();
   const { useGetUserInterests, useGetUserInterestsById } = useInterest();
 
@@ -70,7 +72,7 @@ export default function ProfilePage() {
     name: user?.full_name,
     handle: user?.username,
     bio: user?.bio,
-    followers: user?.followers_count ?? 0,
+    followers: connections?.total ?? 0,
     badges: user?.badges_count ?? 0,
     tags,
     profile_pic: user?.profile_pic,
@@ -88,7 +90,7 @@ export default function ProfilePage() {
         />
       </div>
       {/* Left Column */}
-      <div className="w-full md:max-w-76.25 relative md:sticky md:top-0 z-10">
+      <div className="w-full md:max-w-76.25 relative md:sticky md:top-10 z-10">
         <IdentityCard
           data={userData}
           isOwnProfile={isOwnProfile}
@@ -165,7 +167,16 @@ export default function ProfilePage() {
                 </button>
               ))}
             </div> */}
-            <h2 className="text-sm font-semibold">Events</h2>
+
+            <ConnectionsSection
+              currentUserId={user?.id}
+              isOwnProfile={isOwnProfile}
+              matches={connections?.items ?? []}
+              totalConnections={connections?.total}
+              isLoading={isConnectionLoading}
+              isError={isConnectionError}
+            />
+            <h2 className="text-sm font-semibold mt-4">Events</h2>
 
             {/* FEED */}
             <div className="py-7.75 flex flex-col items-center justify-center">

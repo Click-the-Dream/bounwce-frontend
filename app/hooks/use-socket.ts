@@ -7,6 +7,7 @@ import { useNotifications } from "../context/NotificationContext";
 import { onMessageToast } from "../_utils/message-toast";
 import { getChatDB } from "../store/chat-store";
 import { useChatUtils } from "../context/ChatContext";
+import { syncEntity } from "../helpers/db-sync";
 
 export const useSocketConnection = ({
   authUserId,
@@ -72,133 +73,120 @@ export const useSocketConnection = ({
 
       // ---------------- MESSAGES CACHE ----------------
 
-      queryClient.setQueryData(["messages", otherUserId], (old: any) => {
-        if (!old) return old;
+      await syncEntity({
+        db: chatDB,
+        queryClient,
+        store: "messages",
+        key: "id",
+        keyValue: message.id,
+        queryKey: ["messages", otherUserId],
 
-        const pages = [...old.pages];
-        const items = pages[0]?.messages?.items || [];
+        selector: (old: any, updater: any) => {
+          const pages = [...old.pages];
 
-        // 1. Strip pending text duplicate
-        let filtered = items.filter(
-          (m: any) =>
-            !(
-              m.pending &&
-              m.body === message.body &&
-              m.sender_id === message.sender_id
-            ),
-        );
+          const firstPage = pages[0];
+          const items = firstPage?.messages?.items || [];
 
-        if (message.client_id) {
-          const index = filtered.findIndex(
-            (m: any) => m.client_id === message.client_id,
+          // remove optimistic duplicate
+          let filtered = items.filter(
+            (m: any) =>
+              !(
+                m.pending &&
+                m.body === message.body &&
+                m.sender_id === message.sender_id
+              ),
           );
 
-          if (index !== -1) {
-            const oldMsg = filtered[index];
+          // replace optimistic client_id version
+          if (message.client_id) {
+            const index = filtered.findIndex(
+              (m: any) => m.client_id === message.client_id,
+            );
 
-            filtered[index] = {
-              ...oldMsg,
-              ...message,
-              local_url: undefined,
-              local_urls: undefined,
-              delivery_status: "sent",
-              pending: false,
-            };
+            if (index !== -1) {
+              filtered[index] = updater(filtered[index]);
 
-            pages[0] = {
-              ...pages[0],
-              messages: {
-                ...pages[0].messages,
-                items: filtered,
-              },
-            };
+              pages[0] = {
+                ...firstPage,
+                messages: {
+                  ...firstPage.messages,
+                  items: filtered,
+                },
+              };
 
-            return {
-              ...old,
-              pages,
-            };
+              return {
+                ...old,
+                pages,
+              };
+            }
           }
-        }
 
-        // 3. Fallback: normal dedup by real id
-        const exists = filtered.some((m: any) => m.id === message.id);
-        if (exists) return old;
+          // dedupe real message
+          const exists = filtered.some((m: any) => m.id === message.id);
 
-        pages[0] = {
-          ...pages[0],
-          messages: {
-            ...pages[0].messages,
-            items: [...filtered, { ...message, delivery_status: "sent" }],
-          },
-        };
+          if (!exists) {
+            filtered.push(updater(message));
+          }
 
-        return {
-          ...old,
-          pages,
-        };
-      });
+          pages[0] = {
+            ...firstPage,
+            messages: {
+              ...firstPage.messages,
+              items: filtered,
+            },
+          };
 
-      // ---------------- INDEXEDDB ----------------
+          return {
+            ...old,
+            pages,
+          };
+        },
 
-      // If this was an optimistic message (had client_id), delete the old one
-      if (message.client_id) {
-        await chatDB.messages.delete(message.client_id);
-      }
-
-      await chatDB.messages.put({
-        ...message,
-        conversation_id: otherUserId,
-        synced: true,
+        updater: (m: any) => ({
+          ...m,
+          ...message,
+          pending: false,
+          delivery_status: "sent",
+        }),
       });
 
       // ---------------- CONVERSATIONS ----------------
 
-      await chatDB.conversations.update(conversationId, {
-        last_message: {
-          body: message.body,
-          caption: message.caption,
-          created_at: message?.created_at,
-          updated_at: message?.updated_at,
-          media_type: message?.media_type,
-          media_url: message?.media_url,
-          sender_id: message?.sender_id,
+      await syncEntity({
+        db: chatDB,
+        queryClient,
+        store: "conversations",
+        key: "user_id",
+        keyValue: otherUserId,
+        queryKey: ["conversations"],
+        selector: (old: any, updater: any) => {
+          const pages = old.pages.map((page: any) => ({
+            ...page,
+            items: (page.items ?? []).map((c: any) =>
+              c.user_id === otherUserId || c.user?.id === otherUserId
+                ? updater(c)
+                : c,
+            ),
+          }));
+          return { ...old, pages };
         },
-        updated_at: new Date().toISOString(),
-      });
-
-      queryClient.setQueryData(["conversations"], (old: any) => {
-        if (!old) return old;
-
-        const pages = old.pages.map((page: any) => {
-          const items = [...page.items];
-
-          const index = items.findIndex(
-            (c: any) => c.user?.id === otherUserId || c.id === otherUserId,
-          );
-
-          if (index === -1) return page;
-
-          const conversation = items[index];
-
-          const updated = {
-            ...conversation,
-            last_message: {
-              body: message.body,
-              created_at: message?.created_at,
-              updated_at: message?.updated_at,
-              media_type: message?.media_type,
-              media_url: message?.media_url,
-              sender_id: message?.sender_id,
-            },
-          };
-
-          items.splice(index, 1);
-          items.unshift(updated);
-
-          return { ...page, items };
-        });
-
-        return { ...old, pages };
+        updater: (c: any) => ({
+          ...c,
+          last_message: {
+            body: message.body,
+            caption: message.caption,
+            created_at: message.created_at || new Date().toISOString(),
+            updated_at: message.updated_at || new Date().toISOString(),
+            media_type: message.media_type,
+            media_url: message.media_url,
+            sender_id: message.sender_id,
+          },
+          updated_at: new Date().toISOString(),
+          unread_count:
+            !isMyMessage && !isActiveChat
+              ? (c.unread_count || 0) + 1
+              : c.unread_count,
+        }),
       });
 
       // ---------------- NOTIFICATIONS ----------------

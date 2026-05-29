@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useCallback, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useCallback,
+  useMemo,
+  useEffect,
+  useState,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useNotificationServices from "../hooks/use-notification";
 import {
@@ -31,14 +38,22 @@ export const NotificationProvider = ({
   // 1. Reactive System Unread
   const { data: summary } = unreadSummary();
   const systemUnread = summary?.notifications?.unread_count || 0;
+  const [conversations, setConversations] = useState<any>(() =>
+    queryClient.getQueryData(["conversations", {}]),
+  );
 
-  // 2. Reactive Chat Conversations (Replaces manual getQueryData)
-  const { data: conversations }: any = useQuery({
-    queryKey: ["conversations"],
-    queryFn: () => queryClient.getQueryData(["conversations"]),
-    enabled: !!currentUser,
-    staleTime: Infinity,
-  });
+  useEffect(() => {
+    // Subscribe to any conversations cache key changes
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (
+        event.query.queryKey[0] === "conversations" &&
+        event.type === "updated"
+      ) {
+        setConversations(event.query.state.data);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
 
   const chatUnread = useMemo(() => {
     if (!conversations?.pages) return 0;
@@ -65,27 +80,6 @@ export const NotificationProvider = ({
     [notificationPages],
   );
 
-  // 4. Mutation Helpers (Interact directly with the Cache)
-  const incrementUnread = useCallback(
-    async (userId: string) => {
-      if (!chatDB) return;
-      await syncEntity({
-        db: chatDB,
-        queryClient,
-        store: "conversations",
-        key: "user_id",
-        keyValue: userId,
-        queryKey: ["conversations"],
-        predicate: (c: any) => c.user?.id === userId || c.id === userId,
-        updater: (c: any) => ({
-          ...c,
-          unread_count: (c.unread_count || 0) + 1,
-        }),
-      });
-    },
-    [queryClient, chatDB],
-  );
-
   const decrementUnread = useCallback(
     async (userId: string) => {
       if (!chatDB) return;
@@ -96,7 +90,15 @@ export const NotificationProvider = ({
         key: "user_id",
         keyValue: userId,
         queryKey: ["conversations"],
-        predicate: (c: any) => c.user?.id === userId || c.id === userId,
+        selector: (old: any, updater: any) => {
+          const pages = old.pages.map((page: any) => ({
+            ...page,
+            items: page.items?.map((c: any) =>
+              c.user?.id === userId || c.user_id === userId ? updater(c) : c,
+            ),
+          }));
+          return { ...old, pages };
+        },
         updater: (c: any) => ({
           ...c,
           unread_count: Math.max((c.unread_count || 0) - 1, 0),
@@ -116,7 +118,15 @@ export const NotificationProvider = ({
         key: "user_id",
         keyValue: userId,
         queryKey: ["conversations"],
-        predicate: (c: any) => c.user?.id === userId || c.id === userId,
+        selector: (old: any, updater: any) => {
+          const pages = old.pages.map((page: any) => ({
+            ...page,
+            items: page.items?.map((c: any) =>
+              c.user?.id === userId || c.user_id === userId ? updater(c) : c,
+            ),
+          }));
+          return { ...old, pages };
+        },
         updater: (c: any) => ({ ...c, unread_count: 0 }),
       });
     },
@@ -142,12 +152,8 @@ export const NotificationProvider = ({
           ),
         };
       });
-
-      if (n.event_type === "chat_message" && n.payload?.sender) {
-        incrementUnread(n.payload.sender.id);
-      }
     },
-    [queryClient, incrementUnread],
+    [queryClient],
   );
 
   const totalUnread = useMemo(
@@ -162,7 +168,6 @@ export const NotificationProvider = ({
         totalUnread,
         pushNotification,
         resetUnread,
-        incrementUnread,
         decrementUnread,
         fetchNextPage,
         hasNextPage,

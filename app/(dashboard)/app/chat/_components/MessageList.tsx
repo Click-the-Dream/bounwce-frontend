@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useImperativeHandle,
+  forwardRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams } from "next/navigation";
 
 import { useChatUtils } from "@/app/context/ChatContext";
@@ -15,7 +23,9 @@ import ImageViewer from "./ImageViewer";
 import TypingDots from "./TypingDots";
 
 // TYPES
-
+interface Props {
+  onScrollNearBottomChange?: (isNearBottom: boolean) => void;
+}
 interface FlatMessage {
   id: string;
   sender_id: string;
@@ -43,11 +53,10 @@ const isMediaMessage = (msg: FlatMessage) =>
 
 // COMPONENT
 
-const MessageList = () => {
+const MessageList = forwardRef(({ onScrollNearBottomChange }: Props, ref) => {
   const { authDetails } = useAuth();
   const { setReplyTo, typingUsers, activeUploadsRef } = useChatUtils();
   const { chatId } = useParams<{ chatId: string }>();
-
   const {
     useGetMessages,
     useGetChatSignature,
@@ -178,25 +187,24 @@ const MessageList = () => {
   const isTyping = typingUsers[chatId];
 
   // HELPERS
-
   const isNearBottom = () => {
     const el = containerRef.current;
-
     if (!el) return true;
 
-    return el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 180;
   };
 
-  const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
-    const el = containerRef.current;
-
-    if (!el) return;
-
-    el.scrollTo({
-      top: el.scrollHeight,
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    containerRef.current?.scrollTo({
+      top: containerRef.current.scrollHeight,
       behavior,
     });
   };
+
+  // Expose the function to the parent
+  useImperativeHandle(ref, () => ({
+    scrollToBottom,
+  }));
 
   const scrollToMessage = (messageId: string) => {
     const el = containerRef.current;
@@ -353,20 +361,19 @@ const MessageList = () => {
 
   const handleScroll = async () => {
     const el = containerRef.current;
-
     if (!el) return;
 
-    if (!hasNextPage) return;
+    const nearBottom = isNearBottom();
 
+    onScrollNearBottomChange?.(!nearBottom);
+
+    if (!hasNextPage) return;
     if (isFetchingNextPage) return;
 
     if (el.scrollTop <= LOAD_MORE_THRESHOLD && !loadingOlderRef.current) {
       loadingOlderRef.current = true;
-
       prevScrollHeightRef.current = el.scrollHeight;
-
       prevScrollTopRef.current = el.scrollTop;
-
       await fetchNextPage();
     }
   };
@@ -546,6 +553,6 @@ const MessageList = () => {
       )}
     </div>
   );
-};
+});
 
 export default MessageList;

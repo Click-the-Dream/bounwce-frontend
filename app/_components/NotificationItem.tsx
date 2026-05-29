@@ -1,4 +1,3 @@
-import Link from "next/link";
 import UserImage from "../(dashboard)/app/_components/UserImage";
 import { timeAgo } from "../_utils/formatters";
 import { Notification } from "../_utils/types/notification";
@@ -21,13 +20,11 @@ export const NotificationItem = ({
   const isChat = notification.event_type === "chat_message";
 
   const sender = notification.payload?.sender;
-  const conversationId = notification.payload?.conversation_id;
   const isUnread = notification.read_at === null;
-  console.log(notification);
 
   const handleItemClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const target = isChat ? `/app/chat/${conversationId}` : "#";
+    const target = isChat && sender?.id ? `/app/chat/${sender?.id}` : "#";
     if (isUnread) {
       markAsRead.mutate(notification.id);
     }
@@ -36,10 +33,9 @@ export const NotificationItem = ({
   };
 
   return (
-    <Link
-      href={isChat ? `/app/chat/${conversationId}` : "#"}
+    <div
       onClick={handleItemClick}
-      className={`flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 my-2 relative ${
+      className={`cursor-pointer flex items-start gap-3 p-4 border-b border-gray-100 hover:bg-gray-50 my-2 relative ${
         isUnread ? "bg-gray-100/50" : "bg-white"
       }`}
     >
@@ -81,6 +77,9 @@ export const NotificationItem = ({
           {timeAgo(notification.created_at)}
         </span>
       </div>
-    </Link>
+      {isUnread && (
+        <div className="w-2 h-2 rounded-full bg-blue-500 mt-1 shrink-0" />
+      )}
+    </div>
   );
 };

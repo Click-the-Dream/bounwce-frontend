@@ -77,7 +77,9 @@ class ChatDB extends Dexie {
 let currentChatDB: ChatDB | null = null;
 
 export const getChatDB = (userId: string) => {
-  if (!currentChatDB || currentChatDB.name !== `chat_db_${userId}`) {
+  const name = `chat_db_${userId}`;
+  if (!currentChatDB || currentChatDB.name !== name) {
+    currentChatDB?.close();
     currentChatDB = new ChatDB(userId);
   }
   return currentChatDB;
