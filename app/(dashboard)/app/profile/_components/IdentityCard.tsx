@@ -4,6 +4,7 @@ import {
   Check,
   Loader2,
   MessageCircleReply,
+  MinusCircle,
   MoreHorizontal,
   Pencil,
   PlusCircle,
@@ -293,10 +294,11 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
             {/* CONNECTED */}
             {(isConnected || localConnectStatus === "connected") && (
               <button
-                disabled
-                className="cursor-pointer max-w-22 h-7.5 flex-1 bg-green-100 text-green-700 rounded-full text-xs flex items-center justify-center"
+                onClick={() => router.push(`/app/chat/${data.id}`)}
+                className="cursor-pointer font-medium max-w-23.25 h-7.5 flex-1 bg-white border-[0.83px] border-black outline outline-[#747474] hover:bg-[#dedede] text-black p-2 rounded-full text-xs flex items-center justify-center transition-all"
               >
-                Connected
+                <MinusCircle className="size-3.5 mr-1.75" />
+                Unmatch
               </button>
             )}
 

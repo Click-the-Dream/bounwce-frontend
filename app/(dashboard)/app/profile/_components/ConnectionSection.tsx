@@ -118,15 +118,6 @@ function ConnectionCard({
           </p>
         )}
       </div>
-
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <span className="text-[10px] px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 font-medium">
-          Connected
-        </span>
-        {connectedDate && (
-          <span className="text-[9.5px] text-gray-300">{connectedDate}</span>
-        )}
-      </div>
     </div>
   );
 }
@@ -201,44 +192,6 @@ export default function ConnectionsSection({
           {isOwnProfile && (
             <button className="text-[11px] font-semibold text-black hover:underline">
               Manage
-            </button>
-          )}
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-3">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search connections…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-[12px] border border-[#00000018] rounded-lg bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-black/20 focus:bg-white transition-all"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
             </button>
           )}
         </div>

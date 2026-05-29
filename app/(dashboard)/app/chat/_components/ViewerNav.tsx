@@ -29,11 +29,11 @@ const ViewerNav = ({ user, message, handleClose, onZoom }: any) => {
         </div>
 
         <div className="flex flex-col">
-          <span className="font-medium text-sm text-black leading-tight">
+          <span className="font-medium text-sm text-black leading-tight line-clamp-1">
             {senderName}
           </span>
 
-          <span className="text-[13px] text-black">
+          <span className="text-[13px] text-black line-clamp-1">
             {message?.created_at
               ? `${formatMessageDate(message.created_at)} at ${formatTime(message.created_at)}`
               : ""}

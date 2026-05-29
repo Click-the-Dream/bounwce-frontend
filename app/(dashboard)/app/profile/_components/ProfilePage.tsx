@@ -82,7 +82,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <main className="w-full relative h-screen md:h-full justify-start mx-auto flex flex-col gap-2 md:gap-0 md:flex-row md:justify-center p-4 md:p-8 md:pt-4.75 overflow-y-auto bg-white">
+    <main className="w-full relative h-[calc(100dvh-60px)] justify-start mx-auto flex flex-col gap-2 md:gap-0 md:flex-row md:justify-center p-4 md:p-8 pt-0! overflow-y-auto bg-white">
       <div className="relative md:hidden">
         <ProfileBanner
           user={{

@@ -177,7 +177,8 @@ const InterestSelector = ({ open: openProp, onClose }: Props) => {
             Browse Your Interest
           </h1>
           <p className="text-sm max-w-md mx-auto">
-            Select at least 1 interest in each category
+            Select at least 1 interest in each category to help personalie your
+            experience on bouwnce
           </p>
         </header>
 
@@ -216,12 +217,14 @@ const InterestSelector = ({ open: openProp, onClose }: Props) => {
         </div>
 
         <div className="mt-16 flex justify-end gap-3">
-          <button
-            onClick={handleClose}
-            className="bg-gray-200 text-gray-700 py-2.5 px-7.5 rounded-lg"
-          >
-            Cancel
-          </button>
+          {isControlled && (
+            <button
+              onClick={handleClose}
+              className="bg-gray-200 text-gray-700 py-2.5 px-7.5 rounded-lg"
+            >
+              Cancel
+            </button>
+          )}
 
           <button
             onClick={handleSave}
