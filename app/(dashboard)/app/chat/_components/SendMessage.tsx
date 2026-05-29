@@ -360,10 +360,17 @@ const SendMessage = ({
           }}
           onKeyDown={(e) => {
             if (e.shiftKey) return;
+
             if (e.key === "Enter") {
-              e.preventDefault();
-              if (e.nativeEvent.isComposing) return;
-              handleSend();
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(
+                navigator.userAgent,
+              );
+
+              if (!isMobile) {
+                e.preventDefault();
+                if (e.nativeEvent.isComposing) return;
+                handleSend();
+              }
             }
           }}
           className="flex-1 bg-transparent text-base focus:outline-none max-h-28 resize-none overflow-hidden overflow-y-auto leading-5 py-1"
