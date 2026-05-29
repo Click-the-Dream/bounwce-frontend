@@ -7,6 +7,7 @@ import useUser from "@/app/hooks/use-user";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useChatUtils } from "@/app/context/ChatContext";
+import UserImage from "../../_components/UserImage";
 
 interface NewChatModalProps {
   isOpen: boolean;
@@ -115,24 +116,11 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                     onClick={() => router.push(`/app/chat/${user.id}`)}
                     className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2"
                   >
-                    <div className="relative size-9.25 rounded-[10px] bg-gray-200">
-                      {user.profile ? (
-                        <SafeImage
-                          src={user.profile.url}
-                          alt={user.full_name}
-                          width={40}
-                          height={40}
-                          className="w-full h-full object-cover rounded-[10px]"
-                        />
-                      ) : (
-                        <div className="w-full h-full rounded-[10px] bg-gray-100 flex items-center justify-center font-bold text-black">
-                          {user.full_name?.slice(0, 2) || "NA"}
-                        </div>
-                      )}
-                      {isOnline && (
-                        <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-[0.83px] border-white rounded-full" />
-                      )}
-                    </div>
+                    <UserImage
+                      user={user}
+                      size={37}
+                      rounded="rounded-[10px] shrink-0"
+                    />
 
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">

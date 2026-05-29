@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { usePendingMessageRecovery } from "@/app/hooks/usePendingMesssageRecovery";
+import { ShieldAlert } from "lucide-react";
 
 interface ChatWindowProps {
   selectedUser?: User;
@@ -25,6 +26,9 @@ const ChatWindow = ({
   const { resetUnread } = useNotifications();
   const scrollListRef = useRef<{ scrollToBottom: () => void }>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const isRestrictedUser =
+    selectedUser?.full_name === "Bouwnce" ||
+    selectedUser?.email === "justclick610@gmail.com";
 
   usePendingMessageRecovery(authDetails?.user?.id);
 
@@ -117,13 +121,25 @@ const ChatWindow = ({
       )}
 
       {/* Input Area */}
-      {chatId && (
-        <SendMessage
-          selectedChat={selectedUser}
-          showScrollButton={showScrollButton}
-          onScrollToBottom={() => scrollListRef.current?.scrollToBottom()}
-        />
-      )}
+      {chatId ? (
+        isRestrictedUser ? (
+          <div className="border-t border-t-[#0000004D] bg-gray-50 px-4 py-3 flex items-center justify-center gap-2">
+            <ShieldAlert className="size-4 text-gray-400" />
+            <p className="text-[13px] text-gray-500">
+              <span className="font-semibold text-gray-700">
+                System Policy:
+              </span>{" "}
+              This conversation is read-only.
+            </p>
+          </div>
+        ) : (
+          <SendMessage
+            selectedChat={selectedUser}
+            showScrollButton={showScrollButton}
+            onScrollToBottom={() => scrollListRef.current?.scrollToBottom()}
+          />
+        )
+      ) : null}
     </div>
   );
 };
