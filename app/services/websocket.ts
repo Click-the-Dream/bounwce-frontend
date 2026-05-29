@@ -137,7 +137,6 @@ class WebSocketService {
       if (event.code === 4001 || event.code === 4003) {
         this.setState("disconnected");
         // Don't reconnect — token is bad. Tell AuthContext to handle it.
-        this.setState("reconnecting");
         this.onAuthFailure?.();
         return;
       }

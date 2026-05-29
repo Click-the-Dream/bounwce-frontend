@@ -17,3 +17,15 @@ export const getIDFromSlug = (param?: string) => {
     raw: param,
   };
 };
+
+export const getPeerId = ({
+  sender_id,
+  recipient_id,
+  currentUserId,
+}: {
+  sender_id: string;
+  recipient_id: string;
+  currentUserId: string;
+}) => {
+  return sender_id === currentUserId ? recipient_id : sender_id;
+};

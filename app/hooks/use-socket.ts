@@ -55,12 +55,18 @@ export const useSocketConnection = ({
   //  SOCKET CONNECT ONLY ON TOKEN CHANGE
   useEffect(() => {
     const handleMessage = async (raw: any) => {
-      const message = raw.message || raw;
+      const incoming = raw.message || raw;
+      const message = {
+        ...incoming,
+        peer_id:
+          incoming.sender_id === authUserRef.current
+            ? incoming.recipient_id
+            : incoming.sender_id,
+      };
       const otherUserId =
         message.sender_id === authUserId
           ? message.recipient_id
           : message.sender_id;
-      const conversationId = message.conversation_id;
 
       const isMyMessage =
         String(message.sender_id) === String(authUserRef.current);
@@ -82,6 +88,21 @@ export const useSocketConnection = ({
         queryKey: ["messages", otherUserId],
 
         selector: (old: any, updater: any) => {
+          if (!old) {
+            return {
+              pages: [
+                {
+                  messages: {
+                    items: [updater(message)],
+                    page: 1,
+                    total: 1,
+                    page_size: 20,
+                  },
+                },
+              ],
+              pageParams: [1],
+            };
+          }
           const pages = [...old.pages];
 
           const firstPage = pages[0];
@@ -160,6 +181,21 @@ export const useSocketConnection = ({
         keyValue: otherUserId,
         queryKey: ["conversations"],
         selector: (old: any, updater: any) => {
+          if (!old) {
+            return {
+              pages: [
+                {
+                  messages: {
+                    items: [updater(message)],
+                    page: 1,
+                    total: 1,
+                    page_size: 20,
+                  },
+                },
+              ],
+              pageParams: [1],
+            };
+          }
           const pages = old.pages.map((page: any) => ({
             ...page,
             items: (page.items ?? []).map((c: any) =>

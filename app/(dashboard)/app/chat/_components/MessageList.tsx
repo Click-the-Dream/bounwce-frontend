@@ -544,13 +544,13 @@ const MessageList = forwardRef(({ onScrollNearBottomChange }: Props, ref) => {
       </div>
 
       {/* Image Viewer */}
-      {viewerOpen && (
-        <ImageViewer
-          media={mediaMessages}
-          startIndex={viewerIndex}
-          onClose={() => setViewerOpen(false)}
-        />
-      )}
+
+      <ImageViewer
+        media={mediaMessages}
+        startIndex={viewerIndex}
+        onClose={() => setViewerOpen(false)}
+        viewerOpen={viewerOpen}
+      />
     </div>
   );
 });

@@ -9,7 +9,6 @@ export const ChatContext = createContext<any>({});
 
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const { authDetails } = useAuth();
-  const queryClient = useQueryClient();
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   const [onlineUsers, setOnlineUsers] = useState<Record<string, true>>({});
@@ -24,9 +23,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const db = getChatDB(authDetails.user.id);
 
     const cached = await db.messages
-      .where("recipient_id") // Ensure this matches your DB index
+      .where("peer_id") // Ensure this matches your DB index
       .equals(userId)
       .toArray();
+
+    if (cached.length === 0) {
+      delete prewarmedCacheRef.current[userId];
+      return null;
+    }
 
     const sorted = cached.sort(
       (a, b) =>

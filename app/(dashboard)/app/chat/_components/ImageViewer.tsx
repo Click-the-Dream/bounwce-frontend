@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
 import ViewerNav from "./ViewerNav";
 import SafeImage from "@/app/_components/SafeImage";
 
-const ImageViewer = ({ media, startIndex, onClose }: any) => {
+const ImageViewer = ({ media, startIndex, onClose, viewerOpen }: any) => {
   const [index, setIndex] = useState(startIndex);
   const [zoom, setZoom] = useState(1);
 
@@ -31,7 +30,9 @@ const ImageViewer = ({ media, startIndex, onClose }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex flex-col z-50">
+    <div
+      className={`${viewerOpen ? "fixed inset-0 z-50" : "hidden"} fixed inset-0 bg-white flex flex-col z-50`}
+    >
       {/* HEADER */}
       <ViewerNav
         user={current?.sender}
@@ -88,6 +89,7 @@ const ImageViewer = ({ media, startIndex, onClose }: any) => {
               src={m.src}
               className="w-full h-full object-cover aspect-square"
               alt="thumb"
+              showLoader={true}
             />
           </div>
         ))}

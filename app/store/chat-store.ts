@@ -3,10 +3,11 @@ import { User } from "../_utils/types/buyer";
 
 export interface CachedMessage {
   id: string;
-  conversation_id: string;
+  conversation_id?: string;
   body: string;
   sender_id: string;
   recipient_id: string;
+  peer_id: string;
   created_at: string;
   updated_at?: string;
   pending?: boolean;
@@ -47,14 +48,25 @@ class ChatDB extends Dexie {
   users!: Table<User, string>;
 
   constructor(userId: string) {
-    // Dynamically create a DB named by the user ID
     super(`chat_db_${userId}`);
 
-    this.version(1).stores({
-      messages: "id, conversation_id, created_at, recipient_id",
-      conversations: "id,user_id, updated_at",
-      users: "id",
-    });
+    this.version(2)
+      .stores({
+        messages: "id, peer_id, created_at",
+        conversations: "id,user_id, updated_at",
+        users: "id",
+      })
+      .upgrade(async (tx) => {
+        const messages = await tx.table("messages").toArray();
+
+        for (const msg of messages) {
+          if (!msg.peer_id) {
+            msg.peer_id =
+              msg.sender_id === userId ? msg.recipient_id : msg.sender_id;
+          }
+        }
+        await tx.table("messages").bulkPut(messages);
+      });
 
     this.on("ready", () => {
       this.conversations.hook("creating", (primKey, obj) => {

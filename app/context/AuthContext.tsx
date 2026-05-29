@@ -92,17 +92,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // ---------------- TOKEN REFRESH HANDLER ----------------
 
   const handleRefresh = useCallback(async () => {
-    const newToken = await refreshToken();
-
-    if (!newToken) {
-      safeLogout();
+    // 1. Don't refresh if we know we are offline
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
       return null;
     }
 
-    updateAccessToken(newToken);
-    return newToken;
+    try {
+      const newToken = await refreshToken();
+      if (!newToken) {
+        safeLogout(); // Only logout if token call explicitly returns null (invalid)
+        return null;
+      }
+      updateAccessToken(newToken);
+      return newToken;
+    } catch (error: any) {
+      if (!error.response || error.code === "ERR_NETWORK") {
+        console.warn("Network disconnected; preserving local session.");
+        return null;
+      }
+      safeLogout(); // Logout only on 401/403
+      return null;
+    }
   }, [refreshToken, safeLogout, updateAccessToken]);
-
   // expose to interceptor safely
   useEffect(() => {
     updateAuthRef.current = safeLogout;

@@ -73,7 +73,7 @@ const useChat = () => {
           .toArray();
 
         if (cached.length > 0) {
-          queryClient.setQueryData(["conversations", params], {
+          queryClient.setQueryData(["conversations"], {
             pages: [
               {
                 items: cached,
@@ -103,7 +103,6 @@ const useChat = () => {
 
           // Persist fresh server data to IndexedDB
           if (items && pageParam === 1) {
-            await chatDB.conversations.clear(); // Clear old list to sync perfectly
             await chatDB.conversations.bulkPut(items);
           }
 
@@ -162,7 +161,8 @@ const useChat = () => {
           const items = rawItems.map((m: any) =>
             normalizeMessage({
               ...m,
-              recipient_id: options.userId,
+              peer_id: options.userId,
+              delivery_status: "sent",
               synced: true,
             }),
           );
@@ -182,7 +182,19 @@ const useChat = () => {
           };
         } catch (err) {
           console.error("Fetch failed:", err);
-          return null;
+          const cached = await chatDB.messages
+            .where("peer_id")
+            .equals(options.userId)
+            .sortBy("created_at");
+
+          return {
+            messages: {
+              items: cached,
+              page: 1,
+              total: cached.length,
+              page_size: cached.length,
+            },
+          };
         }
       },
       initialPageParam: 1,
@@ -301,7 +313,7 @@ const useChat = () => {
     const messageToSave = {
       ...message,
       // Force the ID mapping here at the point of entry
-      conversation_id:
+      peer_id:
         message.recipient_id === currentUser.id
           ? message.sender_id
           : message.recipient_id,
@@ -402,7 +414,7 @@ const useChat = () => {
     const messageToSave = {
       ...messageWithClientId,
       // Force the ID mapping here at the point of entry
-      conversation_id:
+      peer_id:
         messageWithClientId.recipient_id === currentUser.id
           ? messageWithClientId.sender_id
           : messageWithClientId.recipient_id,

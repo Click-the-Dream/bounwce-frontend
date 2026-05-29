@@ -121,7 +121,7 @@ const ChatWindow = ({
         <SendMessage
           selectedChat={selectedUser}
           showScrollButton={showScrollButton}
-          onScrollToBottom={() => {}}
+          onScrollToBottom={() => scrollListRef.current?.scrollToBottom()}
         />
       )}
     </div>

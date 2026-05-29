@@ -18,6 +18,7 @@ import MediaUploadModal from "./MediaUploadViewer";
 import { useAuth } from "@/app/context/AuthContext";
 import SmartReplyPreview from "./SmartReplyPreview";
 import { useChatUtils } from "@/app/context/ChatContext";
+import ScrollToBottomBtn from "./ScrollToBottomBtn";
 // TYPES
 interface SendMessageProps {
   selectedChat?: User;
@@ -397,26 +398,11 @@ const SendMessage = ({
         className="hidden"
         onChange={handleFileChange}
       />
-      {showScrollButton && (
-        <button
-          onClick={onScrollToBottom}
-          className="absolute -top-14 right-5 w-10 h-10 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 z-50"
-        >
-          <svg
-            className="w-5 h-5 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-      )}
+
+      <ScrollToBottomBtn
+        onScrollToBottom={onScrollToBottom}
+        isVisible={showScrollButton}
+      />
     </div>
   );
 };
