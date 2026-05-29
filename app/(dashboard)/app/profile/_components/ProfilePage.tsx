@@ -8,9 +8,10 @@ import useInterest from "@/app/hooks/use-interest";
 import ProfileBanner from "./ProfileBanner";
 import useMatch from "@/app/hooks/use-match";
 import ConnectionsSection from "./ConnectionSection";
+import { slugify } from "@/app/_utils/slugify";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("Posts");
   const [showAllTags, setShowAllTags] = useState(false);
 
   const { profileId, isOwnProfile } = profileHelper();
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   } = useGetMatches();
   const { useGetCurrentUser, useGetUserById } = useUser();
   const { useGetUserInterests, useGetUserInterestsById } = useInterest();
+  const router = useRouter();
 
   const userQuery = isOwnProfile
     ? useGetCurrentUser()
@@ -175,6 +177,9 @@ export default function ProfilePage() {
               totalConnections={connections?.total}
               isLoading={isConnectionLoading}
               isError={isConnectionError}
+              onViewProfile={(p) =>
+                router.push(`/app/profile/${slugify(p?.full_name)}_${p?.id}`)
+              }
             />
             <h2 className="text-sm font-semibold mt-4">Events</h2>
 

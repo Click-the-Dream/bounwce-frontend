@@ -33,7 +33,7 @@ interface ConnectionsSectionProps {
   isLoading?: boolean;
   isError?: boolean;
   totalConnections?: number;
-  onViewProfile?: (userId: string) => void;
+  onViewProfile?: (user: { id: string; full_name: string }) => void;
 }
 
 // ─── Derive the "other person" from a match ───────────────────────────────────
@@ -78,7 +78,7 @@ function ConnectionCard({
   onViewProfile,
 }: {
   connection: ResolvedConnection;
-  onViewProfile?: (id: string) => void;
+  onViewProfile?: (user: { id: string; full_name: string }) => void;
 }) {
   const connectedDate = connection.connected_at
     ? new Date(connection.connected_at).toLocaleDateString("en-GB", {
@@ -91,7 +91,9 @@ function ConnectionCard({
   return (
     <div
       className="flex items-center gap-3 py-3.5 cursor-pointer group transition-all"
-      onClick={() => onViewProfile?.(connection.id)}
+      onClick={() =>
+        onViewProfile?.({ id: connection.id, full_name: connection.full_name })
+      }
     >
       <UserImage
         user={{
