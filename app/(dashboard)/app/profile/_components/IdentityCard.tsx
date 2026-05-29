@@ -294,10 +294,15 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
             {/* CONNECTED */}
             {(isConnected || localConnectStatus === "connected") && (
               <button
-                onClick={() => router.push(`/app/chat/${data.id}`)}
+                onClick={handleReject}
+                disabled={actionLoading !== null}
                 className="cursor-pointer font-medium max-w-23.25 h-7.5 flex-1 bg-white border-[0.83px] border-black outline outline-[#747474] hover:bg-[#dedede] text-black p-2 rounded-full text-xs flex items-center justify-center transition-all"
               >
-                <MinusCircle className="size-3.5 mr-1.75" />
+                {actionLoading === "reject" ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <MinusCircle className="size-3.5 mr-1.75" />
+                )}
                 Unmatch
               </button>
             )}
