@@ -107,7 +107,7 @@ const ProfileBanner = ({ user, isOwnProfile }: ProfileBannerProps) => {
       />
 
       {/* BANNER + EDIT BUTTON */}
-      <div className="relative">
+      <div className="relative bg-gray-200">
         <Image
           src={bannerSrc}
           alt="profile-banner"

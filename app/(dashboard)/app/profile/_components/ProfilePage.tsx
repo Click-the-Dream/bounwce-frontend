@@ -92,7 +92,7 @@ export default function ProfilePage() {
         />
       </div>
       {/* Left Column */}
-      <div className="w-full md:max-w-76.25 relative md:sticky md:top-10 z-10">
+      <div className="w-full md:max-w-76.25 relative md:sticky md:top-0 z-10">
         <IdentityCard
           data={userData}
           isOwnProfile={isOwnProfile}
