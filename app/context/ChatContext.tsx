@@ -27,10 +27,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       .equals(userId)
       .toArray();
 
-    if (cached.length === 0) {
+  /*  if (cached.length === 0) {
       delete prewarmedCacheRef.current[userId];
       return null;
-    }
+    }*/
 
     const sorted = cached.sort(
       (a, b) =>
