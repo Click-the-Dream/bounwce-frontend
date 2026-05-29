@@ -76,9 +76,9 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
 
     router.push(`/app/chat/${chatUser.id}`);
 
-    requestAnimationFrame(() => {
+    /*requestAnimationFrame(() => {
       prewarmMessages(chatUser.id);
-    });
+    });*/
   };
 
   return (
