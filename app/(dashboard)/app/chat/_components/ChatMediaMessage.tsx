@@ -313,7 +313,7 @@ const ChatMediaMessage = ({
         data-message-id={msg.id}
         className={`
           ${styles.bubble}
-          p-0.5 relative rounded-[10px] min-w-0 max-w-full overflow-hidden shadow-sm
+          p-0.5 relative w-full rounded-[10px] overflow-hidden shadow-sm
           transition-colors duration-300
           ${isHighlighted ? "ring-2 ring-orange/60" : ""}
         `}

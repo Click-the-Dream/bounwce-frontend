@@ -29,7 +29,7 @@ const SafeImage = ({
       {/* Shimmer placeholder — only shown when showLoader and not yet loaded */}
       {showLoader && !loaded && (
         <div
-          className="absolute inset-0 rounded-[inherit] overflow-hidden"
+          className="absolute inset-0 rounded-[10px] overflow-hidden"
           aria-hidden
         >
           {/* Base grey */}

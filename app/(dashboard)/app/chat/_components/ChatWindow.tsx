@@ -7,7 +7,7 @@ import { User } from "@/app/_utils/types/buyer";
 import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useAuth } from "@/app/context/AuthContext";
-// import { usePendingMessageRecovery } from "@/app/hooks/usePendingMesssageRecovery";
+import { usePendingMessageRecovery } from "@/app/hooks/usePendingMesssageRecovery";
 
 interface ChatWindowProps {
   selectedUser?: User;
@@ -26,7 +26,7 @@ const ChatWindow = ({
   const scrollListRef = useRef<{ scrollToBottom: () => void }>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  //  usePendingMessageRecovery(authDetails?.user?.id);
+  usePendingMessageRecovery(authDetails?.user?.id);
 
   useEffect(() => {
     if (!chatId) return;

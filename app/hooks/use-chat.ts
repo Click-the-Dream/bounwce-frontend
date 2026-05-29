@@ -144,6 +144,20 @@ const useChat = () => {
 
       queryFn: async ({ pageParam = 1 }) => {
         try {
+          // Grab stuck messages BEFORE fetch so we can merge atomically
+          const localStuck =
+            pageParam === 1
+              ? await chatDB.messages
+                  .where("peer_id")
+                  .equals(options.userId)
+                  .filter((m: any) =>
+                    ["pending", "uploading", "sending", "failed"].includes(
+                      m.delivery_status,
+                    ),
+                  )
+                  .toArray()
+              : [];
+
           const res = await api.get(
             `/chats/conversations/with/${options.userId}`,
             {
@@ -155,9 +169,8 @@ const useChat = () => {
           );
 
           const data = res.data?.data;
-
-          // 1. Define 'items' here by extracting it from the response
           const rawItems = data?.messages?.items || [];
+
           const items = rawItems.map((m: any) =>
             normalizeMessage({
               ...m,
@@ -167,17 +180,20 @@ const useChat = () => {
             }),
           );
 
-          // 2. Now 'items' is defined, and you can safely use it
           if (pageParam === 1 && items.length > 0) {
             await chatDB.messages.bulkPut(items);
           }
 
-          // 3. Return the object with the newly defined 'items'
+          const serverIds = new Set(items.map((m: any) => m.id));
+          const stillStuck = localStuck.filter(
+            (m: any) => !serverIds.has(m.id),
+          );
+
           return {
             ...data,
             messages: {
               ...data.messages,
-              items,
+              items: [...items, ...stillStuck],
             },
           };
         } catch (err) {
@@ -189,7 +205,10 @@ const useChat = () => {
 
           return {
             messages: {
-              items: cached,
+              items: cached.map((msg) => ({
+                ...msg,
+                delivery_status: msg.delivery_status || "sent",
+              })),
               page: 1,
               total: cached.length,
               page_size: cached.length,
@@ -536,6 +555,27 @@ const useChat = () => {
       reply_to_message_id: reply_to?.id,
     });
   };
+
+  // in useChat
+  const markMessageFailed = async (messageId: string, recipientId: string) => {
+    queryClient.setQueryData(["messages", recipientId], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page: any) => ({
+          ...page,
+          messages: {
+            ...page.messages,
+            items: page.messages.items.map((m: any) =>
+              m.id === messageId ? { ...m, delivery_status: "failed" } : m,
+            ),
+          },
+        })),
+      };
+    });
+    await chatDB.messages.update(messageId, { delivery_status: "failed" });
+  };
+
   return {
     useGetConversations,
     useGetMessages,
@@ -545,6 +585,7 @@ const useChat = () => {
     useGetChatSignature,
     uploadToCloudinary,
     retryEmitMedia,
+    markMessageFailed,
   };
 };
 

@@ -40,15 +40,13 @@ export const ConnectionStatusToast = () => {
 
   return (
     <AnimatePresence>
-      {authDetails?.user &&
-        state !== "connected" &&
-        state !== "disconnected" && (
-          <motion.div
-            initial={{ y: 20, opacity: 0, scale: 0.98 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 20, opacity: 0, scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 420, damping: 30 }}
-            className="
+      {authDetails?.user && state !== "connected" && (
+        <motion.div
+          initial={{ y: 20, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: 20, opacity: 0, scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 420, damping: 30 }}
+          className="
             fixed top-4 left-1/2 -translate-x-1/2
             z-9999
 
@@ -65,11 +63,11 @@ export const ConnectionStatusToast = () => {
 
             text-xs font-medium
           "
-          >
-            <span className={`w-2 h-2 rounded-full ${s.color} animate-pulse`} />
-            {s.text}
-          </motion.div>
-        )}
+        >
+          <span className={`w-2 h-2 rounded-full ${s.color} animate-pulse`} />
+          {s.text}
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 };

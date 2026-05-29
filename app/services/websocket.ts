@@ -53,12 +53,28 @@ class WebSocketService {
 
   // ---------------- STATE ----------------
 
+  // Add this helper to map browser WebSocket states to your custom states
+  private getMappedState(readyState: number): ConnectionState {
+    switch (readyState) {
+      case WebSocket.CONNECTING:
+        return "connecting";
+      case WebSocket.OPEN:
+        return "connected";
+      case WebSocket.CLOSING:
+      case WebSocket.CLOSED:
+      default:
+        return "disconnected";
+    }
+  }
+
+  // Update your setState to be more resilient
   private setState(state: ConnectionState) {
+    // Only update if it actually changes
     if (this.state === state) return;
     this.state = state;
-    queueMicrotask(() => {
-      this.stateListeners.forEach((cb) => cb(state));
-    });
+
+    // Trigger listeners
+    this.stateListeners.forEach((cb) => cb(state));
   }
 
   getState() {
@@ -132,8 +148,6 @@ class WebSocketService {
     this.socket.addEventListener("close", (event) => {
       this.stopPing();
 
-      // 4001 = server's "token invalid/expired" close code
-      // adjust this to whatever your server actually sends
       if (event.code === 4001 || event.code === 4003) {
         this.setState("disconnected");
         // Don't reconnect — token is bad. Tell AuthContext to handle it.

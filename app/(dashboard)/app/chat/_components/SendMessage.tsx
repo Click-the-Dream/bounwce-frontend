@@ -19,6 +19,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import SmartReplyPreview from "./SmartReplyPreview";
 import { useChatUtils } from "@/app/context/ChatContext";
 import ScrollToBottomBtn from "./ScrollToBottomBtn";
+import { queryClient } from "@/app/services/query-client";
 // TYPES
 interface SendMessageProps {
   selectedChat?: User;
@@ -63,6 +64,7 @@ const SendMessage = ({
     prepareOptimisticMedia,
     uploadAndEmitMedia,
     useGetChatSignature,
+    markMessageFailed,
   } = useChat();
 
   const getSignature = useGetChatSignature();
@@ -222,25 +224,29 @@ const SendMessage = ({
 
     activeUploadsRef.current.set(clientId, files);
 
-    const raw = await getSignature.mutateAsync({
-      upload_type: type,
-      count: files.length,
-    });
+    try {
+      const raw = await getSignature.mutateAsync({
+        upload_type: type,
+        count: files.length,
+      });
 
-    const signatureItems = (raw.items || [raw.fields]).map((item: any) => ({
-      fields: item,
-      constraints: raw.constraints,
-    }));
+      const signatureItems = (raw.items || [raw.fields]).map((item: any) => ({
+        fields: item,
+        constraints: raw.constraints,
+      }));
 
-    await uploadAndEmitMedia({
-      files,
-      type,
-      recipient_id: recipient.id,
-      caption,
-      signatures: signatureItems,
-      clientId: [clientId],
-      reply_to: replyTo,
-    });
+      await uploadAndEmitMedia({
+        files,
+        type,
+        recipient_id: recipient.id,
+        caption,
+        signatures: signatureItems,
+        clientId: [clientId],
+        reply_to: replyTo,
+      });
+    } catch (err) {
+      if (clientId) await markMessageFailed(clientId, recipient.id);
+    }
   };
 
   const resetInput = () => {

@@ -8,6 +8,7 @@ import { onMessageToast } from "../_utils/message-toast";
 import { getChatDB } from "../store/chat-store";
 import { useChatUtils } from "../context/ChatContext";
 import { syncEntity } from "../helpers/db-sync";
+import { useAuth } from "../context/AuthContext";
 
 export const useSocketConnection = ({
   authUserId,
@@ -17,6 +18,7 @@ export const useSocketConnection = ({
   activeConversationId?: string;
 }) => {
   const queryClient = useQueryClient();
+  const { authDetails } = useAuth();
   const chatDB = getChatDB(authUserId);
 
   const { pushNotification, decrementUnread } = useNotifications();
@@ -41,6 +43,15 @@ export const useSocketConnection = ({
   useEffect(() => {
     authUserRef.current = authUserId;
   }, [authUserId]);
+
+  useEffect(() => {
+    // Rely on the authDetails object from Context
+    if (authDetails?.access_token) {
+      websocket.connect(authDetails.access_token);
+    } else if (!authDetails) {
+      websocket.disconnect();
+    }
+  }, [authDetails?.access_token]);
 
   useEffect(() => {
     activeChatRef.current = activeConversationId;
