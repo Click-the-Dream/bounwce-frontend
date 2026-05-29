@@ -3,7 +3,7 @@ import BuyerLayout from "./_components/BuyerLayout";
 import SecureRoute from "@/app/protocols/SecureRoutes";
 
 export const metadata = generatePageMetadata({
-  title: "Buyer Dashboard | Bouwnce",
+  title: "Home",
   description:
     "Explore events, connect with people, track your activity, and manage your profile from your Bouwnce buyer dashboard.",
 });
