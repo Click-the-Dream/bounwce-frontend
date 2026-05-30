@@ -82,7 +82,10 @@ export const useSocketConnection = ({
             })),
           };
         },
-        updater: (c: any) => ({ ...c, unread_count: 0 }),
+        updater: (c: any) => {
+          if (!c) return c;
+          return { ...c, unread_count: 0 };
+        },
       });
     })();
   }, [activeConversationId]);
@@ -246,24 +249,28 @@ export const useSocketConnection = ({
             ],
           };
         },
-        updater: (c: any) => ({
-          ...c,
-          last_message: {
-            body: message.body,
-            caption: message.caption,
-            created_at: message.created_at || new Date().toISOString(),
-            updated_at: message.updated_at || new Date().toISOString(),
-            media_type: message.media_type,
-            media_url: message.media_url,
-            sender_id: message.sender_id,
-          },
-          updated_at: new Date().toISOString(),
-          unread_count: isActiveChat
-            ? 0
-            : !isMyMessage
-              ? (c.unread_count || 0) + 1
-              : c.unread_count,
-        }),
+        updater: (c: any) => {
+          if (!c) return c;
+
+          return {
+            ...c,
+            last_message: {
+              body: message.body,
+              caption: message.caption,
+              created_at: message.created_at || new Date().toISOString(),
+              updated_at: message.updated_at || new Date().toISOString(),
+              media_type: message.media_type,
+              media_url: message.media_url,
+              sender_id: message.sender_id,
+            },
+            updated_at: new Date().toISOString(),
+            unread_count: isActiveChat
+              ? 0
+              : !isMyMessage
+                ? (c.unread_count || 0) + 1
+                : c.unread_count,
+          };
+        },
       });
 
       // ---------------- NOTIFICATIONS ----------------

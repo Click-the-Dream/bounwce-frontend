@@ -162,6 +162,8 @@ const useChat = () => {
     delivery_status: message.delivery_status ?? "sent",
     synced: message.synced ?? true,
   });
+  const normalizeInfinite = (data: any) =>
+    data?.pages?.[0]?.messages?.items ? data : undefined;
 
   const useGetMessages = (options: {
     userId: string;
@@ -171,7 +173,7 @@ const useChat = () => {
       queryKey: ["messages", options.userId],
 
       placeholderData: () =>
-        prewarmedCacheRef.current[options.userId] ?? undefined,
+        normalizeInfinite(prewarmedCacheRef.current[options.userId]),
 
       queryFn: async ({ pageParam = 1 }) => {
         const db = await getDB(); // ← was: chatDBRef.current
