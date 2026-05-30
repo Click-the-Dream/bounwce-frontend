@@ -79,6 +79,7 @@ const MessageList = forwardRef(({ onScrollNearBottomChange }: Props, ref) => {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const readSet = useRef<Set<string>>(new Set());
+  const observer = useRef<IntersectionObserver | null>(null);
 
   const hasScrolledInitiallyRef = useRef(false);
 
@@ -121,16 +122,6 @@ const MessageList = forwardRef(({ onScrollNearBottomChange }: Props, ref) => {
       ),
     [deduped],
   );
-
-  // Group by date
-  console.log({
-    pages: messagesData?.pages,
-    flatMessages,
-    deduped,
-    sortedMessages,
-    isLoading,
-    isFetching,
-  });
 
   const groupedMessages = useMemo(() => {
     const map: Record<
@@ -342,28 +333,47 @@ const MessageList = forwardRef(({ onScrollNearBottomChange }: Props, ref) => {
   }, [sortedMessages]);
 
   // MARK AS READ
-  const lastUnreadId = sortedMessages.findLast(
-    (msg) => msg.sender_id !== authDetails?.user?.id && !msg.read_at,
-  )?.id;
-
   useEffect(() => {
-    if (!sortedMessages.length) return;
+    if (observer.current) observer.current.disconnect();
 
-    const unread = sortedMessages.filter(
-      (msg) =>
-        msg.sender_id !== authDetails?.user?.id &&
-        !msg.read_at &&
-        !readSet.current.has(msg.id),
+    observer.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const messageId = entry.target.getAttribute("data-message-id");
+            if (!messageId) return;
+
+            // Find message to check ownership and read status
+            const msg = sortedMessages.find((m) => m.id === messageId);
+
+            if (
+              msg &&
+              msg.sender_id !== authDetails?.user?.id && // Only mark incoming messages
+              !msg.read_at &&
+              !readSet.current.has(msg.id)
+            ) {
+              readSet.current.add(msg.id);
+              websocket.emit("chat.read", {
+                recipient_id: msg.sender_id,
+                message_id: msg.id,
+              });
+            }
+          }
+        });
+      },
+      {
+        root: containerRef.current,
+        threshold: 0.5, // Triggers when 50% of the message is visible
+      },
     );
 
-    for (const msg of unread) {
-      readSet.current.add(msg.id);
-      websocket.emit("chat.read", {
-        recipient_id: msg.sender_id,
-        message_id: msg.id,
-      });
-    }
-  }, [lastUnreadId, chatId]);
+    // Observe all current rendered message elements
+    const elements =
+      containerRef.current?.querySelectorAll("[data-message-id]");
+    elements?.forEach((el) => observer.current?.observe(el));
+
+    return () => observer.current?.disconnect();
+  }, [sortedMessages, chatId]);
 
   // HANDLERS
 

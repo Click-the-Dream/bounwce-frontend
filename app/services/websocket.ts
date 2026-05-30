@@ -180,7 +180,14 @@ class WebSocketService {
         const parsed = JSON.parse(event.data);
         if (parsed.type === "pong") return;
         const handlers = this.listeners[parsed.type] || [];
-        handlers.forEach((cb) => cb(parsed.data || parsed.payload || parsed));
+        handlers.forEach((cb) =>
+          cb({
+            type: parsed.type,
+            client_id: parsed.client_id,
+            data: parsed.data,
+            payload: parsed.payload,
+          }),
+        );
       } catch (err) {
         console.error("Socket parse error:", err);
       }

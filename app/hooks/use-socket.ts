@@ -8,6 +8,7 @@ import { onMessageToast } from "../_utils/message-toast";
 import { useChatUtils } from "../context/ChatContext";
 import { syncEntity } from "../helpers/db-sync";
 import { useAuth } from "../context/AuthContext";
+import { replaceOptimisticMessage } from "./use-chat";
 
 export const useSocketConnection = ({
   authUserId,
@@ -49,8 +50,6 @@ export const useSocketConnection = ({
     }
   }, [authDetails?.access_token]);
 
-  // FIX: Reset unread when navigating into a chat. Uses the same
-  // ["conversations", {}] key that useGetConversations registers.
   useEffect(() => {
     activeChatRef.current = activeConversationId;
 
@@ -98,7 +97,12 @@ export const useSocketConnection = ({
 
   useEffect(() => {
     const handleMessage = async (raw: any) => {
-      const incoming = raw.message || raw;
+      const event = raw.type;
+      const payload = raw.data ?? raw.payload ?? raw;
+      const incoming = payload.message ?? payload;
+
+      const clientId = raw.client_id ?? payload.client_id;
+
       const message = {
         ...incoming,
         peer_id:
@@ -106,6 +110,8 @@ export const useSocketConnection = ({
             ? incoming.recipient_id
             : incoming.sender_id,
       };
+      console.log("EVENT", event);
+      console.log("MESSAGE", message, clientId);
 
       const otherUserId =
         message.sender_id === authUserRef.current
@@ -131,146 +137,78 @@ export const useSocketConnection = ({
         keyValue: message.id,
         queryKey: ["messages", otherUserId],
         selector: (old: any, updater: any) => {
-          if (!old) {
-            return {
-              pages: [
-                {
-                  messages: {
-                    items: [updater(message)],
-                    page: 1,
-                    total: 1,
-                    page_size: 20,
-                  },
-                },
-              ],
-              pageParams: [1],
-            };
-          }
+          if (!old) return old;
 
-          const pages = [...old.pages];
-          const firstPage = pages[0];
-          const items = firstPage?.messages?.items || [];
+          return {
+            ...old,
+            pages: old.pages.map((page: any, pIdx: number) => {
+              if (pIdx !== 0) return page; // Only update first page for speed
 
-          // Remove optimistic duplicate
-          let filtered = items.filter(
-            (m: any) =>
-              !(
-                m.pending &&
-                m.body === message.body &&
-                m.sender_id === message.sender_id
-              ),
-          );
+              const items = [...page.messages.items];
+              // Find index by client_id OR id
+              const idx = items.findIndex(
+                (m: any) => m.client_id === clientId || m.id === message.id,
+              );
 
-          // Replace optimistic client_id version
-          if (message.client_id) {
-            const index = filtered.findIndex(
-              (m: any) => m.client_id === message.client_id,
-            );
-            if (index !== -1) {
-              filtered[index] = updater(filtered[index]);
-              pages[0] = {
-                ...firstPage,
-                messages: { ...firstPage.messages, items: filtered },
-              };
-              return { ...old, pages };
-            }
-          }
+              if (idx !== -1) {
+                // IN-PLACE UPDATE: No flickering
+                items[idx] = updater(items[idx]);
+              } else {
+                // Fallback if missing
+                items.push(updater(message));
+              }
 
-          // Dedupe real message
-          const exists = filtered.some((m: any) => m.id === message.id);
-          if (!exists) {
-            filtered.push(updater(message));
-          }
-
-          pages[0] = {
-            ...firstPage,
-            messages: { ...firstPage.messages, items: filtered },
+              return { ...page, messages: { ...page.messages, items } };
+            }),
           };
-          return { ...old, pages };
         },
         updater: (m: any) => ({
-          ...m,
+          ...(m || {}),
           ...message,
           pending: false,
           delivery_status: "sent",
         }),
       });
 
-      // ---------------- CONVERSATIONS ----------------
-      // FIX: Use ["conversations", {}] to match useGetConversations' query key.
-      // FIX: Match by peer_id OR user?.id (not user_id which may not exist).
-      // FIX: Bump the conversation to the top of the list on new message.
-
       await syncEntity({
         db,
         queryClient,
-        store: "conversations",
-        key: "peer_id",
-        keyValue: otherUserId,
-        queryKey: ["conversations", {}],
+        store: "messages",
+        key: "id",
+        keyValue: message.id,
+        queryKey: ["messages", otherUserId],
+
         selector: (old: any, updater: any) => {
-          if (!old?.pages) return old;
+          if (!old) return old;
 
-          let found = false;
-          let updatedConversation: any = null;
+          const pages = old.pages.map((page: any, idx: number) => {
+            if (idx !== 0) return page;
 
-          // Update the conversation in place first
-          const pages = old.pages.map((page: any) => ({
-            ...page,
-            items: (page.items ?? []).map((c: any) => {
-              const isMatch =
-                c.peer_id === otherUserId || c.user?.id === otherUserId;
-              if (isMatch) {
-                found = true;
-                updatedConversation = updater(c);
-                return updatedConversation;
-              }
-              return c;
-            }),
-          }));
+            const items = [...page.messages.items];
 
-          if (!found) return { ...old, pages };
+            const exists = items.findIndex((m: any) => m.id === message.id);
 
-          // Bubble the updated conversation to the top of page 0
-          // so the list always shows the most recent message first
-          const firstPage = pages[0];
-          const others = (firstPage.items ?? []).filter(
-            (c: any) => c.peer_id !== otherUserId && c.user?.id !== otherUserId,
-          );
+            if (exists !== -1) {
+              items[exists] = updater(items[exists]);
+            } else {
+              items.push(updater(message));
+            }
 
-          return {
-            ...old,
-            pages: [
-              {
-                ...firstPage,
-                items: [updatedConversation, ...others],
-              },
-              ...pages.slice(1),
-            ],
-          };
+            return {
+              ...page,
+              messages: { ...page.messages, items },
+            };
+          });
+
+          return { ...old, pages };
         },
-        updater: (c: any) => {
-          if (!c) return c;
 
-          return {
-            ...c,
-            last_message: {
-              body: message.body,
-              caption: message.caption,
-              created_at: message.created_at || new Date().toISOString(),
-              updated_at: message.updated_at || new Date().toISOString(),
-              media_type: message.media_type,
-              media_url: message.media_url,
-              sender_id: message.sender_id,
-            },
-            updated_at: new Date().toISOString(),
-            unread_count: isActiveChat
-              ? 0
-              : !isMyMessage
-                ? (c.unread_count || 0) + 1
-                : c.unread_count,
-          };
-        },
+        updater: (m: any) => ({
+          ...m,
+          ...message,
+          pending: false,
+          delivery_status: "sent",
+        }),
       });
 
       // ---------------- NOTIFICATIONS ----------------
@@ -306,6 +244,39 @@ export const useSocketConnection = ({
       }
     };
 
+    const handleMessageAck = async (raw: any) => {
+      const clientId = raw.client_id;
+      const payload = raw.data?.message ?? raw.payload?.message ?? raw.message;
+
+      if (!clientId || !payload) return;
+
+      const peerId =
+        payload.sender_id === authUserRef.current
+          ? payload.recipient_id
+          : payload.sender_id;
+
+      // 1. Replace optimistic message in React Query
+      queryClient.setQueryData(["messages", peerId], (old: any) =>
+        replaceOptimisticMessage(old, clientId, {
+          ...payload,
+          peer_id: peerId,
+          pending: false,
+          delivery_status: "sent",
+        }),
+      );
+
+      // 2. Fix DB: remove temp + store real
+      const db = await getDB();
+      if (!db) return;
+
+      await db.messages.delete(clientId);
+      await db.messages.put({
+        ...payload,
+        peer_id: peerId,
+        pending: false,
+        delivery_status: "sent",
+      });
+    };
     const handleTyping = (raw: any) => {
       const data = raw.data || raw;
       const userId = data?.user?.id;
@@ -386,16 +357,8 @@ export const useSocketConnection = ({
       setOnlineUsersRef.current(() => onlineMap);
     };
 
-    websocket.off("chat.message", handleMessage);
-    websocket.off("chat.sent", handleMessage);
-    websocket.off("chat.typing", handleTyping);
-    websocket.off("user.online", handleUserOnline);
-    websocket.off("user.online.snapshot", handleOnlineSnapshot);
-    websocket.off("chat.read.updated", handleReadUpdated);
-    websocket.off("chat.read.ack", handleReadUpdated);
-
     websocket.on("chat.message", handleMessage);
-    websocket.on("chat.sent", handleMessage);
+    websocket.on("chat.sent", handleMessageAck);
     websocket.on("chat.typing", handleTyping);
     websocket.on("user.online", handleUserOnline);
     websocket.on("user.online.snapshot", handleOnlineSnapshot);
@@ -404,7 +367,7 @@ export const useSocketConnection = ({
 
     return () => {
       websocket.off("chat.message", handleMessage);
-      websocket.off("chat.sent", handleMessage);
+      websocket.off("chat.sent", handleMessageAck);
       websocket.off("chat.typing", handleTyping);
       websocket.off("user.online", handleUserOnline);
       websocket.off("user.online.snapshot", handleOnlineSnapshot);

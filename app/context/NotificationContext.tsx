@@ -95,10 +95,13 @@ export const NotificationProvider = ({
           }));
           return { ...old, pages };
         },
-        updater: (c: any) => ({
-          ...c,
-          unread_count: Math.max((c.unread_count || 0) - 1, 0),
-        }),
+        updater: (c: any) => {
+          if (!c) return c;
+          return {
+            ...c,
+            unread_count: Math.max((c?.unread_count || 0) - 1, 0),
+          };
+        },
       });
     },
     [queryClient, chatDBRef],
@@ -125,7 +128,10 @@ export const NotificationProvider = ({
           }));
           return { ...old, pages };
         },
-        updater: (c: any) => ({ ...c, unread_count: 0 }),
+        updater: (c: any) => {
+          if (!c) return c;
+          return { ...c, unread_count: 0 };
+        },
       });
     },
     [queryClient, chatDBRef],

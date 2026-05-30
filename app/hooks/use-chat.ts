@@ -93,7 +93,7 @@ const useChat = () => {
       if (!currentUser?.id) return;
 
       const hydrateConversations = async () => {
-        const db = await getDB(); // ← was: chatDBRef.current (null on first render)
+        const db = await getDB(); // (null on first render)
         if (!db) return;
 
         const cached = await db.conversations
@@ -123,7 +123,7 @@ const useChat = () => {
       queryKey: ["conversations", params],
       queryFn: async ({ pageParam = 1 }) => {
         try {
-          const db = await getDB(); // ← was: chatDBRef.current
+          const db = await getDB(); //
           if (!db) return null;
 
           const res = await api.get("/chats/conversations", {
@@ -176,7 +176,7 @@ const useChat = () => {
         normalizeInfinite(prewarmedCacheRef.current[options.userId]),
 
       queryFn: async ({ pageParam = 1 }) => {
-        const db = await getDB(); // ← was: chatDBRef.current
+        const db = await getDB(); //
         if (!db) return null;
 
         try {
@@ -270,7 +270,7 @@ const useChat = () => {
     recipient: CachedConversation["user"];
     message: any;
   }) => {
-    const db = await getDB(); // ← was: chatDBRef.current
+    const db = await getDB(); //
     if (!db) return;
 
     const existingInDB = await db.conversations
@@ -338,7 +338,7 @@ const useChat = () => {
     reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return;
-    const db = await getDB(); // ← was: chatDBRef.current
+    const db = await getDB(); //
     if (!db) return;
 
     const message = buildOptimisticMessage({
@@ -391,7 +391,7 @@ const useChat = () => {
     serverMessage: any;
     peerId: string;
   }) => {
-    const db = await getDB(); // ← was: chatDBRef.current
+    const db = await getDB(); //
     if (!db) return;
 
     queryClient.setQueryData(["messages", peerId], (old: any) =>
@@ -452,7 +452,7 @@ const useChat = () => {
     reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return null;
-    const db = await getDB(); // ← was: chatDBRef.current
+    const db = await getDB(); //
     if (!db) return null;
 
     const localUrls = files.map((file) => URL.createObjectURL(file));
@@ -509,7 +509,7 @@ const useChat = () => {
     clientId: string[];
     reply_to?: ReplyTarget | null;
   }) => {
-    const db = await getDB(); // ← was: chatDBRef.current
+    const db = await getDB(); //
     if (!db) return;
 
     try {
@@ -602,7 +602,7 @@ const useChat = () => {
   };
 
   const markMessageFailed = async (messageId: string, recipientId: string) => {
-    const db = await getDB(); // ← was: chatDBRef.current
+    const db = await getDB(); //
     if (!db) return;
 
     queryClient.setQueryData(["messages", recipientId], (old: any) => {

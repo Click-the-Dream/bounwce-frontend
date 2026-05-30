@@ -93,7 +93,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
     >
       <div
         // Used by MessageList to find and scroll to this element
-        data-message-id={msg.id}
+        data-message-id={msg.client_id || msg.id}
         className={`
           ${styles.bubble}
           relative rounded-[10px] text-[13px]
