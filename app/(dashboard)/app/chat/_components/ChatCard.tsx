@@ -71,14 +71,11 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
     }
   };
 
-  const goToChat = () => {
+  const goToChat = async () => {
     resetUnread(chatUser.id);
-
+    const data = await prewarmMessages(chatUser.id);
+    console.log("PREWARMED", data);
     router.push(`/app/chat/${chatUser.id}`);
-
-    requestAnimationFrame(() => {
-      prewarmMessages(chatUser.id);
-    });
   };
 
   return (

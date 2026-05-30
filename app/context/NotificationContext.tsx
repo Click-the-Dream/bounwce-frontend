@@ -8,15 +8,14 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import useNotificationServices from "../hooks/use-notification";
 import {
   Notification,
   NotificationContextType,
 } from "../_utils/types/notification";
 import { syncEntity } from "../helpers/db-sync";
-import { useAuth } from "./AuthContext";
-import { getChatDB } from "../store/chat-store";
+import { useChatUtils } from "./ChatContext";
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
 
@@ -26,13 +25,8 @@ export const NotificationProvider = ({
   children: React.ReactNode;
 }) => {
   const queryClient = useQueryClient();
-  const { authDetails } = useAuth();
-  const currentUser = authDetails?.user;
+  const { chatDBRef } = useChatUtils();
 
-  const chatDB = useMemo(
-    () => (currentUser ? getChatDB(currentUser.id) : null),
-    [currentUser],
-  );
   const { getNotifications, unreadSummary } = useNotificationServices();
 
   // 1. Reactive System Unread
@@ -82,6 +76,8 @@ export const NotificationProvider = ({
 
   const decrementUnread = useCallback(
     async (userId: string) => {
+      const chatDB = chatDBRef.current; // ← read inside callback
+      if (!chatDB) return;
       if (!chatDB) return;
       await syncEntity({
         db: chatDB,
@@ -105,11 +101,13 @@ export const NotificationProvider = ({
         }),
       });
     },
-    [queryClient, chatDB],
+    [queryClient, chatDBRef],
   );
 
   const resetUnread = useCallback(
     async (userId: string) => {
+      const chatDB = chatDBRef.current; // ← read inside callback
+      if (!chatDB) return;
       if (!chatDB) return;
       await syncEntity({
         db: chatDB,
@@ -130,7 +128,7 @@ export const NotificationProvider = ({
         updater: (c: any) => ({ ...c, unread_count: 0 }),
       });
     },
-    [queryClient, chatDB],
+    [queryClient, chatDBRef],
   );
 
   const pushNotification = useCallback(

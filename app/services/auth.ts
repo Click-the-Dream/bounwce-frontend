@@ -15,6 +15,7 @@ export const refreshTokenCall = (): Promise<any> => {
     .finally(() => {
       refreshPromise = null;
     });
+  // ← no .catch() here — let handleRefresh decide what to do with the error
 
   return refreshPromise;
 };

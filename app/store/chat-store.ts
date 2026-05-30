@@ -53,8 +53,6 @@ class ChatDB extends Dexie {
   constructor(userId: string) {
     super(`chat_db_${userId}`);
 
-    // FIX (Bug 9): add peer_id index to conversations so lookups by peer work
-    // reliably regardless of what the server uses as the primary id.
     this.version(3)
       .stores({
         messages: "id, peer_id, created_at, client_id",

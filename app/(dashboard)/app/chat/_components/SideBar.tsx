@@ -37,7 +37,7 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
   const activeConversation = useMemo(() => {
     if (!selectedUser) return null;
 
-    const existing = conversations.find(
+    const existing = conversations?.find(
       (c: any) => c.user?.id === selectedUser.id,
     );
 

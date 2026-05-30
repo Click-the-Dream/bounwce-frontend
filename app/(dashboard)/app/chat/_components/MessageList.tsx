@@ -123,6 +123,14 @@ const MessageList = forwardRef(({ onScrollNearBottomChange }: Props, ref) => {
   );
 
   // Group by date
+  console.log({
+    pages: messagesData?.pages,
+    flatMessages,
+    deduped,
+    sortedMessages,
+    isLoading,
+    isFetching,
+  });
 
   const groupedMessages = useMemo(() => {
     const map: Record<

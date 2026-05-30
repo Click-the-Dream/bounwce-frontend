@@ -1,14 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { websocket } from "../services/websocket";
-import { getChatDB } from "../store/chat-store";
-import useChat from "./use-chat";
+import { useChatUtils } from "../context/ChatContext";
 
 export const usePendingMessageRecovery = (userId: string | undefined) => {
   const queryClient = useQueryClient();
-  const chatDB = getChatDB(userId || "");
-  const { uploadAndEmitMedia, useGetChatSignature } = useChat();
-
+  const { chatDBRef } = useChatUtils();
   const recoveryInProgressRef = useRef(false);
   const retryCountRef = useRef<Record<string, number>>({});
 
@@ -43,6 +40,7 @@ export const usePendingMessageRecovery = (userId: string | undefined) => {
    */
   const recoverPendingMessages = async () => {
     if (!userId) return;
+    const chatDB = chatDBRef.current;
 
     try {
       const allMessages = await chatDB.messages
@@ -78,6 +76,7 @@ export const usePendingMessageRecovery = (userId: string | undefined) => {
   const recoverMessage = async (msg: any) => {
     const messageId = msg.id;
     const recipientId = msg.peer_id;
+    const chatDB = chatDBRef.current;
 
     retryCountRef.current[messageId] =
       (retryCountRef.current[messageId] || 0) + 1;
@@ -129,6 +128,7 @@ export const usePendingMessageRecovery = (userId: string | undefined) => {
     messageId: string,
     newStatus: string,
   ) => {
+    const chatDB = chatDBRef.current;
     queryClient.setQueryData(["messages", peerId], (old: any) => {
       if (!old) return old;
       return {

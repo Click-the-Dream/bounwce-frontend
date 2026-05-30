@@ -117,23 +117,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // ---------------- TOKEN REFRESH HANDLER ----------------
   const handleRefresh = useCallback(async (): Promise<string | null> => {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
+      console.warn("Offline — skipping refresh, preserving session.");
       return null;
     }
 
     try {
       const newToken = await refreshToken();
       if (!newToken) {
+        // Refresh succeeded but returned no token — genuine auth failure
         await safeLogout();
         return null;
       }
       updateAccessToken(newToken);
       return newToken;
     } catch (error: any) {
-      if (!error.response || error.code === "ERR_NETWORK") {
-        console.warn("Network disconnected; preserving local session.");
+      // Network error or timeout — don't log out, user may just be offline
+      if (
+        !error.response ||
+        error.code === "ERR_NETWORK" ||
+        error.code === "ECONNABORTED"
+      ) {
+        console.warn("Network error during refresh — preserving session.");
         return null;
       }
-      await safeLogout();
+
+      // 401/403 from the refresh endpoint — token is genuinely invalid
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        await safeLogout();
+        return null;
+      }
+
+      // 5xx server error — don't log out, server might be temporarily down
+      if (error.response?.status >= 500) {
+        console.warn("Server error during refresh — preserving session.");
+        return null;
+      }
+
+      // Unknown error — preserve session, don't logout aggressively
+      console.error("Unexpected refresh error:", error);
       return null;
     }
   }, [refreshToken, safeLogout, updateAccessToken]);
@@ -142,11 +163,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const scheduleRefresh = useCallback(
     (token: string) => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+
       const exp = getTokenExp(token);
       if (!exp) return;
-      const delay = exp - Date.now() - 60_000;
-      if (delay <= 0) handleRefresh();
-      else refreshTimerRef.current = setTimeout(() => handleRefresh(), delay);
+
+      const delay = exp - Date.now() - 60_000; // refresh 60s before expiry
+
+      if (delay <= 0) {
+        // Token is already expired or expiring very soon
+        // Only refresh if it's actually expired, not just "about to expire"
+        if (Date.now() > exp) {
+          handleRefresh();
+        } else {
+          // Expires within 60s — schedule for actual expiry minus a buffer
+          const urgentDelay = Math.max(exp - Date.now() - 5_000, 0);
+          refreshTimerRef.current = setTimeout(
+            () => handleRefresh(),
+            urgentDelay,
+          );
+        }
+      } else {
+        refreshTimerRef.current = setTimeout(() => handleRefresh(), delay);
+      }
     },
     [handleRefresh],
   );

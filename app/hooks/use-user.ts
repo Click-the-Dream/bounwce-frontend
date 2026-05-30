@@ -8,12 +8,13 @@ import api from "../services/api";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage } from "../_utils/formatters";
 import { useAuth } from "../context/AuthContext";
-import { getChatDB } from "../store/chat-store";
 import { User } from "../_utils/types/buyer";
+import { useChatUtils } from "../context/ChatContext";
 
 const useUser = () => {
   const { updateUser, authDetails } = useAuth();
-  const db = authDetails?.user?.id ? getChatDB(authDetails.user.id) : null;
+  const { chatDBRef } = useChatUtils();
+  const db = chatDBRef.current;
 
   const client = api;
   const queryClient = useQueryClient();

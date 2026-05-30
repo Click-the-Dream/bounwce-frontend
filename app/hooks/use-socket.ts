@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { websocket } from "../services/websocket";
 import { useNotifications } from "../context/NotificationContext";
 import { onMessageToast } from "../_utils/message-toast";
-import { getChatDB } from "../store/chat-store";
 import { useChatUtils } from "../context/ChatContext";
 import { syncEntity } from "../helpers/db-sync";
 import { useAuth } from "../context/AuthContext";
@@ -19,10 +18,9 @@ export const useSocketConnection = ({
 }) => {
   const queryClient = useQueryClient();
   const { authDetails } = useAuth();
-  const chatDB = getChatDB(authUserId);
 
   const { pushNotification, decrementUnread } = useNotifications();
-  const { setTypingUsers, setOnlineUsers } = useChatUtils();
+  const { setTypingUsers, setOnlineUsers, getDB } = useChatUtils();
 
   const setTypingUsersRef = useRef(setTypingUsers);
   const setOnlineUsersRef = useRef(setOnlineUsers);
@@ -36,7 +34,6 @@ export const useSocketConnection = ({
     setOnlineUsersRef.current = setOnlineUsers;
   }, [setTypingUsers, setOnlineUsers]);
 
-  // latest active chat without rerender/reconnect
   const activeChatRef = useRef<string | undefined>(activeConversationId);
   const authUserRef = useRef(authUserId);
 
@@ -45,7 +42,6 @@ export const useSocketConnection = ({
   }, [authUserId]);
 
   useEffect(() => {
-    // Rely on the authDetails object from Context
     if (authDetails?.access_token) {
       websocket.connect(authDetails.access_token);
     } else if (!authDetails) {
@@ -53,28 +49,42 @@ export const useSocketConnection = ({
     }
   }, [authDetails?.access_token]);
 
+  // FIX: Reset unread when navigating into a chat. Uses the same
+  // ["conversations", {}] key that useGetConversations registers.
   useEffect(() => {
     activeChatRef.current = activeConversationId;
 
     if (!activeConversationId) return;
-    syncEntity({
-      db: chatDB,
-      queryClient,
-      store: "conversations",
-      key: "peer_id",
-      keyValue: activeConversationId,
-      queryKey: ["conversations", {}],
-      selector: (old: any, updater: any) => ({
-        ...old,
-        pages: old.pages.map((page: any) => ({
-          ...page,
-          items: page.items?.map((c: any) =>
-            c.peer_id === activeConversationId ? updater(c) : c,
-          ),
-        })),
-      }),
-      updater: (c: any) => ({ ...c, unread_count: 0 }),
-    });
+
+    (async () => {
+      const db = await getDB();
+
+      syncEntity({
+        db,
+        queryClient,
+        store: "conversations",
+        key: "peer_id",
+        keyValue: activeConversationId,
+        queryKey: ["conversations", {}],
+        selector: (old: any, updater: any) => {
+          if (!old?.pages) return old;
+
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items?.map((c: any) =>
+                c.peer_id === activeConversationId ||
+                c.user?.id === activeConversationId
+                  ? updater(c)
+                  : c,
+              ),
+            })),
+          };
+        },
+        updater: (c: any) => ({ ...c, unread_count: 0 }),
+      });
+    })();
   }, [activeConversationId]);
 
   useEffect(() => {
@@ -83,7 +93,6 @@ export const useSocketConnection = ({
     };
   }, []);
 
-  //  SOCKET CONNECT ONLY ON TOKEN CHANGE
   useEffect(() => {
     const handleMessage = async (raw: any) => {
       const incoming = raw.message || raw;
@@ -94,8 +103,9 @@ export const useSocketConnection = ({
             ? incoming.recipient_id
             : incoming.sender_id,
       };
+
       const otherUserId =
-        message.sender_id === authUserId
+        message.sender_id === authUserRef.current
           ? message.recipient_id
           : message.sender_id;
 
@@ -104,20 +114,19 @@ export const useSocketConnection = ({
 
       const activeChatId = activeChatRef.current;
       const isActiveChat =
-        activeChatId &&
+        !!activeChatId &&
         (message.sender_id === activeChatId ||
           message.recipient_id === activeChatId);
 
       // ---------------- MESSAGES CACHE ----------------
-
+      const db = await getDB();
       await syncEntity({
-        db: chatDB,
+        db,
         queryClient,
         store: "messages",
         key: "id",
         keyValue: message.id,
         queryKey: ["messages", otherUserId],
-
         selector: (old: any, updater: any) => {
           if (!old) {
             return {
@@ -134,12 +143,12 @@ export const useSocketConnection = ({
               pageParams: [1],
             };
           }
-          const pages = [...old.pages];
 
+          const pages = [...old.pages];
           const firstPage = pages[0];
           const items = firstPage?.messages?.items || [];
 
-          // remove optimistic duplicate
+          // Remove optimistic duplicate
           let filtered = items.filter(
             (m: any) =>
               !(
@@ -149,51 +158,33 @@ export const useSocketConnection = ({
               ),
           );
 
-          // replace optimistic client_id version
+          // Replace optimistic client_id version
           if (message.client_id) {
             const index = filtered.findIndex(
               (m: any) => m.client_id === message.client_id,
             );
-
             if (index !== -1) {
               filtered[index] = updater(filtered[index]);
-
               pages[0] = {
                 ...firstPage,
-                messages: {
-                  ...firstPage.messages,
-                  items: filtered,
-                },
+                messages: { ...firstPage.messages, items: filtered },
               };
-
-              return {
-                ...old,
-                pages,
-              };
+              return { ...old, pages };
             }
           }
 
-          // dedupe real message
+          // Dedupe real message
           const exists = filtered.some((m: any) => m.id === message.id);
-
           if (!exists) {
             filtered.push(updater(message));
           }
 
           pages[0] = {
             ...firstPage,
-            messages: {
-              ...firstPage.messages,
-              items: filtered,
-            },
+            messages: { ...firstPage.messages, items: filtered },
           };
-
-          return {
-            ...old,
-            pages,
-          };
+          return { ...old, pages };
         },
-
         updater: (m: any) => ({
           ...m,
           ...message,
@@ -203,39 +194,57 @@ export const useSocketConnection = ({
       });
 
       // ---------------- CONVERSATIONS ----------------
+      // FIX: Use ["conversations", {}] to match useGetConversations' query key.
+      // FIX: Match by peer_id OR user?.id (not user_id which may not exist).
+      // FIX: Bump the conversation to the top of the list on new message.
 
       await syncEntity({
-        db: chatDB,
+        db,
         queryClient,
         store: "conversations",
-        key: "user_id",
+        key: "peer_id",
         keyValue: otherUserId,
-        queryKey: ["conversations"],
+        queryKey: ["conversations", {}],
         selector: (old: any, updater: any) => {
-          if (!old) {
-            return {
-              pages: [
-                {
-                  messages: {
-                    items: [updater(message)],
-                    page: 1,
-                    total: 1,
-                    page_size: 20,
-                  },
-                },
-              ],
-              pageParams: [1],
-            };
-          }
+          if (!old?.pages) return old;
+
+          let found = false;
+          let updatedConversation: any = null;
+
+          // Update the conversation in place first
           const pages = old.pages.map((page: any) => ({
             ...page,
-            items: (page.items ?? []).map((c: any) =>
-              c.user_id === otherUserId || c.user?.id === otherUserId
-                ? updater(c)
-                : c,
-            ),
+            items: (page.items ?? []).map((c: any) => {
+              const isMatch =
+                c.peer_id === otherUserId || c.user?.id === otherUserId;
+              if (isMatch) {
+                found = true;
+                updatedConversation = updater(c);
+                return updatedConversation;
+              }
+              return c;
+            }),
           }));
-          return { ...old, pages };
+
+          if (!found) return { ...old, pages };
+
+          // Bubble the updated conversation to the top of page 0
+          // so the list always shows the most recent message first
+          const firstPage = pages[0];
+          const others = (firstPage.items ?? []).filter(
+            (c: any) => c.peer_id !== otherUserId && c.user?.id !== otherUserId,
+          );
+
+          return {
+            ...old,
+            pages: [
+              {
+                ...firstPage,
+                items: [updatedConversation, ...others],
+              },
+              ...pages.slice(1),
+            ],
+          };
         },
         updater: (c: any) => ({
           ...c,
@@ -292,9 +301,7 @@ export const useSocketConnection = ({
 
     const handleTyping = (raw: any) => {
       const data = raw.data || raw;
-
       const userId = data?.user?.id;
-
       if (!userId) return;
 
       setTypingUsersRef.current((prev: any) => ({
@@ -308,13 +315,11 @@ export const useSocketConnection = ({
 
       setOnlineUsersRef.current((prev: any) => {
         const next = { ...prev };
-
         if (online) {
           next[user.id] = true;
         } else {
           delete next[user.id];
         }
-
         return next;
       });
     };
@@ -327,18 +332,16 @@ export const useSocketConnection = ({
         decrementUnread(reader_id);
       }
 
-      // Queue instead of writing immediately
       if (!readQueue.current[reader_id]) readQueue.current[reader_id] = [];
       readQueue.current[reader_id].push({ message_id, read });
 
       if (flushRef.current) clearTimeout(flushRef.current);
       flushRef.current = setTimeout(() => {
-        Object.entries(readQueue.current).forEach(([reader_id, updates]) => {
+        Object.entries(readQueue.current).forEach(([rid, updates]) => {
           queryClient.setQueriesData(
-            { queryKey: ["messages", reader_id] },
+            { queryKey: ["messages", rid] },
             (old: any) => {
               if (!old) return old;
-
               return {
                 ...old,
                 pages: old.pages.map((page: any) => ({
@@ -361,26 +364,20 @@ export const useSocketConnection = ({
             },
           );
         });
-
-        readQueue.current = {}; // clear after flush
+        readQueue.current = {};
       }, 50);
     };
 
     const handleOnlineSnapshot = (data: any) => {
       const items = data?.items || [];
-
       const onlineMap: Record<string, boolean> = {};
-
       items.forEach((item: any) => {
         if (item?.user?.id && item.online) {
           onlineMap[item.user.id] = true;
         }
       });
-
       setOnlineUsersRef.current(() => onlineMap);
     };
-
-    // CLEAN BEFORE REGISTERING
 
     websocket.off("chat.message", handleMessage);
     websocket.off("chat.sent", handleMessage);

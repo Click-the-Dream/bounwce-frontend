@@ -36,8 +36,8 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <NotificationProvider>
-          <ChatProvider>
+        <ChatProvider>
+          <NotificationProvider>
             <ChatResetBridge />
             <StoreProvider>
               <SocketConnect>{children}</SocketConnect>
@@ -64,8 +64,8 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
                 }}
               />
             </StoreProvider>
-          </ChatProvider>
-        </NotificationProvider>
+          </NotificationProvider>
+        </ChatProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

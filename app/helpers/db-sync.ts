@@ -1,5 +1,3 @@
-// helpers/db-sync.ts
-
 export const updateDBEntity = async ({
   db,
   store,
@@ -14,37 +12,38 @@ export const updateDBEntity = async ({
   updater: (item: any) => any;
 }) => {
   if (!db) {
-    await db;
+    console.warn("updateDBEntity: DB is null");
+    return null;
   }
+
+  if (!db.isOpen()) {
+    try {
+      await db.open();
+    } catch (err) {
+      console.error("DB open failed", err);
+      return null;
+    }
+  }
+
   const table = db[store];
-
   const existing = await table.where(key).equals(keyValue).first();
-  if (!existing) return null;
 
-  const updated = updater(existing);
+  const updated = updater(existing ?? null);
+  if (!updated) return null;
+
   await table.put(updated);
-
   return updated;
 };
 
-// React Query sync (single item)
-export const syncQueryEntity = async ({
+export const syncQueryEntity = ({
   queryClient,
   queryKey,
-  updater,
   selector,
-}: {
-  queryClient: any;
-  queryKey: string[];
-  selector: (old: any, updater: (item: any) => any) => any;
-  updater: (item: any) => any;
-}) => {
+  updater,
+}: any) => {
   queryClient.setQueriesData({ queryKey }, (old: any) => {
     if (!old?.pages) return old;
-    if (typeof selector !== "function") {
-      console.error("syncQueryEntity: selector is not a function");
-      return old;
-    }
+    if (typeof selector !== "function") return old;
 
     return selector(old, updater);
   });
@@ -60,20 +59,17 @@ export const syncEntity = async ({
   updater,
   selector,
 }: any) => {
-  // instant cache update
-  syncQueryEntity({
-    queryClient,
-    queryKey,
-    updater,
-    selector,
-  });
+  syncQueryEntity({ queryClient, queryKey, selector, updater });
 
-  // async db sync
+  if (!db) return;
+
   updateDBEntity({
     db,
     store,
     key,
     keyValue,
     updater,
-  }).catch((err) => console.error(`Failed to sync ${store}:`, err));
+  }).catch((err) => {
+    console.error(`Failed DB sync for ${store}`, err);
+  });
 };
