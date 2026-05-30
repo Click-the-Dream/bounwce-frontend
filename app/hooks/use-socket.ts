@@ -55,6 +55,26 @@ export const useSocketConnection = ({
 
   useEffect(() => {
     activeChatRef.current = activeConversationId;
+
+    if (!activeConversationId) return;
+    syncEntity({
+      db: chatDB,
+      queryClient,
+      store: "conversations",
+      key: "peer_id",
+      keyValue: activeConversationId,
+      queryKey: ["conversations", {}],
+      selector: (old: any, updater: any) => ({
+        ...old,
+        pages: old.pages.map((page: any) => ({
+          ...page,
+          items: page.items?.map((c: any) =>
+            c.peer_id === activeConversationId ? updater(c) : c,
+          ),
+        })),
+      }),
+      updater: (c: any) => ({ ...c, unread_count: 0 }),
+    });
   }, [activeConversationId]);
 
   useEffect(() => {
@@ -229,8 +249,9 @@ export const useSocketConnection = ({
             sender_id: message.sender_id,
           },
           updated_at: new Date().toISOString(),
-          unread_count:
-            !isMyMessage && !isActiveChat
+          unread_count: isActiveChat
+            ? 0
+            : !isMyMessage
               ? (c.unread_count || 0) + 1
               : c.unread_count,
         }),

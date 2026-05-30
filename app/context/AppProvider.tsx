@@ -10,6 +10,7 @@ import SocketConnect from "./SocketConnect";
 import { NotificationProvider } from "./NotificationContext";
 import audioController from "../_utils/audioController";
 import { ChatProvider } from "./ChatContext";
+import ChatResetBridge from "./Chatresetbridge ";
 
 const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
@@ -37,6 +38,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
       <AuthProvider>
         <NotificationProvider>
           <ChatProvider>
+            <ChatResetBridge />
             <StoreProvider>
               <SocketConnect>{children}</SocketConnect>
 

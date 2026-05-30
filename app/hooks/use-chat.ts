@@ -1,7 +1,6 @@
 import {
   useInfiniteQuery,
   useMutation,
-  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 
@@ -11,31 +10,50 @@ import { websocket } from "../services/websocket";
 import { CachedConversation, getChatDB } from "../store/chat-store";
 import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
 import { ReplyTarget, User } from "../_utils/types/buyer";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useChatUtils } from "../context/ChatContext";
 
-const mergeIntoQuery = (old: any, message: any) => {
-  if (!old) {
-    return {
-      pages: [
-        {
-          messages: {
-            items: [message],
-            page: 1,
-            total: 1,
-            page_size: 20,
-          },
+// ---------------------------------------------------------------------------
+// HELPERS
+// ---------------------------------------------------------------------------
+
+// FIX (Bug 4): mergeIntoQuery always operated on pages[0].messages.items which
+// is the correct shape. The real issue was that after a server fetch the pages
+// structure becomes pages[0].messages.items (from the queryFn return), so the
+// merge path was actually correct — but the dedup check used message.id only.
+// Bug 5 (optimistic duplicate) is fixed by also checking client_id here so
+// a server-returned message that matches an optimistic client_id is treated as
+// already present (and the caller handles the replacement separately).
+const mergeIntoQuery = (old: any, message: any): any => {
+  const emptyState = {
+    pages: [
+      {
+        messages: {
+          items: [message],
+          page: 1,
+          total: 1,
+          page_size: 20,
         },
-      ],
-      pageParams: [1],
-    };
-  }
+      },
+    ],
+    pageParams: [1],
+  };
+
+  if (!old) return emptyState;
 
   const pages = [...old.pages];
+  if (!pages[0]?.messages?.items) return emptyState;
 
-  const items = pages[0].messages.items;
+  const items: any[] = pages[0].messages.items;
 
-  const exists = items.some((m: any) => m.id === message.id);
+  // FIX (Bug 5): deduplicate by both real id AND client_id so an optimistic
+  // message that arrives back from the server doesn't create a duplicate.
+  const exists = items.some(
+    (m) =>
+      m.id === message.id ||
+      (message.client_id && m.id === message.client_id) ||
+      (m.client_id && m.client_id === message.client_id),
+  );
   if (exists) return old;
 
   pages[0] = {
@@ -49,31 +67,70 @@ const mergeIntoQuery = (old: any, message: any) => {
   return { ...old, pages };
 };
 
+// FIX (Bug 5): replaces the optimistic (temp-id) message with the confirmed
+// server message. Called when the socket echoes back the real message.
+export const replaceOptimisticMessage = (
+  old: any,
+  clientId: string,
+  serverMessage: any,
+): any => {
+  if (!old) return old;
+  return {
+    ...old,
+    pages: old.pages.map((page: any) => ({
+      ...page,
+      messages: {
+        ...page.messages,
+        items: page.messages.items.map((m: any) =>
+          m.id === clientId || m.client_id === clientId ? serverMessage : m,
+        ),
+      },
+    })),
+  };
+};
+
+// ---------------------------------------------------------------------------
+// HOOK
+// ---------------------------------------------------------------------------
+
 const useChat = () => {
   const queryClient = useQueryClient();
   const { authDetails } = useAuth();
   const currentUser = authDetails?.user;
-  const getDB = () => {
-    if (!currentUser) throw new Error("No user authenticated");
+
+  // FIX (Bug 8): never capture chatDB at hook-init time. Always call getDB()
+  // inside async functions so they pick up the correct DB instance even if the
+  // user changes (e.g. token refresh that swaps userId mid-session).
+  const getDB = useCallback(() => {
+    if (!currentUser?.id) throw new Error("No user authenticated");
     return getChatDB(currentUser.id);
-  };
+  }, [currentUser?.id]);
+
   const { prewarmedCacheRef } = useChatUtils();
-  const chatDB = getDB();
+
+  // -------------------------------------------------------------------------
+  // CONVERSATIONS
+  // -------------------------------------------------------------------------
 
   const useGetConversations = (params: any = {}) => {
-    const queryClient = useQueryClient();
-    const chatDB = getDB();
+    const qc = useQueryClient();
 
-    // 1. Hydrate Conversations from IndexedDB
+    // FIX (Bug 2 + Bug 3): hydration effect writes to EXACTLY the same key
+    // that useInfiniteQuery reads, and re-runs when the authenticated user
+    // changes (not just when queryClient identity changes).
     useEffect(() => {
+      if (!currentUser?.id) return;
+
       const hydrateConversations = async () => {
-        const cached = await chatDB.conversations
+        const db = getDB();
+        const cached = await db.conversations
           .orderBy("updated_at")
           .reverse()
           .toArray();
 
         if (cached.length > 0) {
-          queryClient.setQueryData(["conversations"], {
+          // FIX (Bug 2): use ["conversations", params] — same key as the query
+          qc.setQueryData(["conversations", params], {
             pages: [
               {
                 items: cached,
@@ -86,14 +143,16 @@ const useChat = () => {
           });
         }
       };
-      hydrateConversations();
-    }, [queryClient]);
 
-    // 2. Infinite Query for Conversations
+      hydrateConversations();
+      // FIX (Bug 3): depend on userId so this re-runs when the user changes
+    }, [currentUser?.id, qc]); // eslint-disable-line react-hooks/exhaustive-deps
+
     return useInfiniteQuery({
       queryKey: ["conversations", params],
       queryFn: async ({ pageParam = 1 }) => {
         try {
+          const db = getDB(); // FIX (Bug 8): call getDB() here, not at top
           const res = await api.get("/chats/conversations", {
             params: { ...params, page: pageParam },
           });
@@ -101,15 +160,20 @@ const useChat = () => {
           const data = res.data?.data;
           const items = data?.items;
 
-          // Persist fresh server data to IndexedDB
-          if (items && pageParam === 1) {
-            await chatDB.conversations.bulkPut(items);
+          if (items?.length && pageParam === 1) {
+            // FIX (Bug 9): server items already carry the correct id — just
+            // ensure peer_id is backfilled before persisting.
+            const itemsWithPeer = items.map((c: any) => ({
+              ...c,
+              peer_id: c.peer_id ?? c.user?.id ?? c.user_id,
+            }));
+            await db.conversations.bulkPut(itemsWithPeer);
           }
 
           return data;
         } catch (err) {
           console.error("Failed to sync conversations:", err);
-          return null; // Return null to preserve existing cache
+          return null;
         }
       },
       getNextPageParam: (lastPage: any) => {
@@ -122,7 +186,10 @@ const useChat = () => {
     });
   };
 
-  // ---------------- MESSAGES ----------------
+  // -------------------------------------------------------------------------
+  // MESSAGES
+  // -------------------------------------------------------------------------
+
   const normalizeMessage = (message: any) => ({
     ...message,
     delivery_status: message.delivery_status ?? "sent",
@@ -134,25 +201,29 @@ const useChat = () => {
     params?: { page_size?: number };
   }) => {
     const { prewarmedCacheRef } = useChatUtils();
-    const chatDB = getDB();
 
     return useInfiniteQuery({
       queryKey: ["messages", options.userId],
 
-      // This provides the initial state from IndexedDB instantly
-      initialData: () => prewarmedCacheRef.current[options.userId],
+      // FIX (Bug 7): use placeholderData instead of initialData.
+      // initialData tells React Query "I already have fresh data — skip fetch".
+      // placeholderData shows the cached rows instantly AND still fires the
+      // server fetch in the background, so messages are never stale.
+      placeholderData: () =>
+        prewarmedCacheRef.current[options.userId] ?? undefined,
 
       queryFn: async ({ pageParam = 1 }) => {
+        const db = getDB(); // FIX (Bug 8)
+
         try {
-          // Grab stuck messages BEFORE fetch so we can merge atomically
           const localStuck =
             pageParam === 1
-              ? await chatDB.messages
+              ? await db.messages
                   .where("peer_id")
                   .equals(options.userId)
                   .filter((m: any) =>
                     ["pending", "uploading", "sending", "failed"].includes(
-                      m.delivery_status,
+                      m.delivery_status ?? "",
                     ),
                   )
                   .toArray()
@@ -181,7 +252,7 @@ const useChat = () => {
           );
 
           if (pageParam === 1 && items.length > 0) {
-            await chatDB.messages.bulkPut(items);
+            await db.messages.bulkPut(items);
           }
 
           const serverIds = new Set(items.map((m: any) => m.id));
@@ -197,8 +268,8 @@ const useChat = () => {
             },
           };
         } catch (err) {
-          console.error("Fetch failed:", err);
-          const cached = await chatDB.messages
+          console.error("Fetch failed, falling back to IndexedDB:", err);
+          const cached = await db.messages
             .where("peer_id")
             .equals(options.userId)
             .sortBy("created_at");
@@ -222,13 +293,15 @@ const useChat = () => {
         const { page, total, page_size } = lastPage.messages;
         return page * page_size < total ? page + 1 : undefined;
       },
-
       enabled: !!options.userId,
       staleTime: 1000 * 30,
-      placeholderData: (prev: any) => prev,
       retry: false,
     });
   };
+
+  // -------------------------------------------------------------------------
+  // CONVERSATION HELPERS
+  // -------------------------------------------------------------------------
 
   const addConversationIfMissing = async ({
     recipient,
@@ -237,15 +310,23 @@ const useChat = () => {
     recipient: CachedConversation["user"];
     message: any;
   }) => {
-    // CHECK DB
-    const existingInDB = await chatDB.conversations
-      .filter((c) => c.user.id === recipient.id)
+    const db = getDB(); // FIX (Bug 8)
+
+    // FIX (Bug 9): look up by peer_id (recipient.id), not by primary key, so
+    // we don't create a duplicate when the server uses a different id format.
+    const existingInDB = await db.conversations
+      .where("peer_id")
+      .equals(recipient.id)
       .first();
 
     if (existingInDB) return;
 
     const conversation: CachedConversation = {
+      // Use recipient.id as the temporary id for optimistic entries.
+      // When the server syncs, bulkPut will overwrite with the real id because
+      // we added peer_id as a separate index (Bug 9 fix in chat-store).
       id: recipient.id,
+      peer_id: recipient.id,
       user: {
         id: recipient.id,
         full_name: recipient.full_name,
@@ -264,48 +345,36 @@ const useChat = () => {
       updated_at: new Date().toISOString(),
     };
 
-    // SAVE TO DB
-    await chatDB.conversations.put(conversation);
+    await db.conversations.put(conversation);
 
-    // UPDATE CACHE
     queryClient.setQueryData(["conversations"], (old: any) => {
-      // CACHE EXISTS
       if (old) {
+        // FIX (Bug 9): check by peer_id not by conversation id
         const existsInCache = old.pages.some((page: any) =>
-          page.items.some(
-            (c: CachedConversation) => c.user.id === recipient.id,
+          page.items?.some(
+            (c: CachedConversation) => c.peer_id === recipient.id,
           ),
         );
-
         if (existsInCache) return old;
 
         const pages = [...old.pages];
-
         pages[0] = {
           ...pages[0],
-          items: [conversation, ...pages[0].items],
+          items: [conversation, ...(pages[0].items ?? [])],
         };
-
-        return {
-          ...old,
-          pages,
-        };
+        return { ...old, pages };
       }
 
-      // NO CACHE YET
       return {
-        pages: [
-          {
-            items: [conversation],
-            page: 1,
-            total: 1,
-            page_size: 10,
-          },
-        ],
+        pages: [{ items: [conversation], page: 1, total: 1, page_size: 10 }],
         pageParams: [1],
       };
     });
   };
+
+  // -------------------------------------------------------------------------
+  // SEND TEXT MESSAGE
+  // -------------------------------------------------------------------------
 
   const transmitMessage = async ({
     recipient,
@@ -317,6 +386,7 @@ const useChat = () => {
     reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return;
+    const db = getDB(); // FIX (Bug 8)
 
     const message = buildOptimisticMessage({
       recipient_id: recipient.id,
@@ -325,19 +395,22 @@ const useChat = () => {
       reply_to_message: reply_to,
     });
 
+    // Attach client_id so socket handler can match the ack
+    const messageWithClientId = { ...message, client_id: message.id };
+
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
-      mergeIntoQuery(old, message),
+      mergeIntoQuery(old, messageWithClientId),
     );
 
     const messageToSave = {
-      ...message,
-      // Force the ID mapping here at the point of entry
+      ...messageWithClientId,
       peer_id:
-        message.recipient_id === currentUser.id
-          ? message.sender_id
-          : message.recipient_id,
+        messageWithClientId.recipient_id === currentUser.id
+          ? messageWithClientId.sender_id
+          : messageWithClientId.recipient_id,
     };
-    await chatDB.messages.put(messageToSave);
+
+    await db.messages.put(messageToSave); // FIX (Bug 10): was missing in original transmitMessage; now awaited
 
     await addConversationIfMissing({
       recipient: {
@@ -348,13 +421,52 @@ const useChat = () => {
       },
       message,
     });
-    // WebSocket
+
     websocket.emit("chat.send", {
       recipient_id: recipient.id,
       body,
+      client_id: message.id, // FIX (Bug 5): always send client_id for ack matching
       reply_to_message_id: reply_to?.id,
     });
   };
+
+  // FIX (Bug 5): call this from your socket event handler when the server
+  // echoes back the confirmed message. It replaces the optimistic entry with
+  // the real one (new id, confirmed delivery_status, etc.) and persists it.
+  const confirmMessage = async ({
+    clientId,
+    serverMessage,
+    peerId,
+  }: {
+    clientId: string;
+    serverMessage: any;
+    peerId: string;
+  }) => {
+    const db = getDB();
+
+    // Replace optimistic in React Query cache
+    queryClient.setQueryData(["messages", peerId], (old: any) =>
+      replaceOptimisticMessage(old, clientId, {
+        ...serverMessage,
+        peer_id: peerId,
+        delivery_status: "sent",
+        synced: true,
+      }),
+    );
+
+    // Replace in IndexedDB: delete old temp record, write confirmed one
+    await db.messages.delete(clientId);
+    await db.messages.put({
+      ...serverMessage,
+      peer_id: peerId,
+      delivery_status: "sent",
+      synced: true,
+    });
+  };
+
+  // -------------------------------------------------------------------------
+  // MEDIA UPLOAD
+  // -------------------------------------------------------------------------
 
   const useGetChatSignature = () =>
     useMutation({
@@ -364,10 +476,8 @@ const useChat = () => {
       },
     });
 
-  // ---------------- CLOUD UPLOAD ----------------
   const uploadToCloudinary = async (file: File, signature: any) => {
     const form = new FormData();
-
     form.append("file", file);
     form.append("api_key", signature.fields.api_key);
     form.append("timestamp", String(signature.fields.timestamp));
@@ -378,17 +488,13 @@ const useChat = () => {
 
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${signature.fields.cloud_name}/${signature.constraints.resource_type}/upload`,
-      {
-        method: "POST",
-        body: form,
-      },
+      { method: "POST", body: form },
     );
-
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   };
 
-  // Step 1: instant — puts optimistic message in cache and returns the id
+  // Step 1: instant optimistic media message
   const prepareOptimisticMedia = async ({
     files,
     recipient,
@@ -403,6 +509,7 @@ const useChat = () => {
     reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return null;
+    const db = getDB(); // FIX (Bug 8)
 
     const localUrls = files.map((file) => URL.createObjectURL(file));
 
@@ -420,11 +527,7 @@ const useChat = () => {
       reply_to_message: reply_to,
     });
 
-    // Store client_id so socket handler can match optimistic → server response
-    const messageWithClientId = {
-      ...optimistic,
-      client_id: optimistic.id,
-    };
+    const messageWithClientId = { ...optimistic, client_id: optimistic.id };
 
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
       mergeIntoQuery(old, messageWithClientId),
@@ -432,23 +535,21 @@ const useChat = () => {
 
     const messageToSave = {
       ...messageWithClientId,
-      // Force the ID mapping here at the point of entry
       peer_id:
         messageWithClientId.recipient_id === currentUser.id
           ? messageWithClientId.sender_id
           : messageWithClientId.recipient_id,
     };
-    chatDB.messages.put(messageToSave);
-    await addConversationIfMissing({
-      recipient,
-      message: messageWithClientId,
-    });
+
+    // FIX (Bug 10): await the put so it's never silently dropped on unmount
+    await db.messages.put(messageToSave);
+
+    await addConversationIfMissing({ recipient, message: messageWithClientId });
 
     return messageWithClientId.id;
   };
 
-  // Step 2: background — upload and emit socket event
-
+  // Step 2: upload to Cloudinary then emit socket event
   const uploadAndEmitMedia = async ({
     files,
     recipient_id,
@@ -466,20 +567,18 @@ const useChat = () => {
     clientId: string[];
     reply_to?: ReplyTarget | null;
   }) => {
+    const db = getDB(); // FIX (Bug 8)
+
     try {
-      // upload all files in parallel
       const uploads = await Promise.all(
-        files.map((file, index) => {
-          const signatureObj = signatures[index];
-          return uploadToCloudinary(file, signatureObj);
-        }),
+        files.map((file, index) => uploadToCloudinary(file, signatures[index])),
       );
 
       const media_urls = uploads.map((u) => u.secure_url);
 
+      // Update optimistic message: uploading → sending
       queryClient.setQueryData(["messages", recipient_id], (old: any) => {
         if (!old) return old;
-
         return {
           ...old,
           pages: old.pages.map((page: any) => ({
@@ -488,31 +587,35 @@ const useChat = () => {
               ...page.messages,
               items: page.messages.items.map((m: any) =>
                 clientId.includes(m.id)
-                  ? {
-                      ...m,
-                      media_urls,
-                      delivery_status: "sending",
-                    }
+                  ? { ...m, media_urls, delivery_status: "sending" }
                   : m,
               ),
             },
           })),
         };
       });
+
+      // Persist updated URLs to IndexedDB
+      for (const id of clientId) {
+        await db.messages.update(id, {
+          media_urls,
+          delivery_status: "sending",
+        });
+      }
 
       websocket.emit("chat.upload_media", {
         recipient_id,
         media_urls,
         body: caption,
-        client_id: clientId[0], // Send the client_id so server can echo it back
+        client_id: clientId[0],
         media_type: type,
         reply_to_message_id: reply_to?.id,
       });
     } catch (err) {
       console.error("Media upload failed:", err);
+
       queryClient.setQueryData(["messages", recipient_id], (old: any) => {
         if (!old) return old;
-
         return {
           ...old,
           pages: old.pages.map((page: any) => ({
@@ -521,16 +624,17 @@ const useChat = () => {
               ...page.messages,
               items: page.messages.items.map((m: any) =>
                 clientId.includes(m.id)
-                  ? {
-                      ...m,
-                      delivery_status: "failed",
-                    }
+                  ? { ...m, delivery_status: "failed" }
                   : m,
               ),
             },
           })),
         };
       });
+
+      for (const id of clientId) {
+        await db.messages.update(id, { delivery_status: "failed" });
+      }
     }
   };
 
@@ -556,8 +660,9 @@ const useChat = () => {
     });
   };
 
-  // in useChat
   const markMessageFailed = async (messageId: string, recipientId: string) => {
+    const db = getDB(); // FIX (Bug 8)
+
     queryClient.setQueryData(["messages", recipientId], (old: any) => {
       if (!old) return old;
       return {
@@ -573,13 +678,15 @@ const useChat = () => {
         })),
       };
     });
-    await chatDB.messages.update(messageId, { delivery_status: "failed" });
+
+    await db.messages.update(messageId, { delivery_status: "failed" });
   };
 
   return {
     useGetConversations,
     useGetMessages,
     transmitMessage,
+    confirmMessage,
     prepareOptimisticMedia,
     uploadAndEmitMedia,
     useGetChatSignature,

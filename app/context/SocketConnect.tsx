@@ -30,7 +30,7 @@ export default function SocketConnect({
       {children}
       <ConnectionStatusToast />
       <AuthModal
-        isOpen={showAuthModal}
+        isOpen={showAuthModal || false}
         onClose={() => setShowAuthModal(false)}
       />
     </>

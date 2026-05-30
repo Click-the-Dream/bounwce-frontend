@@ -1,29 +1,31 @@
 import { useContext } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { AuthContext } from "../context/AuthContext";
-import { queryClient } from "../services/query-client";
+import { useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
 import { useRouter } from "next/navigation";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage, storedUserEmail } from "../_utils/formatters";
-import { deleteChatDB, getChatDB } from "../store/chat-store";
+import { deleteChatDB } from "../store/chat-store";
+import { useChatUtils } from "../context/ChatContext";
+
 const useAuthServices = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { authDetails, updateAuth } = useContext(AuthContext);
-  const db = authDetails?.user?.id ? getChatDB(authDetails.user.id) : null;
+  const { resetChatState } = useChatUtils();
   const client = api;
 
   // Login Mutation
   const loginMutation = useMutation({
-    mutationFn: async (credentials) => {
+    mutationFn: async (credentials: any) => {
       const { data } = await client.post("/auth/resend-otp", credentials);
       return data.data;
     },
     onSuccess: (data) => {
-      //updateAuth(userData); // Immediately update auth state
       onSuccess({
         title: "Login Successful!",
-        message: `Here is your otp ${data?.otp}`, //"Continuing to dashboard",
+        message: `Here is your otp ${data?.otp}`,
       });
       router.push("/vendor");
     },
@@ -51,60 +53,27 @@ const useAuthServices = () => {
       router.push("/email_verification");
     },
     onError: async (err: any) => {
-      const errorMessage = extractErrorMessage(err);
-      /* const apiMessage = err?.response?.data?.message;
-
-      // Handle "user already exists" case more gracefully
-      if (apiMessage === "User with the email already exist") {
-        // Step 1: Gently inform user what’s happening
-        onSuccess({
-          message: "Email already registered",
-          success: "Sending you a new verification code...",
-        });
-        // Step 2: Actually request the OTP
-        await requestOtpMutation.mutateAsync(variables?.email, {
-          onSuccess: () => {
-            // Step 3: Save the email and redirect with a short UX delay
-            storedUserEmail(variables?.email);
-            navigate("/email_verification", {
-              state: variables,
-              replace: true,
-            });
-          },
-        });
-
-        return;
-      }*/
-
-      // Default fallback for other errors
       onFailure({
         title: "Registration Failed",
-        message: errorMessage,
+        message: extractErrorMessage(err),
       });
     },
   });
 
-  // Mutation for updating profile
+  // Update Profile Mutation
   const updateProfile = useMutation({
-    mutationFn: async (profileData) => {
+    mutationFn: async (profileData: any) => {
       if (!authDetails?.user?.profile?.userId) {
         throw new Error("User ID not found");
       }
-
       const { data } = await client.put(
         `/profile/${authDetails.user.profile.userId}`,
-        profileData, // Profile data must be in the second argument
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
+        profileData,
+        { headers: { "Content-Type": "multipart/form-data" } },
       );
-
-      if (!data && data?.status) {
+      if (!data?.status) {
         throw new Error(data?.message || "Error updating profile");
       }
-
       return data.data;
     },
     onSuccess: (updatedUser) => {
@@ -125,26 +94,19 @@ const useAuthServices = () => {
 
   const requestOtpMutation = useMutation({
     mutationFn: async (credentials: { email?: string }) => {
-      if (credentials?.email) {
-        storedUserEmail(credentials?.email);
-      }
-      const email = credentials?.email ?? storedUserEmail(); // Call function to get email
-      if (!email) {
-        throw new Error("No email provided");
-      }
-      const { data } = await client.post("/auth/resend-otp", { email: email });
-
+      if (credentials?.email) storedUserEmail(credentials.email);
+      const email = credentials?.email ?? storedUserEmail();
+      if (!email) throw new Error("No email provided");
+      const { data } = await client.post("/auth/resend-otp", { email });
       return data;
     },
     onSuccess: ({ data }) => {
-      //setOtpRequested(true);
       onSuccess({
         title: "OTP Requested!",
         message: `Here is your otp ${data?.otp}`,
       });
     },
     onError: (err: any) => {
-      // setOtpRequested(false);
       onFailure({
         title: "Can't Request OTP",
         message: extractErrorMessage(err),
@@ -154,21 +116,17 @@ const useAuthServices = () => {
 
   const verifyOtpMutation = useMutation({
     mutationFn: async (otpData: any) => {
-      const email = otpData?.email ?? storedUserEmail(); // Call function to get email
-      if (!email) {
-        throw new Error("No email provided");
-      }
+      const email = otpData?.email ?? storedUserEmail();
+      if (!email) throw new Error("No email provided");
       const { data } = await client.post("/auth/verify-code", {
         ...otpData,
-        email: email,
+        email,
       });
-
       return data.data;
     },
     onSuccess: (userData) => {
       updateAuth(userData);
     },
-
     onError: (err: any) => {
       onFailure({
         title: "OTP Verification Failed",
@@ -177,16 +135,30 @@ const useAuthServices = () => {
     },
   });
 
+  // FIX (Bug 6 + Bug 7): Full logout teardown in the correct order:
+  // 1. Reset in-memory chat state (prewarmedCacheRef, selectedChat, etc.)
+  // 2. Wipe IndexedDB — wrapped in try/catch so a DB error never blocks logout
+  // 3. Clear React Query cache via the hook instance (fixes Bug 5)
+  // 4. Clear auth state
+  // onError still redirects — logout must always complete
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const userId = authDetails?.user?.id;
 
-      if (userId) {
-        await deleteChatDB(userId);
-      }
+      // Step 1: wipe in-memory chat state
+      resetChatState();
 
+      // Step 2: wipe IndexedDB — never block logout on DB failure
+      try {
+        if (userId) await deleteChatDB(userId);
+      } catch {}
+
+      // Step 3: clear React Query cache (hook instance — fixes Bug 5)
       queryClient.clear();
-      updateAuth(null); // Reset auth state
+
+      // Step 4: clear auth (triggers safeLogout inside updateAuth)
+      updateAuth(null);
+
       return null;
     },
     onSuccess: () => {
@@ -194,11 +166,12 @@ const useAuthServices = () => {
         title: "Logout successful",
         message: "You have been logged out.",
       });
-      // Force hard refresh to reset memory/state
       window.location.href = "/login";
     },
     onError: (err: any) => {
+      // FIX (Bug 7): always redirect even on error so user is never stuck
       onFailure({ title: "Logout Failed", message: extractErrorMessage(err) });
+      window.location.href = "/login";
     },
   });
 
@@ -208,7 +181,7 @@ const useAuthServices = () => {
     verifyOtp: verifyOtpMutation,
     requestOtp: requestOtpMutation,
     logout: logoutMutation,
-    updateProfile: updateProfile,
+    updateProfile,
     storedUserEmail,
   };
 };

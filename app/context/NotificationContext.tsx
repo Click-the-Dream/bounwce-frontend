@@ -115,14 +115,14 @@ export const NotificationProvider = ({
         db: chatDB,
         queryClient,
         store: "conversations",
-        key: "user_id",
+        key: "peer_id",
         keyValue: userId,
-        queryKey: ["conversations"],
+        queryKey: ["conversations", {}], // ← match the actual query key
         selector: (old: any, updater: any) => {
           const pages = old.pages.map((page: any) => ({
             ...page,
             items: page.items?.map((c: any) =>
-              c.user?.id === userId || c.user_id === userId ? updater(c) : c,
+              c.user?.id === userId || c.peer_id === userId ? updater(c) : c,
             ),
           }));
           return { ...old, pages };

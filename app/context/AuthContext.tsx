@@ -22,15 +22,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // FIX (Bug 1): keep a ref that is always current so the axios interceptor
+  // closure never reads stale state. Updated on every authDetails change.
+  const authDetailsRef = useRef<any>(null);
+  useEffect(() => {
+    authDetailsRef.current = authDetails;
+  }, [authDetails]);
+
+  // FIX (Bug 3 + safeLogout): a ref to the chat reset function injected from
+  // ChatContext via registerChatReset(). This lets AuthContext call
+  // resetChatState() without a circular import.
+  const chatResetRef = useRef<(() => void) | null>(null);
+  const registerChatReset = useCallback((fn: () => void) => {
+    chatResetRef.current = fn;
+  }, []);
+
   // ---------------- GLOBAL GUARDS ----------------
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
   const logoutLockRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const updateAuthRef = useRef<any>(() => {});
-
   // ---------------- TOKEN HELPERS ----------------
-
   const getTokenExp = (token: string) => {
     try {
       return JSON.parse(atob(token.split(".")[1]))?.exp * 1000;
@@ -44,18 +56,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return !exp || Date.now() > exp - 30_000;
   };
 
-  // ---------------- SAFE LOGOUT (CRITICAL FIX) ----------------
-
-  const safeLogout = useCallback(() => {
+  // ---------------- SAFE LOGOUT ----------------
+  // FIX (Bug 3): safeLogout now also wipes IndexedDB + prewarm ref.
+  // It imports lazily to avoid circular deps between AuthContext ↔ chat-store.
+  const safeLogout = useCallback(async () => {
     if (logoutLockRef.current) return;
     logoutLockRef.current = true;
 
+    // 1. Wipe in-memory chat state (prewarmRef, selectedChat, etc.)
+    chatResetRef.current?.();
+
+    // 2. Wipe IndexedDB for the current user — never block logout on failure
+    try {
+      const userId = authDetailsRef.current?.user?.id;
+      if (userId) {
+        const { deleteChatDB } = await import("../store/chat-store");
+        await deleteChatDB(userId);
+      }
+    } catch {}
+
+    // 3. Clear React Query cache
+    queryClient.clear();
+
+    // 4. Clear auth state + storage
     setAuthDetails(null);
     localStorage.removeItem("authUser");
     localStorage.removeItem("ws_token");
 
+    // 5. Disconnect websocket
     websocket.disconnect();
-    queryClient.clear();
 
     setTimeout(() => {
       logoutLockRef.current = false;
@@ -63,7 +92,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [queryClient]);
 
   // ---------------- SINGLE REFRESH PIPELINE ----------------
-
   const refreshToken = useCallback(async (): Promise<string | null> => {
     if (!refreshPromiseRef.current) {
       refreshPromiseRef.current = refreshTokenCall()
@@ -73,26 +101,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           refreshPromiseRef.current = null;
         });
     }
-
     return refreshPromiseRef.current;
   }, []);
 
   const updateAccessToken = useCallback((token: string) => {
     setAuthDetails((prev: any) => {
       if (!prev) return prev;
-
       const updated = { ...prev, access_token: token };
       localStorage.setItem("authUser", JSON.stringify(updated));
-
       websocket.reconnectWithToken(token);
       return updated;
     });
   }, []);
 
   // ---------------- TOKEN REFRESH HANDLER ----------------
-
-  const handleRefresh = useCallback(async () => {
-    // 1. Don't refresh if we know we are offline
+  const handleRefresh = useCallback(async (): Promise<string | null> => {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       return null;
     }
@@ -100,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const newToken = await refreshToken();
       if (!newToken) {
-        safeLogout(); // Only logout if token call explicitly returns null (invalid)
+        await safeLogout();
         return null;
       }
       updateAccessToken(newToken);
@@ -110,32 +133,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.warn("Network disconnected; preserving local session.");
         return null;
       }
-      safeLogout(); // Logout only on 401/403
+      await safeLogout();
       return null;
     }
   }, [refreshToken, safeLogout, updateAccessToken]);
-  // expose to interceptor safely
-  useEffect(() => {
-    updateAuthRef.current = safeLogout;
-  }, [safeLogout]);
 
-  // ---------------- PROACTIVE SCHEDULER ----------------
-
+  // ---------------- PROACTIVE REFRESH SCHEDULER ----------------
   const scheduleRefresh = useCallback(
     (token: string) => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-
       const exp = getTokenExp(token);
       if (!exp) return;
-
       const delay = exp - Date.now() - 60_000;
-
-      const run = async () => {
-        await handleRefresh();
-      };
-
-      if (delay <= 0) run();
-      else refreshTimerRef.current = setTimeout(run, delay);
+      if (delay <= 0) handleRefresh();
+      else refreshTimerRef.current = setTimeout(() => handleRefresh(), delay);
     },
     [handleRefresh],
   );
@@ -143,79 +154,82 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const token = authDetails?.access_token;
     if (!token) return;
-
     scheduleRefresh(token);
-
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
   }, [authDetails?.access_token, scheduleRefresh]);
 
   // ---------------- VISIBILITY FIX ----------------
-
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState !== "visible") return;
-
       const token = authDetails?.access_token;
       if (!token) return;
-
-      if (isExpired(token)) {
-        await handleRefresh();
-      } else {
-        scheduleRefresh(token);
-      }
+      if (isExpired(token)) await handleRefresh();
+      else scheduleRefresh(token);
     };
-
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [authDetails?.access_token, handleRefresh, scheduleRefresh]);
 
   // ---------------- INIT ----------------
-
+  // FIX (Bug 1): pass () => authDetailsRef.current so the interceptor always
+  // reads the latest token, not the null value captured at mount time.
   useEffect(() => {
     const stored = localStorage.getItem("authUser");
-
     if (stored) {
-      const parsed = JSON.parse(stored);
-      setAuthDetails(parsed);
-
-      if (parsed?.access_token) {
-        websocket.connect(parsed.access_token);
+      try {
+        const parsed = JSON.parse(stored);
+        setAuthDetails(parsed);
+        if (parsed?.access_token) {
+          websocket.connect(parsed.access_token);
+        }
+      } catch {
+        localStorage.removeItem("authUser");
       }
     }
 
-    setupInterceptors(() => authDetails, handleRefresh);
+    // FIX (Bug 1): use the ref getter — always returns current token
+    setupInterceptors(() => authDetailsRef.current, handleRefresh);
 
+    // FIX (Bug 4): store the cleanup so it can be replaced if needed.
+    // Assign once; handleRefresh is stable due to useCallback.
     websocket.onAuthFailure = handleRefresh;
 
     setTimeout(() => setIsLoading(false), 50);
-  }, []);
 
-  const updateAuth = (user: any) => {
-    if (!user) return safeLogout();
+    return () => {
+      // FIX (Bug 4): clean up the websocket handler on unmount
+      websocket.onAuthFailure = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once
 
-    setAuthDetails(user);
-    localStorage.setItem("authUser", JSON.stringify(user));
+  // ---------------- PUBLIC UPDATERS ----------------
+  const updateAuth = useCallback(
+    (user: any) => {
+      if (!user) {
+        safeLogout();
+        return;
+      }
+      setAuthDetails(user);
+      localStorage.setItem("authUser", JSON.stringify(user));
+      if (user?.access_token) {
+        websocket.reconnectWithToken(user.access_token);
+      }
+    },
+    [safeLogout],
+  );
 
-    if (user?.access_token) {
-      websocket.reconnectWithToken(user.access_token);
-    }
-  };
-
-  const updateUser = (patch: any) => {
+  const updateUser = useCallback((patch: any) => {
     setAuthDetails((prev: any) => {
       if (!prev) return prev;
-
-      const updated = {
-        ...prev,
-        user: { ...prev.user, ...patch },
-      };
-
+      const updated = { ...prev, user: { ...prev.user, ...patch } };
       localStorage.setItem("authUser", JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -226,6 +240,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         showAuthModal,
         setShowAuthModal,
+        registerChatReset, // FIX: exposed so ChatProvider can register its reset fn
       }}
     >
       {children}
