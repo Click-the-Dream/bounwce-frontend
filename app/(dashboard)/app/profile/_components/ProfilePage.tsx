@@ -94,7 +94,7 @@ export default function ProfilePage() {
           }}
           isOwnProfile={isOwnProfile}
         />
-        <div className="block absolute z-50 -bottom-10 left-3 md:hidden">
+        <div className="block absolute z-20 -bottom-10 left-3 md:hidden">
           <ProfileImage
             user={{
               id: userData.id,
