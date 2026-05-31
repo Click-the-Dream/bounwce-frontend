@@ -139,11 +139,10 @@ export const useSocketConnection = ({
 
             const exists = items.some(
   (i: any) =>
-    i.id === message.id ||
-    i.client_id === message.client_id
+    i.id === message.id 
 );
             const newItems = exists
-              ? items.map((i: any) => ((i.id === message.id || i.client_id === message.client_id)  ? updater(i) : i))
+              ? items.map((i: any) => (i.id === message.id  ? updater(i) : i))
               : [...items, updater(message)];
 
             return {
