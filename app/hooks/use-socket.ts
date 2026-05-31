@@ -311,7 +311,7 @@ if (existing) {
     peer_id: peerId,
     pending: false,
     delivery_status: "sent",
-    client_id: undefined, // remove it
+    client_id: undefined,
   });
 } else {
   await db.messages.put({
