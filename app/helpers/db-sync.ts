@@ -31,7 +31,9 @@ export const updateDBEntity = async ({
   if (!existing && key === "id") {
     existing = await table.where("client_id").equals(keyValue).first();
   }
-  const updated = updater(existing ?? { client_id: keyValue });
+  const base = existing ?? { [key]: keyValue };
+
+  const updated = updater(base);
   await table.put(updated);
   return updated;
 };
