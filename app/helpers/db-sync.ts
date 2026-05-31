@@ -34,6 +34,14 @@ export const updateDBEntity = async ({
   const base = existing ?? { [key]: keyValue };
 
   const updated = updater(base);
+  if (!updated?.[key]) {
+    console.error("Missing key path for IndexedDB put()", {
+      key,
+      updated,
+    });
+    return null;
+  }
+
   await table.put(updated);
   return updated;
 };

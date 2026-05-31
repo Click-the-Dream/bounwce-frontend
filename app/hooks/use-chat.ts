@@ -12,11 +12,9 @@ import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
 import { ReplyTarget, User } from "../_utils/types/buyer";
 import { useEffect } from "react";
 import { useChatUtils } from "../context/ChatContext";
+import { normalizeInfinite, normalizeMessage } from "../_utils/chat/normalizer";
 
-// ---------------------------------------------------------------------------
 // HELPERS
-// ---------------------------------------------------------------------------
-
 const mergeIntoQuery = (old: any, message: any): any => {
   const emptyState = {
     pages: [
@@ -157,13 +155,6 @@ const useChat = () => {
     });
   };
   // MESSAGES
-  const normalizeMessage = (message: any) => ({
-    ...message,
-    delivery_status: message.delivery_status ?? "sent",
-    synced: message.synced ?? true,
-  });
-  const normalizeInfinite = (data: any) =>
-    data?.pages?.[0]?.messages?.items ? data : undefined;
 
   const useGetMessages = (options: {
     userId: string;
@@ -207,12 +198,7 @@ const useChat = () => {
           const rawItems = data?.messages?.items || [];
 
           const items = rawItems.map((m: any) =>
-            normalizeMessage({
-              ...m,
-              peer_id: options.userId,
-              delivery_status: "sent",
-              synced: true,
-            }),
+            normalizeMessage(m, options.userId),
           );
 
           if (pageParam === 1 && items.length > 0) {
@@ -348,14 +334,18 @@ const useChat = () => {
       reply_to_message: reply_to,
     });
 
-    const messageWithClientId = { ...message, client_id: message.id };
-
+    const messageWithClientId = {
+      ...message,
+      id: message.id,
+      client_id: message.id,
+    };
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
       mergeIntoQuery(old, messageWithClientId),
     );
 
     const messageToSave = {
       ...messageWithClientId,
+      id: message.id,
       peer_id:
         messageWithClientId.recipient_id === currentUser.id
           ? messageWithClientId.sender_id
