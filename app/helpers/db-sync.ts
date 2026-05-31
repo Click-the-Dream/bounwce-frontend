@@ -74,3 +74,46 @@ export const syncEntity = async ({
     console.error(`Failed DB sync for ${store}`, err);
   });
 };
+
+const markMessageAsReadSelector = (old: any, updater: any) => {
+  return {
+    ...old,
+    pages: old.pages.map((page: any) => ({
+      ...page,
+      messages: {
+        ...page.messages,
+        items: page.messages.items.map((msg: any) => updater(msg)),
+      },
+    })),
+  };
+};
+const markAsReadUpdater = (msgId: string, userId: string) => (msg: any) => {
+  if (msg.id !== msgId) return msg;
+
+  if (msg.sender_id === userId) return msg;
+
+  return {
+    ...msg,
+    read_at: msg.read_at ?? new Date().toISOString(),
+  };
+};
+export const syncMessageRead = async ({
+  db,
+  queryClient,
+  chatId,
+  messageId,
+  userId,
+}: any) => {
+  const updater = markAsReadUpdater(messageId, userId);
+
+  await syncEntity({
+    db,
+    queryClient,
+    store: "messages",
+    key: "peer_id",
+    keyValue: chatId,
+    queryKey: ["messages", chatId],
+    updater,
+    selector: markMessageAsReadSelector,
+  });
+};

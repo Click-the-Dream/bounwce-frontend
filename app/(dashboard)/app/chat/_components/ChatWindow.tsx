@@ -24,8 +24,12 @@ const ChatWindow = ({
   const { authDetails } = useAuth();
   const { chatId } = useParams<{ chatId: string }>();
   const { resetUnread } = useNotifications();
-  const scrollListRef = useRef<{ scrollToBottom: () => void }>(null);
+  const scrollListRef = useRef<{
+    scrollToBottom: () => void;
+    markVisibleUnreadAsRead: () => void;
+  }>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const isRestrictedUser =
     selectedUser?.full_name === "Bouwnce" ||
     selectedUser?.email === "justclick610@gmail.com";
@@ -88,6 +92,7 @@ const ChatWindow = ({
         <MessageList
           ref={scrollListRef}
           onScrollNearBottomChange={setShowScrollButton}
+          onUnreadChange={setUnreadCount}
         />
       ) : (
         <div className="hidden md:flex flex-1 items-center justify-center bg-[#fafafa]">
@@ -136,7 +141,11 @@ const ChatWindow = ({
           <SendMessage
             selectedChat={selectedUser}
             showScrollButton={showScrollButton}
-            onScrollToBottom={() => scrollListRef.current?.scrollToBottom()}
+            unreadCount={unreadCount}
+            onScrollToBottom={() => {
+              scrollListRef.current?.scrollToBottom();
+              scrollListRef.current?.markVisibleUnreadAsRead();
+            }}
           />
         )
       ) : null}

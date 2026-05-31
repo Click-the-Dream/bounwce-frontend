@@ -25,6 +25,7 @@ interface SendMessageProps {
   selectedChat?: User;
   showScrollButton: boolean;
   onScrollToBottom?: any;
+  unreadCount?: number;
 }
 
 type FileAcceptType = "image" | "video" | "file" | "camera" | "all";
@@ -41,6 +42,7 @@ const SendMessage = ({
   selectedChat,
   showScrollButton,
   onScrollToBottom,
+  unreadCount,
 }: SendMessageProps) => {
   const { authDetails } = useAuth();
   const { replyTo, setReplyTo, activeUploadsRef } = useChatUtils();
@@ -415,6 +417,7 @@ const SendMessage = ({
       <ScrollToBottomBtn
         onScrollToBottom={onScrollToBottom}
         isVisible={showScrollButton}
+        unreadCount={unreadCount}
       />
     </div>
   );
