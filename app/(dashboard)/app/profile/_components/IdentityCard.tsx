@@ -23,6 +23,7 @@ import { shareProfile } from "@/app/_utils/share";
 import { slugify } from "@/app/_utils/slugify";
 import EditProfileModal from "./EditProfileModal";
 import ProfileImage from "./ProfileImage";
+import { useNotifications } from "@/app/context/NotificationContext";
 
 type Props = {
   data: any;
@@ -35,6 +36,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [openEditProfile, setOpenEditProfile] = useState(false);
+  const { setConnectionModal } = useNotifications();
 
   const [localConnectStatus, setLocalConnectStatus] = useState<
     "idle" | "loading" | "pending" | "connected"
@@ -87,13 +89,14 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
       {
         onSuccess: () => {
           setLocalConnectStatus("pending");
-          onSuccess({
-            title: "Connection Request Sent",
-            message: "Request sent successfully.",
+          setConnectionModal({
+            isOpen: true,
+            userId: data?.id,
+            full_name: data.name ?? "user",
+            profile_pic: data.profile_pic,
           });
 
           queryClient.invalidateQueries();
-          router.push(`/app/chat/${data.id}`);
         },
         onError: () => {
           setLocalConnectStatus("idle");

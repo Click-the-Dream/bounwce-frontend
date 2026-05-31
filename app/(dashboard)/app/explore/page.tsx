@@ -8,35 +8,21 @@ import ExploreCardSkeleton from "../_components/loader/ExploreCardSkeleton";
 import { onFailure } from "@/app/_utils/notification";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import ConnectionModal from "./_components/ConnectionModal";
-
-interface ModalState {
-  isOpen: boolean;
-  userId: string;
-  full_name: string;
-  profile_pic?: {
-    url: string;
-  };
-}
-
-const MODAL_CLOSED: ModalState = {
-  isOpen: false,
-  userId: "",
-  full_name: "",
-};
+import { useNotifications } from "@/app/context/NotificationContext";
+import { MODAL_CLOSED } from "@/app/_utils/types/connection";
 
 const ExplorePage = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { useGetSuggestedCandidates, createMatchRequest, useGetMatchRequests } =
     useMatch();
+  const { setConnectionModal, connectionModal } = useNotifications();
 
   const { data } = useGetMatchRequests();
   const matchRequests = data?.items;
   const [connectState, setConnectState] = useState<
     Record<string, ConnectStatus>
   >({});
-  const [modal, setModal] = useState<ModalState>(MODAL_CLOSED);
 
   const requestMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -78,7 +64,7 @@ const ExplorePage = () => {
           queryClient.invalidateQueries();
 
           // Open the modal — it handles auto-redirect internally
-          setModal({
+          setConnectionModal({
             isOpen: true,
             userId,
             full_name: user.full_name ?? "USer",
@@ -94,17 +80,6 @@ const ExplorePage = () => {
         },
       },
     );
-  };
-
-  const goToChat = useCallback(() => {
-    if (!modal.userId) return;
-
-    router.push(`/app/chat/${modal.userId}`);
-    setModal(MODAL_CLOSED);
-  }, [modal.userId, router]);
-
-  const dismissModal = () => {
-    setModal(MODAL_CLOSED);
   };
 
   if (isLoading) {
@@ -196,14 +171,6 @@ const ExplorePage = () => {
           </div>
         </main>
       </div>
-
-      <ConnectionModal
-        isOpen={modal.isOpen}
-        full_name={modal.full_name}
-        onGoToChat={goToChat}
-        onDismiss={dismissModal}
-        userId={modal?.userId}
-      />
     </>
   );
 };

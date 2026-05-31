@@ -5,6 +5,7 @@ import { ConnectionStatusToast } from "../_utils/ConnectionStatusToast";
 import AuthModal from "../_components/AuthModal";
 import { useEffect } from "react";
 import useLocation from "../hooks/use-location";
+import ConnectionModal from "../(dashboard)/app/explore/_components/ConnectionModal";
 
 export default function SocketConnect({
   children,
@@ -33,6 +34,7 @@ export default function SocketConnect({
         isOpen={showAuthModal || false}
         onClose={() => setShowAuthModal(false)}
       />
+      <ConnectionModal />
     </>
   );
 }

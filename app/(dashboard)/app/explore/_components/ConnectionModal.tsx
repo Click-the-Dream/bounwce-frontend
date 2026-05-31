@@ -2,34 +2,33 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import UserImage from "../../_components/UserImage";
+import { useNotifications } from "@/app/context/NotificationContext";
+import { useRouter } from "next/navigation";
+import { MODAL_CLOSED } from "@/app/_utils/types/connection";
 
-interface ConnectionModalProps {
-  isOpen: boolean;
-  full_name: string;
-  profile_pic?: { url: string };
-  userId: string;
-  onGoToChat: () => void;
-  onDismiss: () => void;
-}
+const ConnectionModal = () => {
+  const { connectionModal, setConnectionModal } = useNotifications();
+  const router = useRouter();
+  const goToChat = () => {
+    if (!connectionModal.userId) return;
 
-const ConnectionModal = ({
-  isOpen,
-  full_name,
-  profile_pic,
-  onGoToChat,
-  onDismiss,
-  userId,
-}: ConnectionModalProps) => {
+    router.push(`/app/chat/${connectionModal.userId}`);
+    setConnectionModal(MODAL_CLOSED);
+  };
+
+  const dismissModal = () => {
+    setConnectionModal(MODAL_CLOSED);
+  };
   return (
     <AnimatePresence>
-      {isOpen && (
+      {connectionModal?.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onDismiss}
+            onClick={dismissModal}
             className="absolute inset-0 bg-black/55 backdrop-blur-md"
           />
 
@@ -42,7 +41,7 @@ const ConnectionModal = ({
             className="relative w-full max-w-sm rounded-[28px] bg-white/95 backdrop-blur-xl shadow-2xl overflow-hidden"
           >
             {/* subtle gradient glow */}
-            <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/70 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-b from-emerald-50/70 via-transparent to-transparent pointer-events-none" />
 
             <div className="relative px-6 pt-10 pb-7 text-center">
               {/* Avatar success ring */}
@@ -64,9 +63,9 @@ const ConnectionModal = ({
                 <div className="relative h-24 w-24 rounded-full bg-white shadow-lg flex items-center justify-center">
                   <UserImage
                     user={{
-                      id: userId,
-                      full_name,
-                      profile_pic,
+                      id: connectionModal?.userId,
+                      full_name: connectionModal?.full_name,
+                      profile_pic: connectionModal?.profile_pic,
                     }}
                     size={50}
                   />
@@ -81,7 +80,9 @@ const ConnectionModal = ({
               {/* Context */}
               <p className="mt-2 text-[14px] text-gray-500 leading-relaxed">
                 Your request to{" "}
-                <span className="font-medium text-gray-800">{full_name}</span>{" "}
+                <span className="font-medium text-gray-800">
+                  {connectionModal?.full_name}
+                </span>{" "}
                 has been sent. You can start chatting anytime.
               </p>
 
@@ -92,7 +93,7 @@ const ConnectionModal = ({
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onGoToChat}
+                onClick={goToChat}
                 className="w-full rounded-2xl  py-3.5 text-black font-semibold shadow-md"
               >
                 Send message
@@ -102,7 +103,7 @@ const ConnectionModal = ({
               <motion.button
                 whileHover={{ opacity: 0.7 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onDismiss}
+                onClick={dismissModal}
                 className="mt-3 w-full rounded-2xl py-3 text-sm font-medium text-gray-600"
               >
                 Not now

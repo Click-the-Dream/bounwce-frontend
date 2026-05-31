@@ -1,3 +1,5 @@
+import { ModalState } from "./connection";
+
 export type Notification = {
   id: string;
   user_id: string;
@@ -21,4 +23,6 @@ export type NotificationContextType = {
   fetchNextPage: any;
   hasNextPage: any;
   isFetchingNextPage: any;
+  connectionModal: ModalState;
+  setConnectionModal: (m: ModalState) => void;
 };

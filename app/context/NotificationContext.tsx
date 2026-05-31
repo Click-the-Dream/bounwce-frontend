@@ -16,6 +16,7 @@ import {
 } from "../_utils/types/notification";
 import { syncEntity } from "../helpers/db-sync";
 import { useChatUtils } from "./ChatContext";
+import { MODAL_CLOSED, ModalState } from "../_utils/types/connection";
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
 
@@ -29,6 +30,8 @@ export const NotificationProvider = ({
 
   const { getNotifications, unreadSummary } = useNotificationServices();
 
+  const [connectionModal, setConnectionModal] =
+    useState<ModalState>(MODAL_CLOSED);
   // 1. Reactive System Unread
   const { data: summary } = unreadSummary();
   const systemUnread = summary?.notifications?.unread_count || 0;
@@ -128,9 +131,15 @@ export const NotificationProvider = ({
           }));
           return { ...old, pages };
         },
-        updater: (c: any) => {
-          if (!c) return c;
-          return { ...c, unread_count: 0 };
+        updater: (c: { unread_count: any }) => {
+          console.log("before", c?.unread_count);
+
+          const updated = {
+            ...c,
+            unread_count: 0,
+          };
+
+          return updated;
         },
       });
     },
@@ -176,6 +185,8 @@ export const NotificationProvider = ({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        connectionModal,
+        setConnectionModal,
       }}
     >
       {children}

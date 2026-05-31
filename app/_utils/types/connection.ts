@@ -32,3 +32,18 @@ export interface ConnectionRequest {
   requester_id: string;
   target_user_id: string;
 }
+
+export interface ModalState {
+  isOpen: boolean;
+  userId: string;
+  full_name: string;
+  profile_pic?: {
+    url: string;
+  };
+}
+
+export const MODAL_CLOSED: ModalState = {
+  isOpen: false,
+  userId: "",
+  full_name: "",
+};
