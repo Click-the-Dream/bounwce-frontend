@@ -29,9 +29,15 @@ type Props = {
   data: any;
   isOwnProfile: boolean;
   isLoading?: boolean;
+  isConnectionLoading?: boolean;
 };
 
-const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
+const IdentityCard: React.FC<Props> = ({
+  data,
+  isOwnProfile,
+  isLoading,
+  isConnectionLoading,
+}) => {
   const { authDetails, setShowAuthModal } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -127,7 +133,6 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
             title: "Connected",
             message: "You are now connected",
           });
-          queryClient.invalidateQueries();
         },
         onError: () => {
           onFailure({
@@ -299,7 +304,6 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
             {/* CONNECTED */}
             {(isConnected || localConnectStatus === "connected") && (
               <button
-                onClick={handleReject}
                 disabled={actionLoading !== null}
                 className="cursor-pointer font-medium max-w-23.25 h-7.5 flex-1 bg-white border-[0.83px] border-black outline outline-[#747474] hover:bg-[#dedede] text-black p-2 rounded-full text-xs flex items-center justify-center transition-all"
               >
@@ -332,8 +336,13 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
 
       {/* STATS */}
       <div className="flex flex-wrap justify-between gap-2 text-[13px] mb-5 text-[#888888]">
-        <span>
-          <b className="font-normal">{data.followers}</b> Connections
+        <span className="flex items-center gap-1">
+          {isConnectionLoading ? (
+            <div className="h-3 w-6 bg-gray-200 animate-pulse rounded" />
+          ) : (
+            <b className="font-normal">{data.followers}</b>
+          )}{" "}
+          Connections
         </span>
         <span>
           <b className="font-normal">{data.badges}</b> Profile Views

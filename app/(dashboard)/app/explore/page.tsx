@@ -87,7 +87,7 @@ const ExplorePage = () => {
       <div className="min-h-screen bg-gray-50 text-gray-800 py-5.75">
         <main className="flex justify-center px-4 md:px-8 xl:px-14">
           <div className="w-full max-w-7xl">
-            <div className="grid grid-cols-explore gap-x-2.5 gap-y-8.75 pb-12">
+            <div className="grid grid-cols-store gap-x-2.5 gap-y-8.75 pb-12 justify-center">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ExploreCardSkeleton key={i} />
               ))}

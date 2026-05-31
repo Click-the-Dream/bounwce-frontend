@@ -9,6 +9,7 @@ export interface SuggestedCandidate {
   user_id: string;
   full_name: string;
   username?: string;
+  bio?: string;
   score: number;
   score_explanation: string;
   distance_km?: number;

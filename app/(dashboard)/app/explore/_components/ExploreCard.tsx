@@ -5,6 +5,7 @@ import { LuClock } from "react-icons/lu";
 import { slugify } from "@/app/_utils/slugify";
 import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
 import UserImage from "../../_components/UserImage";
+import useMatch from "@/app/hooks/use-match";
 
 type Props = SuggestedCandidate & {
   onConnect: (id: string) => void;
@@ -15,6 +16,7 @@ const interests = ["Reading", "Cooking", "Fitness"];
 const ExploreCard = ({
   full_name,
   user_id,
+  bio,
   shared_interests,
   score,
   profile_pic,
@@ -22,6 +24,13 @@ const ExploreCard = ({
   connectStatus = "idle",
 }: Props) => {
   const router = useRouter();
+  const { useGetMatchesByUserId } = useMatch();
+  const {
+    data: connections,
+    isLoading: isConnectionLoading,
+    isError: isConnectionError,
+  } = useGetMatchesByUserId(user_id);
+  const followersCount = connections?.total ?? 0;
 
   const goToProfile = () => {
     router.push(`/app/profile/${slugify(full_name)}_${user_id}`);
@@ -103,21 +112,27 @@ const ExploreCard = ({
           </h3>
           <p className="text-[#888888] text-[13px]"> @{user_id?.slice(0, 8)}</p>
 
-          {/* <p className="text-[#888888] text-xs leading-relaxed mb-[8.73px]">
+          <p className="text-[#888888] text-xs leading-relaxed mb-[8.73px]">
             {bio}
-          </p> */}
+          </p>
         </div>
       </div>
-      {/*<div className="flex-1 flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
+      <div className="flex-1 flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
         <p className="text-xs text-[#888888]">Followers:</p>{" "}
-        <span className="font-medium text-[13px]">{Math.max(0, score)}</span>
-      </div>*/}
+        <span className="font-medium text-[13px]">
+          {isConnectionLoading ? (
+            <div className="h-3 w-6 bg-gray-200 animate-pulse rounded" />
+          ) : (
+            Math.max(0, followersCount)
+          )}
+        </span>
+      </div>
       <div className="flex-1 flex flex-wrap gap-2 mt-3.5 mb-5.75 px-4">
         {shared_interests?.length > 0 ? (
           shared_interests.slice(0, 3)?.map((interest, index) => (
             <span
               key={index}
-              className="px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
+              className="flex items-center justify-center h-max px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
             >
               {interest}
             </span>

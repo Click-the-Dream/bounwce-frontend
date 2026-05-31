@@ -111,6 +111,7 @@ export default function ProfilePage() {
           data={userData}
           isOwnProfile={isOwnProfile}
           isLoading={isLoading}
+          isConnectionLoading={isConnectionLoading}
         />
       </div>
 
