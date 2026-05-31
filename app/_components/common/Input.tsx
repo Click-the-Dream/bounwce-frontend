@@ -79,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, any>(
               value={value}
               placeholder={placeholder}
               onChange={onChange}
-              className="flex-1 bg-transparent focus:outline-none w-full text-[16px] md:text-[14px]"
+              className="flex-1 bg-transparent focus:outline-none w-full text-[clamp(12px,1vw,14px)]"
               {...rest}
             />
           )}

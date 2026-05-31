@@ -38,7 +38,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   // ---------------- GLOBAL GUARDS ----------------
-  const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
+
+  const refreshInFlight = {
+    current: null as Promise<string | null> | null,
+  };
   const logoutLockRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -57,8 +60,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // ---------------- SAFE LOGOUT ----------------
-  // FIX (Bug 3): safeLogout now also wipes IndexedDB + prewarm ref.
-  // It imports lazily to avoid circular deps between AuthContext ↔ chat-store.
   const safeLogout = useCallback(async () => {
     if (logoutLockRef.current) return;
     logoutLockRef.current = true;
@@ -92,17 +93,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [queryClient]);
 
   // ---------------- SINGLE REFRESH PIPELINE ----------------
-  const refreshToken = useCallback(async (): Promise<string | null> => {
-    if (!refreshPromiseRef.current) {
-      refreshPromiseRef.current = refreshTokenCall()
-        .then((res) => res?.data?.access_token ?? null)
-        .catch(() => null)
-        .finally(() => {
-          refreshPromiseRef.current = null;
-        });
-    }
-    return refreshPromiseRef.current;
-  }, []);
 
   const updateAccessToken = useCallback((token: string) => {
     setAuthDetails((prev: any) => {
@@ -114,50 +104,63 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, []);
 
+  const refreshTokenSafe = async (): Promise<string | null> => {
+    if (refreshInFlight.current) return refreshInFlight.current;
+
+    refreshInFlight.current = (async () => {
+      try {
+        const token = await refreshTokenCall();
+        return token;
+      } catch (err: any) {
+        const isNetworkError =
+          !err.response ||
+          err.code === "ERR_NETWORK" ||
+          err.code === "ECONNABORTED";
+
+        const isAuthError =
+          err.response?.status === 401 || err.response?.status === 403;
+
+        if (isNetworkError) {
+          console.warn("[AUTH] network issue, preserving session");
+          return null;
+        }
+
+        if (isAuthError) {
+          console.warn("[AUTH] refresh token invalid → logout");
+          throw new Error("AUTH_EXPIRED");
+        }
+
+        console.warn("[AUTH] unknown refresh error");
+        return null;
+      }
+    })().finally(() => {
+      refreshInFlight.current = null;
+    });
+
+    return refreshInFlight.current;
+  };
+
   // ---------------- TOKEN REFRESH HANDLER ----------------
   const handleRefresh = useCallback(async (): Promise<string | null> => {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      console.warn("Offline — skipping refresh, preserving session.");
+      console.warn("[AUTH] offline → skip refresh");
       return null;
     }
 
     try {
-      const newToken = await refreshToken();
-      if (!newToken) {
-        // Refresh succeeded but returned no token — genuine auth failure
+      const token = await refreshTokenSafe();
+
+      if (!token) return null;
+
+      updateAccessToken(token);
+      return token; // 🔥 IMPORTANT FIX
+    } catch (e: any) {
+      if (e.message === "AUTH_EXPIRED") {
         await safeLogout();
-        return null;
       }
-      updateAccessToken(newToken);
-      return newToken;
-    } catch (error: any) {
-      // Network error or timeout — don't log out, user may just be offline
-      if (
-        !error.response ||
-        error.code === "ERR_NETWORK" ||
-        error.code === "ECONNABORTED"
-      ) {
-        console.warn("Network error during refresh — preserving session.");
-        return null;
-      }
-
-      // 401/403 from the refresh endpoint — token is genuinely invalid
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        await safeLogout();
-        return null;
-      }
-
-      // 5xx server error — don't log out, server might be temporarily down
-      if (error.response?.status >= 500) {
-        console.warn("Server error during refresh — preserving session.");
-        return null;
-      }
-
-      // Unknown error — preserve session, don't logout aggressively
-      console.error("Unexpected refresh error:", error);
       return null;
     }
-  }, [refreshToken, safeLogout, updateAccessToken]);
+  }, [updateAccessToken, safeLogout]);
 
   // ---------------- PROACTIVE REFRESH SCHEDULER ----------------
   const scheduleRefresh = useCallback(
@@ -212,8 +215,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [authDetails?.access_token, handleRefresh, scheduleRefresh]);
 
   // ---------------- INIT ----------------
-  // FIX (Bug 1): pass () => authDetailsRef.current so the interceptor always
-  // reads the latest token, not the null value captured at mount time.
   useEffect(() => {
     const stored = localStorage.getItem("authUser");
     if (stored) {
@@ -231,9 +232,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // FIX (Bug 1): use the ref getter — always returns current token
     setupInterceptors(() => authDetailsRef.current, handleRefresh);
 
-    // FIX (Bug 4): store the cleanup so it can be replaced if needed.
-    // Assign once; handleRefresh is stable due to useCallback.
-    websocket.onAuthFailure = handleRefresh;
+    websocket.onAuthFailure = async () => {
+      console.warn("[WS] auth failure → attempting silent refresh");
+
+      const token = await handleRefresh();
+
+      if (!token) {
+        console.warn("[WS] refresh failed (NOT logging out)");
+      }
+    };
 
     setTimeout(() => setIsLoading(false), 50);
 
