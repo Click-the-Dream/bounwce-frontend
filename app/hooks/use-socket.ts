@@ -137,10 +137,13 @@ export const useSocketConnection = ({
           const pages = old.pages.map((page: any) => {
             const items = page.messages?.items ?? [];
 
-            const exists = items.some((i: any) => i.id === message.id);
-
+            const exists = items.some(
+  (i) =>
+    i.id === message.id ||
+    i.client_id === message.client_id
+);
             const newItems = exists
-              ? items.map((i: any) => (i.id === message.id ? updater(i) : i))
+              ? items.map((i: any) => ((i.id === message.id || i.client_id === message.client_id)  ? updater(i) : i))
               : [...items, updater(message)];
 
             return {
@@ -296,15 +299,15 @@ export const useSocketConnection = ({
 
       // 2. Fix DB: remove temp + store real
       const db = await getDB();
-      if (!db) return;
+if (!db) return;
 
-      await db.messages.delete(clientId);
-      await db.messages.put({
-        ...payload,
-        peer_id: peerId,
-        pending: false,
-        delivery_status: "sent",
-      });
+await db.messages.update(clientId, {
+  ...payload,
+  id: payload.id, // server id
+  peer_id: peerId,
+  pending: false,
+  delivery_status: "sent",
+});
     };
     const handleTyping = (raw: any) => {
       const data = raw.data || raw;
