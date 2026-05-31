@@ -207,6 +207,7 @@ const MessageList = forwardRef(
     // Expose the function to the parent
     useImperativeHandle(ref, () => ({
       scrollToBottom,
+      markVisibleUnreadAsRead,
     }));
 
     const scrollToMessage = (messageId: string) => {
