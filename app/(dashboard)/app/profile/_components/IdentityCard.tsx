@@ -190,17 +190,19 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
   return (
     <div className="bg-[#F7F7F7] p-3.75 w-full h-full">
       {/* PROFILE IMAGE */}
-      <ProfileImage
-        user={{
-          id: data.id,
-          full_name: data?.name,
-          profile_pic: data?.profile_pic,
-        }}
-        isOwnProfile={isOwnProfile}
-      />
+      <div className="hidden md:block">
+        <ProfileImage
+          user={{
+            id: data.id,
+            full_name: data?.name,
+            profile_pic: data?.profile_pic,
+          }}
+          isOwnProfile={isOwnProfile}
+        />
+      </div>
 
       {/* NAME */}
-      <div className="flex items-start justify-between gap-2 mb-4">
+      <div className="flex items-start justify-between gap-2 mt-6 md:mt-0 mb-4">
         <div>
           <h2 className="text-[18px] font-medium text-black leading-tight">
             {data.name}
@@ -219,7 +221,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
         )}
       </div>
       {/* ACTIONS */}
-      <div className="flex gap-2 mb-5.5 items-center">
+      <div className="flex gap-2 mb-5.5 items-center flex-wrap">
         {isOwnProfile ? (
           <button
             onClick={handleShareProfile}
@@ -329,7 +331,7 @@ const IdentityCard: React.FC<Props> = ({ data, isOwnProfile, isLoading }) => {
       </div>
 
       {/* STATS */}
-      <div className="flex justify-between text-[13px] mb-5 text-[#888888]">
+      <div className="flex flex-wrap justify-between gap-2 text-[13px] mb-5 text-[#888888]">
         <span>
           <b className="font-normal">{data.followers}</b> Connections
         </span>

@@ -81,6 +81,16 @@ const useMatch = () => {
       enabled: !!authDetails?.access_token,
     });
   };
+  const useGetMatchesByUserId = (user_id?: string) => {
+    return useQuery({
+      queryKey: ["matches", user_id],
+      queryFn: async () => {
+        const res = await api.get(`/matches/${user_id}`);
+        return res?.data || [];
+      },
+      enabled: !!authDetails?.access_token && !!user_id,
+    });
+  };
 
   const useSearchUsers = (message: string, page_size: number = 10) => {
     return useInfiniteQuery({
@@ -117,6 +127,7 @@ const useMatch = () => {
     useSearchUsers,
     createMatchRequest,
     respondToMatchRequest,
+    useGetMatchesByUserId,
   };
 };
 

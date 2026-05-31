@@ -1,5 +1,7 @@
 import SafeImage from "@/app/_components/SafeImage";
+import { slugify } from "@/app/_utils/slugify";
 import { useChatUtils } from "@/app/context/ChatContext";
+import { useRouter } from "next/navigation";
 
 interface UserImageProps {
   user: {
@@ -26,11 +28,14 @@ const UserImage = ({
   const { onlineUsers } = useChatUtils();
   const isOnline = !!user?.id && !!onlineUsers?.[user.id];
   const initials = user?.full_name?.trim()?.slice(0, 2)?.toUpperCase() || "NA";
-
+  const router = useRouter();
   return (
     <div
-      // Use template literals to inject the dynamic rounded class
-      className={`relative shrink-0 border border-white ${rounded}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        router.push(`/app/profile/${slugify(user?.full_name)}_${user?.id}`);
+      }}
+      className={`cursor-pointer relative shrink-0 border border-white bg-gray-100 ${rounded}`}
       style={{ ...style, width: size, height: size }}
     >
       {user?.profile_pic?.url ? (

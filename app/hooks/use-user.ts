@@ -315,6 +315,7 @@ const useUser = () => {
         await db.users.update(userId, updatedUser);
       }
 
+      updateUser(updatedUser);
       queryClient.setQueryData(["currentUser"], (old: any) => {
         if (!old) return { data: updatedUser };
 

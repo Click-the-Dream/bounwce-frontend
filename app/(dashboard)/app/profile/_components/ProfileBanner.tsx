@@ -17,7 +17,7 @@ import profileBg from "../../../../assets/buyer/profile-bg.jpg";
 import { Portal } from "@/app/protocols/Portal";
 
 type ProfileBannerProps = {
-  user: { profile_banner?: string | null };
+  user: { profile_banner?: { url: string } };
   isOwnProfile: boolean;
 };
 
@@ -94,7 +94,7 @@ const ProfileBanner = ({ user, isOwnProfile }: ProfileBannerProps) => {
     } catch {}
   };
 
-  const bannerSrc = user?.profile_banner ?? profileBg.src;
+  const bannerSrc = user?.profile_banner?.url ?? profileBg.src;
 
   return (
     <>

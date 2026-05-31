@@ -10,21 +10,25 @@ import useMatch from "@/app/hooks/use-match";
 import ConnectionsSection from "./ConnectionSection";
 import { slugify } from "@/app/_utils/slugify";
 import { useRouter } from "next/navigation";
+import ProfileImage from "./ProfileImage";
 
 export default function ProfilePage() {
   const [showAllTags, setShowAllTags] = useState(false);
-
   const { profileId, isOwnProfile } = profileHelper();
-  const { useGetMatches } = useMatch();
-  const {
-    data: connections,
-    isLoading: isConnectionLoading,
-    isError: isConnectionError,
-  } = useGetMatches();
+  const { useGetMatches, useGetMatchesByUserId } = useMatch();
   const { useGetCurrentUser, useGetUserById } = useUser();
   const { useGetUserInterests, useGetUserInterestsById } = useInterest();
   const router = useRouter();
 
+  const connectionQuery = isOwnProfile
+    ? useGetMatches()
+    : useGetMatchesByUserId(profileId!);
+
+  const {
+    data: connections,
+    isLoading: isConnectionLoading,
+    isError: isConnectionError,
+  } = connectionQuery;
   const userQuery = isOwnProfile
     ? useGetCurrentUser()
     : useGetUserById(profileId!);
@@ -82,7 +86,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <main className="w-full relative h-[calc(100dvh-60px)] justify-start mx-auto flex flex-col gap-2 md:gap-0 md:flex-row md:justify-center p-4 md:p-8 pt-0! overflow-y-auto bg-white">
+    <main className="w-full relative h-[calc(100dvh-60px)] justify-start mx-auto flex flex-col gap-0 md:flex-row md:justify-center p-4 md:p-8 pt-0! overflow-y-auto bg-white">
       <div className="relative md:hidden">
         <ProfileBanner
           user={{
@@ -90,6 +94,16 @@ export default function ProfilePage() {
           }}
           isOwnProfile={isOwnProfile}
         />
+        <div className="block absolute z-100 -bottom-10 left-3 md:hidden">
+          <ProfileImage
+            user={{
+              id: userData.id,
+              full_name: userData?.name,
+              profile_pic: userData?.profile_pic,
+            }}
+            isOwnProfile={isOwnProfile}
+          />
+        </div>
       </div>
       {/* Left Column */}
       <div className="w-full md:max-w-76.25 relative md:sticky md:top-0 z-10">
@@ -152,23 +166,6 @@ export default function ProfilePage() {
                 </button>
               )}
             </div>
-
-            {/* TABS */}
-            {/* <div className="flex items-center gap-2.75 border-y-[0.53px] border-[#00000033] py-4.75">
-              {["Posts", "Replies", "Likes"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`min-w-13 text-xs transition-all px-2.5 py-2 rounded-[50px] ${
-                    activeTab === tab
-                      ? "bg-[#D9D9D9]"
-                      : "bg-transparent hover:bg-[#d9d9d954]"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div> */}
 
             <ConnectionsSection
               currentUserId={user?.id}
