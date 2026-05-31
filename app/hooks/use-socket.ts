@@ -138,7 +138,7 @@ export const useSocketConnection = ({
             const items = page.messages?.items ?? [];
 
             const exists = items.some(
-  (i) =>
+  (i: any) =>
     i.id === message.id ||
     i.client_id === message.client_id
 );
