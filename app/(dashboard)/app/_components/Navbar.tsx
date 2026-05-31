@@ -89,7 +89,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           <UserImage
             user={{
               id:authDetails?.user?.id,
-              full_name:authDetails?.user?.full_name
+              full_name:authDetails?.user?.full_name,
               profile_pic:authDetails?.user?.profile_pic
             }}
             size={32}
