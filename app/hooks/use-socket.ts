@@ -301,13 +301,28 @@ export const useSocketConnection = ({
       const db = await getDB();
 if (!db) return;
 
-await db.messages.update(clientId, {
-  ...payload,
-  id: payload.id, // server id
-  peer_id: peerId,
-  pending: false,
-  delivery_status: "sent",
-});
+const existing = await db.messages
+  .where("client_id")
+  .equals(clientId)
+  .first();
+
+if (existing) {
+  await db.messages.update(existing.id, {
+    ...payload,
+    peer_id: peerId,
+    pending: false,
+    delivery_status: "sent",
+    client_id: undefined, // remove it
+  });
+} else {
+  await db.messages.put({
+    ...payload,
+    peer_id: peerId,
+    pending: false,
+    delivery_status: "sent",
+    client_id: undefined,
+  });
+}
     };
     const handleTyping = (raw: any) => {
       const data = raw.data || raw;
