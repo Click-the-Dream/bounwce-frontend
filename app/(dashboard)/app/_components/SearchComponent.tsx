@@ -53,7 +53,7 @@ const SearchComponent = () => {
 
   return (
     <div
-      className={`relative w-full max-w-xl mx-auto ${isFocused ? "shadow-[0.53px_solid_#0000001A] border-[0.53px] border-[#0000001A] rounded-[10px]" : ""} transition-all duration-200`}
+      className={`relative w-full max-w-xl mx-auto ${isFocused ? "shadow-[0.53px_solid_#0000001A] border-[0.53px] border-[#0000001A] rounded-[10px] z-100" : ""} transition-all duration-200`}
       style={{}}
     >
       {/* --- SEARCH INPUT FIELD --- */}
@@ -84,7 +84,7 @@ const SearchComponent = () => {
 
       {/* --- DROPDOWN RESULTS --- */}
       {isFocused && (
-        <div className="fixed md:absolute top-0 left-0 min-w-80 w-full max-h-109.75 pt-10 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden min-h-112.5 transition-all duration-200">
+        <div className="fixed md:absolute top-0 left-0 min-w-80 w-full max-h-109.75 pt-10 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden min-h-112.5 transition-all duration-200">
           {isLoading && (
             <div className="text-center py-6 text-sm text-gray-400">
               Loading results...
