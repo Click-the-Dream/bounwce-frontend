@@ -6,6 +6,7 @@ import SearchUser from "./SearchUser";
 import useMatch from "@/app/hooks/use-match";
 import { SuggestedCandidate } from "@/app/_utils/types/payload";
 import { useAuth } from "@/app/context/AuthContext";
+import { Portal } from "@/app/protocols/Portal";
 
 const SearchComponent = () => {
   const { useGetMatches, useGetSuggestedCandidates } = useMatch();
@@ -83,6 +84,7 @@ const SearchComponent = () => {
 
       {/* --- DROPDOWN RESULTS --- */}
       {isFocused && (
+      <Portal>
         <div className="fixed md:absolute top-0 left-0 min-w-80 w-full max-h-109.75 pt-10 bg-white border border-gray-200 rounded-xl shadow-2xl z-10 overflow-hidden min-h-112.5 transition-all duration-200">
           {isLoading && (
             <div className="text-center py-6 text-sm text-gray-400">
@@ -139,6 +141,7 @@ const SearchComponent = () => {
           {/* Bottom decorative padding as per wireframe */}
           <div className="h-12 border-t border-gray-50 mt-4" />
         </div>
+      </Portal>
       )}
     </div>
   );
