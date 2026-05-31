@@ -37,13 +37,21 @@ const mergeIntoQuery = (old: any, message: any): any => {
 
   const items: any[] = pages[0].messages.items;
 
-  const exists = items.some(
-    (m) =>
-      m.id === message.id ||
-      (message.client_id && m.id === message.client_id) ||
-      (m.client_id && m.client_id === message.client_id),
-  );
-  if (exists) return old;
+  const index = items.findIndex(
+  (m) =>
+    m.client_id === message.client_id ||
+    m.id === message.id ||
+    (message.client_id && m.id === message.client_id),
+);
+
+if (index !== -1) {
+  items[index] = {
+    ...items[index],
+    ...message,
+  };
+} else {
+  items.push(message);
+}
 
   pages[0] = {
     ...pages[0],
@@ -534,14 +542,17 @@ const useChat = () => {
         });
       }
 
-      websocket.emit("chat.upload_media", {
-        recipient_id,
-        media_urls,
-        body: caption,
-        client_id: clientId[0],
-        media_type: type,
-        reply_to_message_id: reply_to?.id,
-      });
+      const stableClientId = clientId[0];
+
+websocket.emit("chat.upload_media", {
+  recipient_id,
+  media_urls,
+  body: caption,
+  client_id: stableClientId,
+  media_type: type,
+  reply_to_message_id: reply_to?.id,
+});
+
     } catch (err) {
       console.error("Media upload failed:", err);
 
