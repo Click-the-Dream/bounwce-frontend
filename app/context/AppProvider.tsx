@@ -44,7 +44,6 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
               <ToastContainer
                 position="top-right"
-                stacked
                 autoClose={2000}
                 hideProgressBar
                 closeButton={false}
@@ -56,11 +55,12 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
                   marginTop: "8px",
                 }}
                 toastClassName={() =>
-                  "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible"
+                  "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible pointer-events-auto"
                 }
                 style={{
                   top: "3rem",
-                  right: "0.5rem",
+                  right: "0",
+                  pointerEvents: "none",
                 }}
               />
             </StoreProvider>
