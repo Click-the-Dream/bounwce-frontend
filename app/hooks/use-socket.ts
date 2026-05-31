@@ -110,9 +110,6 @@ export const useSocketConnection = ({
             ? incoming.recipient_id
             : incoming.sender_id,
       };
-      console.log("EVENT", event);
-      console.log("MESSAGE", message, clientId);
-
       const otherUserId =
         message.sender_id === authUserRef.current
           ? message.recipient_id
@@ -122,10 +119,7 @@ export const useSocketConnection = ({
         String(message.sender_id) === String(authUserRef.current);
 
       const activeChatId = activeChatRef.current;
-      const isActiveChat =
-        !!activeChatId &&
-        (message.sender_id === activeChatId ||
-          message.recipient_id === activeChatId);
+      const isActiveChat = !!activeChatId && otherUserId === activeChatId;
 
       // ---------------- MESSAGES CACHE ----------------
       const db = await getDB();
@@ -136,34 +130,33 @@ export const useSocketConnection = ({
         key: "id",
         keyValue: message.id,
         queryKey: ["messages", otherUserId],
+        // Update your syncEntity selector for messages like this:
         selector: (old: any, updater: any) => {
-          if (!old) return old;
+          if (!old?.pages) return old;
 
-          return {
-            ...old,
-            pages: old.pages.map((page: any, pIdx: number) => {
-              if (pIdx !== 0) return page; // Only update first page for speed
+          const pages = old.pages.map((page: any) => {
+            const items = page.messages?.items ?? [];
 
-              const items = [...page.messages.items];
-              // Find index by client_id OR id
-              const idx = items.findIndex(
-                (m: any) => m.client_id === clientId || m.id === message.id,
-              );
+            const exists = items.some((i: any) => i.id === message.id);
 
-              if (idx !== -1) {
-                // IN-PLACE UPDATE: No flickering
-                items[idx] = updater(items[idx]);
-              } else {
-                // Fallback if missing
-                items.push(updater(message));
-              }
+            const newItems = exists
+              ? items.map((i: any) => (i.id === message.id ? updater(i) : i))
+              : [...items, updater(message)];
 
-              return { ...page, messages: { ...page.messages, items } };
-            }),
-          };
+            return {
+              ...page,
+              messages: {
+                ...page.messages,
+                items: newItems,
+              },
+            };
+          });
+
+          return { ...old, pages };
         },
         updater: (m: any) => ({
-          ...(m || {}),
+          ...m,
+          id: message.id,
           ...message,
           pending: false,
           delivery_status: "sent",
@@ -173,42 +166,78 @@ export const useSocketConnection = ({
       await syncEntity({
         db,
         queryClient,
-        store: "messages",
-        key: "id",
-        keyValue: message.id,
-        queryKey: ["messages", otherUserId],
-
+        store: "conversations",
+        key: "peer_id",
+        keyValue: otherUserId,
+        queryKey: ["conversations", {}],
         selector: (old: any, updater: any) => {
-          if (!old) return old;
+          if (!old?.pages) return old;
 
-          const pages = old.pages.map((page: any, idx: number) => {
-            if (idx !== 0) return page;
+          let found = false;
+          let updatedConversation: any = null;
 
-            const items = [...page.messages.items];
+          // Update the conversation in place first
+          const pages = old.pages.map((page: any) => ({
+            ...page,
+            items: (page.items ?? []).map((c: any) => {
+              const isMatch =
+                c.peer_id === otherUserId || c.user?.id === otherUserId;
+              if (isMatch) {
+                found = true;
+                updatedConversation = updater(c);
+                return updatedConversation;
+              }
+              return c;
+            }),
+          }));
 
-            const exists = items.findIndex((m: any) => m.id === message.id);
+          if (!found) return { ...old, pages };
 
-            if (exists !== -1) {
-              items[exists] = updater(items[exists]);
-            } else {
-              items.push(updater(message));
-            }
+          const firstPage = pages[0];
+          const others = (firstPage.items ?? []).filter(
+            (c: any) => c.peer_id !== otherUserId && c.user?.id !== otherUserId,
+          );
 
-            return {
-              ...page,
-              messages: { ...page.messages, items },
-            };
-          });
-
-          return { ...old, pages };
+          return {
+            ...old,
+            pages: [
+              {
+                ...firstPage,
+                items: [updatedConversation, ...others],
+              },
+              ...pages.slice(1),
+            ],
+          };
         },
+        updater: (c: any) => {
+          if (!c) return c;
 
-        updater: (m: any) => ({
-          ...m,
-          ...message,
-          pending: false,
-          delivery_status: "sent",
-        }),
+          // Ensure last_message is an object, even if it was previously false
+          const existingLastMessage =
+            typeof c.last_message === "object" && c.last_message !== null
+              ? c.last_message
+              : {};
+
+          return {
+            ...c,
+            last_message: {
+              ...existingLastMessage,
+              body: message.body,
+              caption: message.caption,
+              created_at: message.created_at || new Date().toISOString(),
+              updated_at: message.updated_at || new Date().toISOString(),
+              media_type: message.media_type,
+              media_url: message.media_url,
+              sender_id: message.sender_id,
+            },
+            updated_at: message.updated_at || new Date().toISOString(),
+            unread_count: isActiveChat
+              ? 0
+              : !isMyMessage
+                ? (c.unread_count || 0) + 1
+                : c.unread_count,
+          };
+        },
       });
 
       // ---------------- NOTIFICATIONS ----------------
@@ -288,7 +317,8 @@ export const useSocketConnection = ({
       }));
     };
 
-    const handleUserOnline = ({ user, online }: any) => {
+    const handleUserOnline = (raw: any) => {
+      const { user, online } = raw?.data;
       if (!user?.id) return;
 
       setOnlineUsersRef.current((prev: any) => {
@@ -302,7 +332,8 @@ export const useSocketConnection = ({
       });
     };
 
-    const handleReadUpdated = (data: any) => {
+    const handleReadUpdated = (raw: any) => {
+      const { data } = raw;
       const { reader_id, message_id, read } = data;
       if (!reader_id || !message_id) return;
 
@@ -346,7 +377,8 @@ export const useSocketConnection = ({
       }, 50);
     };
 
-    const handleOnlineSnapshot = (data: any) => {
+    const handleOnlineSnapshot = (raw: any) => {
+      const { data } = raw;
       const items = data?.items || [];
       const onlineMap: Record<string, boolean> = {};
       items.forEach((item: any) => {

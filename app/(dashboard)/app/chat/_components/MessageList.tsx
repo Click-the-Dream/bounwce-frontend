@@ -104,12 +104,9 @@ const MessageList = forwardRef(({ onScrollNearBottomChange }: Props, ref) => {
   // Deduplicate
   const deduped = useMemo(() => {
     const seen = new Set<string>();
-
     return flatMessages.filter((m) => {
       if (seen.has(m.id)) return false;
-
       seen.add(m.id);
-
       return true;
     });
   }, [flatMessages]);

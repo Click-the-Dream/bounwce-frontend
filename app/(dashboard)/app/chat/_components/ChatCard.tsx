@@ -112,7 +112,7 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
               {renderLastMessage()}
             </span>
           ) : (
-            `@${chatUser.username}`
+            `Stat=rt a conversation`
           )}
         </p>
       </div>
