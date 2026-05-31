@@ -87,7 +87,11 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
         <Link href="/app/profile" className="w-8 h-8">
           <UserImage
-            user={authDetails?.user}
+            user={{
+              id:authDetails?.user?.id,
+              full_name:authDetails?.user?.full_name
+              profile_pic:authDetails?.user?.profile_pic
+            }}
             size={32}
             rounded="rounded-md bg-gray-100"
           />
