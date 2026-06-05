@@ -5,12 +5,13 @@ import { MdOutlineDashboard } from "react-icons/md"; // Added dashboard icon
 import { FaPowerOff } from "react-icons/fa";
 import { useAuth } from "@/app/context/AuthContext";
 import Link from "next/link";
+import useAuthServices from "@/app/hooks/use-authservices";
 
 const ProfileDropdown = ({ fullMode = false }) => {
   const { authDetails } = useAuth();
   const user = authDetails?.user;
   const [isOpen, setIsOpen] = useState(false);
-  const { logout } = useAuth();
+  const { logout } = useAuthServices();
 
   if (!user) return null; // Don't render if no user data is available
 
