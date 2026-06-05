@@ -73,8 +73,8 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
 
   const goToChat = async () => {
     resetUnread(chatUser.id);
-    const data = await prewarmMessages(chatUser.id);
-    console.log("PREWARMED", data);
+    await prewarmMessages(chatUser.id);
+
     router.push(`/app/chat/${chatUser.id}`);
   };
 

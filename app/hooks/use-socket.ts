@@ -137,12 +137,9 @@ export const useSocketConnection = ({
           const pages = old.pages.map((page: any) => {
             const items = page.messages?.items ?? [];
 
-            const exists = items.some(
-  (i: any) =>
-    i.id === message.id 
-);
+            const exists = items.some((i: any) => i.id === message.id);
             const newItems = exists
-              ? items.map((i: any) => (i.id === message.id  ? updater(i) : i))
+              ? items.map((i: any) => (i.id === message.id ? updater(i) : i))
               : [...items, updater(message)];
 
             return {
@@ -298,31 +295,103 @@ export const useSocketConnection = ({
 
       // 2. Fix DB: remove temp + store real
       const db = await getDB();
-if (!db) return;
+      if (!db) return;
 
-const existing = await db.messages
-  .where("client_id")
-  .equals(clientId)
-  .first();
+      const existing = await db.messages
+        .where("client_id")
+        .equals(clientId)
+        .first();
 
-if (existing) {
-  await db.messages.update(existing.id, {
-    ...payload,
-    peer_id: peerId,
-    pending: false,
-    delivery_status: "sent",
-    client_id: undefined,
-  });
-} else {
-  await db.messages.put({
-    ...payload,
-    peer_id: peerId,
-    pending: false,
-    delivery_status: "sent",
-    client_id: undefined,
-  });
-}
+      if (existing) {
+        await db.messages.update(existing.id, {
+          ...payload,
+          peer_id: peerId,
+          pending: false,
+          delivery_status: "sent",
+          client_id: undefined,
+        });
+      } else {
+        await db.messages.put({
+          ...payload,
+          peer_id: peerId,
+          pending: false,
+          delivery_status: "sent",
+          client_id: undefined,
+        });
+      }
+
+      await syncEntity({
+        db,
+        queryClient,
+        store: "conversations",
+        key: "peer_id",
+        keyValue: peerId,
+        queryKey: ["conversations", {}],
+        selector: (old: any, updater: any) => {
+          if (!old?.pages) return old;
+
+          let found = false;
+          let updatedConversation: any = null;
+
+          // Update the conversation in place first
+          const pages = old.pages.map((page: any) => ({
+            ...page,
+            items: (page.items ?? []).map((c: any) => {
+              const isMatch = c.peer_id === peerId || c.user?.id === peerId;
+              if (isMatch) {
+                found = true;
+                updatedConversation = updater(c);
+                return updatedConversation;
+              }
+              return c;
+            }),
+          }));
+
+          if (!found) return { ...old, pages };
+
+          const firstPage = pages[0];
+          const others = (firstPage.items ?? []).filter(
+            (c: any) => c.peer_id !== peerId && c.user?.id !== peerId,
+          );
+
+          return {
+            ...old,
+            pages: [
+              {
+                ...firstPage,
+                items: [updatedConversation, ...others],
+              },
+              ...pages.slice(1),
+            ],
+          };
+        },
+        updater: (c: any) => {
+          if (!c) return c;
+
+          // Ensure last_message is an object, even if it was previously false
+          const existingLastMessage =
+            typeof c.last_message === "object" && c.last_message !== null
+              ? c.last_message
+              : {};
+
+          return {
+            ...c,
+            last_message: {
+              ...existingLastMessage,
+              body: payload.body,
+              caption: payload.caption,
+              created_at: payload.created_at || new Date().toISOString(),
+              updated_at: payload.updated_at || new Date().toISOString(),
+              media_type: payload.media_type,
+              media_url: payload.media_url,
+              sender_id: payload.sender_id,
+            },
+            updated_at: payload.updated_at || new Date().toISOString(),
+          };
+        },
+      });
     };
+
     const handleTyping = (raw: any) => {
       const data = raw.data || raw;
       const userId = data?.user?.id;
