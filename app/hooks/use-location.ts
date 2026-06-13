@@ -14,8 +14,6 @@ export default function useLocation() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        console.log("pos", pos);
-
         mutation.mutate({
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,

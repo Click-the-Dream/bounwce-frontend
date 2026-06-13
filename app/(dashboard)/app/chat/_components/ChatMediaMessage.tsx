@@ -11,10 +11,6 @@ import SafeImage from "@/app/_components/SafeImage";
 import SwipeableMessage from "./SwipeableMessage";
 import ReplyPreview from "./ReplyPreview";
 
-// ─────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────
-
 interface ChatMediaMessageProps {
   msg: any;
   onOpen?: (url: string) => void;
@@ -22,10 +18,6 @@ interface ChatMediaMessageProps {
   onRetry?: (msg: any) => void;
   onScrollToMessage?: (messageId: string) => void;
 }
-
-// ─────────────────────────────────────────────
-// COMPONENT
-// ─────────────────────────────────────────────
 
 const ChatMediaMessage = ({
   msg,
@@ -35,19 +27,12 @@ const ChatMediaMessage = ({
   onScrollToMessage,
 }: ChatMediaMessageProps) => {
   const { authDetails } = useAuth();
-
-  // ─── DERIVED ────────────────────────────────
-
   const isSender = msg.sender_id === authDetails?.user?.id;
   const styles = getMessageLayout(isSender);
   const caption = msg.body || msg.caption || "";
 
-  // ─── STATE ────────────────────────────────
   const [isHighlighted, setIsHighlighted] = useState(false);
 
-  // ─── EFFECTS ────────────────────────────────
-
-  // Listen for highlight events from MessageList scroll-to-reply
   useEffect(() => {
     const handler = (e: CustomEvent) => {
       if (e.detail?.messageId === msg.id) {
@@ -60,16 +45,12 @@ const ChatMediaMessage = ({
       window.removeEventListener("highlight-message", handler as EventListener);
   }, [msg.id]);
 
-  // ─── DERIVED FLAGS ──────────────────────────
-
   const isUploading = msg.delivery_status === "uploading";
   const isSending = msg.delivery_status === "sending";
   const isFailed = msg.delivery_status === "failed";
-  const isSent = msg.delivery_status === "sent";
+  const isSent = msg.delivery_status === "sent" || !msg.read_at;
   const isRead = !!msg.read_at;
   const mediaUrls = useMemo(() => msg.media_urls || [], [msg.media_urls]);
-
-  // ─── STATUS ─────────────────────────────────
 
   const renderStatus = () => {
     if (!isSender) return null;
@@ -301,8 +282,6 @@ const ChatMediaMessage = ({
     );
   };
 
-  // ─── RENDER ─────────────────────────────────
-
   return (
     <SwipeableMessage
       isSender={isSender}
@@ -339,6 +318,16 @@ const ChatMediaMessage = ({
         {/* Caption */}
         {caption && <div className="px-2.5 py-2 text-[13px]">{caption}</div>}
 
+        {/* ONLY show overlay if no caption */}
+        {!caption && (
+          <div
+            className={`absolute bottom-0 left-0 right-0 h-20 pointer-events-none ${
+              isSender
+                ? "bg-linear-to-t from-black/80 via-black/40 to-transparent"
+                : "bg-linear-to-b from-white/80 via-white/10 to-gray-300"
+            }`}
+          />
+        )}
         {/* Time + status */}
         <span
           className={`absolute bottom-1 right-2 text-[10px] flex items-center gap-1 ${styles.time} drop-shadow-md`}

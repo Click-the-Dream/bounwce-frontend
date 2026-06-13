@@ -1,37 +1,48 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useMatch from "@/app/hooks/use-match";
 import ExploreCard from "./_components/ExploreCard";
 import { ConnectStatus, SuggestedCandidate } from "@/app/_utils/types/payload";
 import ExploreCardSkeleton from "../_components/loader/ExploreCardSkeleton";
 import { onFailure } from "@/app/_utils/notification";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNotifications } from "@/app/context/NotificationContext";
-import { MODAL_CLOSED } from "@/app/_utils/types/connection";
 
 const ExplorePage = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { useGetSuggestedCandidates, createMatchRequest, useGetMatchRequests } =
     useMatch();
   const { setConnectionModal, connectionModal } = useNotifications();
 
-  const { data } = useGetMatchRequests();
-  const matchRequests = data?.items;
+  const { data: requestData } = useGetMatchRequests();
+
   const [connectState, setConnectState] = useState<
     Record<string, ConnectStatus>
   >({});
 
+  const {
+    data: suggestData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetSuggestedCandidates();
+
+  const suggestions = useMemo(() => {
+    return suggestData?.pages.flatMap((page) => page.items) ?? [];
+  }, [suggestData]);
+
   const requestMap = useMemo(() => {
     const map: Record<string, any> = {};
-    if (!matchRequests) return map;
-    for (const req of matchRequests) {
+    if (!requestData?.items) return map;
+    for (const req of requestData.items) {
       map[req.target_user_id] = req;
     }
     return map;
-  }, [matchRequests]);
+  }, [requestData]);
 
   const getStatus = (userId: string): ConnectStatus => {
     const req = requestMap[userId];
@@ -45,13 +56,18 @@ const ExplorePage = () => {
         return "idle";
     }
   };
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const {
-    data: suggestions,
-    isLoading,
-    isError,
-    refetch,
-  } = useGetSuggestedCandidates();
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    });
+
+    if (sentinelRef.current) observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleConnect = (userId: string, user: SuggestedCandidate) => {
     setConnectState((prev) => ({ ...prev, [userId]: "loading" }));
@@ -167,7 +183,18 @@ const ExplorePage = () => {
                   />
                 );
               })}
+
+              {isFetchingNextPage && hasNextPage && (
+                <>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <ExploreCardSkeleton key={`skeleton-${i}`} />
+                  ))}
+                </>
+              )}
             </div>
+
+            {/* 3. Sentinel and Loading Indicator */}
+            <div ref={sentinelRef} className="h-10" />
           </div>
         </main>
       </div>

@@ -6,7 +6,6 @@ import { websocket } from "../services/websocket";
 import { useNotifications } from "../context/NotificationContext";
 import { onMessageToast } from "../_utils/message-toast";
 import { useChatUtils } from "../context/ChatContext";
-import { syncEntity } from "../helpers/db-sync";
 import { useAuth } from "../context/AuthContext";
 import { replaceOptimisticMessage } from "./use-chat";
 
@@ -19,9 +18,8 @@ export const useSocketConnection = ({
 }) => {
   const queryClient = useQueryClient();
   const { authDetails } = useAuth();
-
   const { pushNotification, decrementUnread } = useNotifications();
-  const { setTypingUsers, setOnlineUsers, getDB } = useChatUtils();
+  const { setTypingUsers, setOnlineUsers } = useChatUtils();
 
   const setTypingUsersRef = useRef(setTypingUsers);
   const setOnlineUsersRef = useRef(setOnlineUsers);
@@ -50,44 +48,24 @@ export const useSocketConnection = ({
     }
   }, [authDetails?.access_token]);
 
+  // Handle active conversation read state sync
   useEffect(() => {
     activeChatRef.current = activeConversationId;
-
     if (!activeConversationId) return;
 
-    (async () => {
-      const db = await getDB();
-
-      syncEntity({
-        db,
-        queryClient,
-        store: "conversations",
-        key: "peer_id",
-        keyValue: activeConversationId,
-        queryKey: ["conversations", {}],
-        selector: (old: any, updater: any) => {
-          if (!old?.pages) return old;
-
-          return {
-            ...old,
-            pages: old.pages.map((page: any) => ({
-              ...page,
-              items: page.items?.map((c: any) =>
-                c.peer_id === activeConversationId ||
-                c.user?.id === activeConversationId
-                  ? updater(c)
-                  : c,
-              ),
-            })),
-          };
-        },
-        updater: (c: any) => {
-          if (!c) return c;
-          return { ...c, unread_count: 0 };
-        },
-      });
-    })();
-  }, [activeConversationId]);
+    queryClient.setQueriesData({ queryKey: ["conversations"] }, (old: any) => {
+      if (!old?.pages) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page: any) => ({
+          ...page,
+          items: page.items?.map((c: any) =>
+            c.user?.id === activeConversationId ? { ...c, unread_count: 0 } : c,
+          ),
+        })),
+      };
+    });
+  }, [activeConversationId, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -96,13 +74,9 @@ export const useSocketConnection = ({
   }, []);
 
   useEffect(() => {
-    const handleMessage = async (raw: any) => {
-      const event = raw.type;
+    const handleMessage = (raw: any) => {
       const payload = raw.data ?? raw.payload ?? raw;
       const incoming = payload.message ?? payload;
-
-      const clientId = raw.client_id ?? payload.client_id;
-
       const message = {
         ...incoming,
         peer_id:
@@ -110,149 +84,79 @@ export const useSocketConnection = ({
             ? incoming.recipient_id
             : incoming.sender_id,
       };
+
       const otherUserId =
         message.sender_id === authUserRef.current
           ? message.recipient_id
           : message.sender_id;
-
       const isMyMessage =
         String(message.sender_id) === String(authUserRef.current);
+      const isActiveChat =
+        !!activeChatRef.current && otherUserId === activeChatRef.current;
 
-      const activeChatId = activeChatRef.current;
-      const isActiveChat = !!activeChatId && otherUserId === activeChatId;
-
-      // ---------------- MESSAGES CACHE ----------------
-      const db = await getDB();
-      await syncEntity({
-        db,
-        queryClient,
-        store: "messages",
-        key: "id",
-        keyValue: message.id,
-        queryKey: ["messages", otherUserId],
-        // Update your syncEntity selector for messages like this:
-        selector: (old: any, updater: any) => {
-          if (!old?.pages) return old;
-
-          const pages = old.pages.map((page: any) => {
-            const items = page.messages?.items ?? [];
-
-            const exists = items.some((i: any) => i.id === message.id);
-            const newItems = exists
-              ? items.map((i: any) => (i.id === message.id ? updater(i) : i))
-              : [...items, updater(message)];
-
-            return {
-              ...page,
-              messages: {
-                ...page.messages,
-                items: newItems,
-              },
-            };
-          });
-
-          return { ...old, pages };
-        },
-        updater: (m: any) => ({
-          ...m,
-          id: message.id,
-          ...message,
-          pending: false,
-          delivery_status: "sent",
-        }),
-      });
-
-      await syncEntity({
-        db,
-        queryClient,
-        store: "conversations",
-        key: "peer_id",
-        keyValue: otherUserId,
-        queryKey: ["conversations", {}],
-        selector: (old: any, updater: any) => {
-          if (!old?.pages) return old;
-
-          let found = false;
-          let updatedConversation: any = null;
-
-          // Update the conversation in place first
-          const pages = old.pages.map((page: any) => ({
+      // Update Messages Cache
+      queryClient.setQueryData(["messages", otherUserId], (old: any) => {
+        if (!old?.pages) return old;
+        const pages = old.pages.map((page: any) => {
+          const items = page.messages?.items ?? [];
+          const exists = items.some((i: any) => i.id === message.id);
+          return {
             ...page,
-            items: (page.items ?? []).map((c: any) => {
-              const isMatch =
-                c.peer_id === otherUserId || c.user?.id === otherUserId;
-              if (isMatch) {
-                found = true;
-                updatedConversation = updater(c);
-                return updatedConversation;
-              }
-              return c;
-            }),
-          }));
-
-          if (!found) return { ...old, pages };
-
-          const firstPage = pages[0];
-          const others = (firstPage.items ?? []).filter(
-            (c: any) => c.peer_id !== otherUserId && c.user?.id !== otherUserId,
-          );
-
-          return {
-            ...old,
-            pages: [
-              {
-                ...firstPage,
-                items: [updatedConversation, ...others],
-              },
-              ...pages.slice(1),
-            ],
-          };
-        },
-        updater: (c: any) => {
-          if (!c) return c;
-
-          // Ensure last_message is an object, even if it was previously false
-          const existingLastMessage =
-            typeof c.last_message === "object" && c.last_message !== null
-              ? c.last_message
-              : {};
-
-          return {
-            ...c,
-            last_message: {
-              ...existingLastMessage,
-              body: message.body,
-              caption: message.caption,
-              created_at: message.created_at || new Date().toISOString(),
-              updated_at: message.updated_at || new Date().toISOString(),
-              media_type: message.media_type,
-              media_url: message.media_url,
-              sender_id: message.sender_id,
+            messages: {
+              ...page.messages,
+              items: exists
+                ? items.map((i: any) => (i.id === message.id ? message : i))
+                : [...items, message],
             },
-            updated_at: message.updated_at || new Date().toISOString(),
-            unread_count: isActiveChat
-              ? 0
-              : !isMyMessage
-                ? (c.unread_count || 0) + 1
-                : c.unread_count,
           };
-        },
+        });
+        return { ...old, pages };
       });
 
-      // ---------------- NOTIFICATIONS ----------------
+      // Update Conversations Cache
+      queryClient.setQueriesData(
+        { queryKey: ["conversations"] },
+        (old: any) => {
+          if (!old?.pages) return old;
+          let updatedConv: any = null;
+          const newPages = old.pages.map((page: any) => {
+            const filtered = (page.items ?? []).filter((c: any) => {
+              const isMatch = c.user?.id === otherUserId;
+              if (isMatch) {
+                updatedConv = {
+                  ...c,
+                  last_message: {
+                    ...c.last_message,
+                    body: message.body,
+                    sender_id: message.sender_id,
+                  },
+                  updated_at: message.updated_at || new Date().toISOString(),
+                  unread_count: isActiveChat
+                    ? 0
+                    : !isMyMessage
+                      ? (c.unread_count || 0) + 1
+                      : c.unread_count,
+                };
+                return false;
+              }
+              return true;
+            });
+            return { ...page, items: filtered };
+          });
+          if (updatedConv) newPages[0].items.unshift(updatedConv);
+          return { ...old, pages: newPages };
+        },
+      );
 
       if (!isMyMessage && !isActiveChat) {
         pushNotification({
           id: crypto.randomUUID(),
           title: message.sender?.full_name || "New Message",
           body: message.body,
-          media_type: message?.media_type,
-          media_url: message?.media_url,
           event_type: "chat_message",
           payload: {
             route: "chat.conversation",
             sender: message.sender,
-            message_id: message.id,
             conversation_id: message.conversation_id,
           },
           read_at: null,
@@ -260,7 +164,6 @@ export const useSocketConnection = ({
           updated_at: new Date().toISOString(),
           user_id: authUserRef.current,
         });
-
         onMessageToast({
           senderName: message.sender?.full_name,
           message: message.body,
@@ -272,163 +175,121 @@ export const useSocketConnection = ({
       }
     };
 
-    const handleMessageAck = async (raw: any) => {
+    const handleSentAck = (raw: any) => {
+      const clientId = raw.data?.client_id || raw.client_id;
+      const peerId = raw.data?.recipient_id;
+
+      if (!clientId || !peerId) return;
+
+      queryClient.setQueryData(["messages", peerId], (old: any) =>
+        replaceOptimisticMessage(old, clientId, {
+          pending: false,
+          delivery_status: "sent",
+        }),
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: ["conversations"] },
+        (old: any) => {
+          if (!old?.pages) return old;
+          let updatedConv: any = null;
+          const newPages = old.pages.map((page: any) => {
+            const filtered = (page.items ?? []).filter((c: any) => {
+              if (c.user?.id === peerId) {
+                updatedConv = {
+                  ...c,
+                  last_message: {
+                    ...c.last_message,
+                    body: "New Message",
+                  },
+                };
+                return false;
+              }
+              return true;
+            });
+            return { ...page, items: filtered };
+          });
+          if (updatedConv) newPages[0].items.unshift(updatedConv);
+          return { ...old, pages: newPages };
+        },
+      );
+    };
+
+    const handleDeliveredAck = (raw: any) => {
       const clientId = raw.client_id;
       const payload = raw.data?.message ?? raw.payload?.message ?? raw.message;
-
       if (!clientId || !payload) return;
 
       const peerId =
         payload.sender_id === authUserRef.current
           ? payload.recipient_id
           : payload.sender_id;
-
-      // 1. Replace optimistic message in React Query
       queryClient.setQueryData(["messages", peerId], (old: any) =>
         replaceOptimisticMessage(old, clientId, {
           ...payload,
           peer_id: peerId,
           pending: false,
-          delivery_status: "sent",
+          delivery_status: "delivered",
         }),
       );
 
-      // 2. Fix DB: remove temp + store real
-      const db = await getDB();
-      if (!db) return;
-
-      const existing = await db.messages
-        .where("client_id")
-        .equals(clientId)
-        .first();
-
-      if (existing) {
-        await db.messages.update(existing.id, {
-          ...payload,
-          peer_id: peerId,
-          pending: false,
-          delivery_status: "sent",
-          client_id: undefined,
-        });
-      } else {
-        await db.messages.put({
-          ...payload,
-          peer_id: peerId,
-          pending: false,
-          delivery_status: "sent",
-          client_id: undefined,
-        });
-      }
-
-      await syncEntity({
-        db,
-        queryClient,
-        store: "conversations",
-        key: "peer_id",
-        keyValue: peerId,
-        queryKey: ["conversations", {}],
-        selector: (old: any, updater: any) => {
+      queryClient.setQueriesData(
+        { queryKey: ["conversations"] },
+        (old: any) => {
           if (!old?.pages) return old;
-
-          let found = false;
-          let updatedConversation: any = null;
-
-          // Update the conversation in place first
-          const pages = old.pages.map((page: any) => ({
-            ...page,
-            items: (page.items ?? []).map((c: any) => {
-              const isMatch = c.peer_id === peerId || c.user?.id === peerId;
-              if (isMatch) {
-                found = true;
-                updatedConversation = updater(c);
-                return updatedConversation;
+          let updatedConv: any = null;
+          const newPages = old.pages.map((page: any) => {
+            const filtered = (page.items ?? []).filter((c: any) => {
+              if (c.user?.id === peerId) {
+                updatedConv = {
+                  ...c,
+                  last_message: { ...c.last_message, ...payload },
+                  updated_at: payload.updated_at,
+                };
+                return false;
               }
-              return c;
-            }),
-          }));
-
-          if (!found) return { ...old, pages };
-
-          const firstPage = pages[0];
-          const others = (firstPage.items ?? []).filter(
-            (c: any) => c.peer_id !== peerId && c.user?.id !== peerId,
-          );
-
-          return {
-            ...old,
-            pages: [
-              {
-                ...firstPage,
-                items: [updatedConversation, ...others],
-              },
-              ...pages.slice(1),
-            ],
-          };
+              return true;
+            });
+            return { ...page, items: filtered };
+          });
+          if (updatedConv) newPages[0].items.unshift(updatedConv);
+          return { ...old, pages: newPages };
         },
-        updater: (c: any) => {
-          if (!c) return c;
-
-          // Ensure last_message is an object, even if it was previously false
-          const existingLastMessage =
-            typeof c.last_message === "object" && c.last_message !== null
-              ? c.last_message
-              : {};
-
-          return {
-            ...c,
-            last_message: {
-              ...existingLastMessage,
-              body: payload.body,
-              caption: payload.caption,
-              created_at: payload.created_at || new Date().toISOString(),
-              updated_at: payload.updated_at || new Date().toISOString(),
-              media_type: payload.media_type,
-              media_url: payload.media_url,
-              sender_id: payload.sender_id,
-            },
-            updated_at: payload.updated_at || new Date().toISOString(),
-          };
-        },
-      });
+      );
     };
 
     const handleTyping = (raw: any) => {
       const data = raw.data || raw;
-      const userId = data?.user?.id;
-      if (!userId) return;
-
-      setTypingUsersRef.current((prev: any) => ({
-        ...prev,
-        [userId]: data.is_typing,
-      }));
+      if (data?.user?.id)
+        setTypingUsersRef.current((prev: any) => ({
+          ...prev,
+          [data.user.id]: data.is_typing,
+        }));
     };
 
     const handleUserOnline = (raw: any) => {
-      const { user, online } = raw?.data;
-      if (!user?.id) return;
-
-      setOnlineUsersRef.current((prev: any) => {
-        const next = { ...prev };
-        if (online) {
-          next[user.id] = true;
-        } else {
-          delete next[user.id];
-        }
-        return next;
-      });
+      const { user, online } = raw?.data || {};
+      if (user?.id) {
+        setOnlineUsersRef.current((prev: any) => {
+          const next = { ...prev };
+          online ? (next[user.id] = true) : delete next[user.id];
+          return next;
+        });
+      }
     };
 
     const handleReadUpdated = (raw: any) => {
       const { data } = raw;
-      const { reader_id, message_id, read } = data;
-      if (!reader_id || !message_id) return;
+      if (!data?.reader_id || !data?.message_id) return;
+      if (data.read && data.reader_id !== authUserRef.current)
+        decrementUnread(data.reader_id);
 
-      if (read && reader_id !== authUserRef.current) {
-        decrementUnread(reader_id);
-      }
-
-      if (!readQueue.current[reader_id]) readQueue.current[reader_id] = [];
-      readQueue.current[reader_id].push({ message_id, read });
+      if (!readQueue.current[data.reader_id])
+        readQueue.current[data.reader_id] = [];
+      readQueue.current[data.reader_id].push({
+        message_id: data.message_id,
+        read: data.read,
+      });
 
       if (flushRef.current) clearTimeout(flushRef.current);
       flushRef.current = setTimeout(() => {
@@ -447,11 +308,14 @@ export const useSocketConnection = ({
                       const update = updates.find(
                         (u) => u.message_id === msg.id,
                       );
-                      if (!update) return msg;
-                      return {
-                        ...msg,
-                        read_at: update.read ? new Date().toISOString() : null,
-                      };
+                      return update
+                        ? {
+                            ...msg,
+                            read_at: update.read
+                              ? new Date().toISOString()
+                              : null,
+                          }
+                        : msg;
                     }),
                   },
                 })),
@@ -464,19 +328,17 @@ export const useSocketConnection = ({
     };
 
     const handleOnlineSnapshot = (raw: any) => {
-      const { data } = raw;
-      const items = data?.items || [];
+      const items = raw.data?.items || [];
       const onlineMap: Record<string, boolean> = {};
       items.forEach((item: any) => {
-        if (item?.user?.id && item.online) {
-          onlineMap[item.user.id] = true;
-        }
+        if (item?.user?.id && item.online) onlineMap[item.user.id] = true;
       });
       setOnlineUsersRef.current(() => onlineMap);
     };
 
     websocket.on("chat.message", handleMessage);
-    websocket.on("chat.sent", handleMessageAck);
+    websocket.on("chat.sent", handleDeliveredAck);
+    websocket.on("chat.send.ack", handleSentAck);
     websocket.on("chat.typing", handleTyping);
     websocket.on("user.online", handleUserOnline);
     websocket.on("user.online.snapshot", handleOnlineSnapshot);
@@ -485,12 +347,13 @@ export const useSocketConnection = ({
 
     return () => {
       websocket.off("chat.message", handleMessage);
-      websocket.off("chat.sent", handleMessageAck);
+      websocket.off("chat.sent", handleDeliveredAck);
+      websocket.off("chat.send.ack", handleSentAck);
       websocket.off("chat.typing", handleTyping);
       websocket.off("user.online", handleUserOnline);
       websocket.off("user.online.snapshot", handleOnlineSnapshot);
       websocket.off("chat.read.updated", handleReadUpdated);
       websocket.off("chat.read.ack", handleReadUpdated);
     };
-  }, [authUserId]);
+  }, [queryClient, decrementUnread, pushNotification]);
 };

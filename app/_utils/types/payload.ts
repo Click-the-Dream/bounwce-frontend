@@ -16,6 +16,7 @@ export interface SuggestedCandidate {
   shared_interests: string[];
   shared_traits?: string[];
   profile_pic?: { url: string }; // URL to profile image
+  profile_banner?: { url: string };
 }
 
 export type ConnectStatus = "idle" | "connected" | "pending" | "loading";

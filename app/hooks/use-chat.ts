@@ -10,9 +10,6 @@ import { websocket } from "../services/websocket";
 import { CachedConversation } from "../store/chat-store";
 import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
 import { ReplyTarget, User } from "../_utils/types/buyer";
-import { useEffect } from "react";
-import { useChatUtils } from "../context/ChatContext";
-import { normalizeInfinite, normalizeMessage } from "../_utils/chat/normalizer";
 
 // HELPERS
 const mergeIntoQuery = (old: any, message: any): any => {
@@ -38,20 +35,20 @@ const mergeIntoQuery = (old: any, message: any): any => {
   const items: any[] = pages[0].messages.items;
 
   const index = items.findIndex(
-  (m) =>
-    m.client_id === message.client_id ||
-    m.id === message.id ||
-    (message.client_id && m.id === message.client_id),
-);
+    (m) =>
+      m.client_id === message.client_id ||
+      m.id === message.id ||
+      (message.client_id && m.id === message.client_id),
+  );
 
-if (index !== -1) {
-  items[index] = {
-    ...items[index],
-    ...message,
-  };
-} else {
-  items.push(message);
-}
+  if (index !== -1) {
+    items[index] = {
+      ...items[index],
+      ...message,
+    };
+  } else {
+    items.push(message);
+  }
 
   pages[0] = {
     ...pages[0],
@@ -77,7 +74,9 @@ export const replaceOptimisticMessage = (
       messages: {
         ...page.messages,
         items: page.messages.items.map((m: any) =>
-          m.id === clientId || m.client_id === clientId ? serverMessage : m,
+          m.id === clientId || m.client_id === clientId
+            ? { ...m, ...serverMessage }
+            : m,
         ),
       },
     })),
@@ -89,173 +88,104 @@ const useChat = () => {
   const { authDetails } = useAuth();
   const currentUser = authDetails?.user;
 
-  // getDB is the ONLY way to access the DB — never read chatDBRef.current directly
-  const { prewarmedCacheRef, getDB } = useChatUtils();
   // CONVERSATIONS
-  const useGetConversations = (params: any = {}) => {
-    const qc = useQueryClient();
+  const useGetConversations = (
+    params: { page_size?: number; name?: string } = {},
+  ) =>
+    useInfiniteQuery({
+      queryKey: ["conversations"],
 
-    useEffect(() => {
-      if (!currentUser?.id) return;
-
-      const hydrateConversations = async () => {
-        const db = await getDB(); // (null on first render)
-        if (!db) return;
-
-        const cached = await db.conversations
-          .orderBy("updated_at")
-          .reverse()
-          .toArray();
-
-        if (cached.length > 0) {
-          qc.setQueryData(["conversations", params], {
-            pages: [
-              {
-                items: cached,
-                page: 1,
-                total: cached.length,
-                page_size: cached.length,
-              },
-            ],
-            pageParams: [1],
-          });
-        }
-      };
-
-      hydrateConversations();
-    }, [currentUser?.id, qc]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    return useInfiniteQuery({
-      queryKey: ["conversations", params],
       queryFn: async ({ pageParam = 1 }) => {
-        try {
-          const db = await getDB(); //
-          if (!db) return null;
+        const res = await api.get("/chats/conversations", {
+          params: {
+            ...params,
+            page: pageParam,
+          },
+        });
 
-          const res = await api.get("/chats/conversations", {
-            params: { ...params, page: pageParam },
-          });
-
-          const data = res.data?.data;
-          const items = data?.items;
-
-          if (items?.length && pageParam === 1) {
-            const itemsWithPeer = items.map((c: any) => ({
-              ...c,
-              peer_id: c.peer_id ?? c.user?.id ?? c.user_id,
-            }));
-            await db.conversations.bulkPut(itemsWithPeer);
-          }
-
-          return data;
-        } catch (err) {
-          console.error("Failed to sync conversations:", err);
-          return null;
-        }
+        return res.data?.data;
       },
+
       getNextPageParam: (lastPage: any) => {
-        if (!lastPage) return undefined;
         const { page, total, page_size } = lastPage;
-        return page * page_size < total ? page + 1 : undefined;
+
+        const hasMore = page * page_size < total;
+
+        return hasMore ? page + 1 : undefined;
       },
+
       initialPageParam: 1,
-      staleTime: 1000 * 60,
     });
-  };
   // MESSAGES
 
-  const useGetMessages = (options: {
-    userId: string;
-    params?: { page_size?: number };
-  }) => {
-    return useInfiniteQuery({
-      queryKey: ["messages", options.userId],
-
-      placeholderData: () =>
-        normalizeInfinite(prewarmedCacheRef.current[options.userId]),
-
+  const prefetchMessages = (userId: string) => {
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ["messages", userId],
       queryFn: async ({ pageParam = 1 }) => {
-        const db = await getDB(); //
-        if (!db) return null;
+        const res = await api.get(`/chats/conversations/with/${userId}`, {
+          params: { page: pageParam, page_size: 20 },
+        });
+        const data = res.data?.data;
 
-        try {
-          const localStuck =
-            pageParam === 1
-              ? await db.messages
-                  .where("peer_id")
-                  .equals(options.userId)
-                  .filter((m: any) =>
-                    ["pending", "uploading", "sending", "failed"].includes(
-                      m.delivery_status ?? "",
-                    ),
-                  )
-                  .toArray()
-              : [];
-
-          const res = await api.get(
-            `/chats/conversations/with/${options.userId}`,
-            {
-              params: {
-                page: pageParam,
-                page_size: options.params?.page_size || 20,
-              },
-            },
-          );
-
-          const data = res.data?.data;
-          const rawItems = data?.messages?.items || [];
-
-          const items = rawItems.map((m: any) =>
-            normalizeMessage(m, options.userId),
-          );
-
-          if (pageParam === 1 && items.length > 0) {
-            await db.messages.bulkPut(items);
-          }
-
-          const serverIds = new Set(items.map((m: any) => m.id));
-          const stillStuck = localStuck.filter(
-            (m: any) => !serverIds.has(m.id),
-          );
-
-          return {
-            ...data,
-            messages: {
-              ...data.messages,
-              items: [...items, ...stillStuck],
-            },
-          };
-        } catch (err) {
-          console.error("Fetch failed, falling back to IndexedDB:", err);
-          const cached = await db.messages
-            .where("peer_id")
-            .equals(options.userId)
-            .sortBy("created_at");
-
-          return {
-            messages: {
-              items: cached.map((msg: any) => ({
-                ...msg,
-                delivery_status: msg.delivery_status || "sent",
-              })),
-              page: 1,
-              total: cached.length,
-              page_size: cached.length,
-            },
-          };
+        // Keep the transformation logic consistent
+        if (data?.messages?.items) {
+          data.messages.items = data.messages.items.map((msg: any) => ({
+            ...msg,
+            delivery_status: "delivered",
+            read_at: msg.read_at || null,
+          }));
         }
+        return data;
       },
       initialPageParam: 1,
-      getNextPageParam: (lastPage: any) => {
-        if (!lastPage?.messages) return undefined;
-        const { page, total, page_size } = lastPage.messages;
-        return page * page_size < total ? page + 1 : undefined;
-      },
-      enabled: !!options.userId,
-      staleTime: 1000 * 30,
-      retry: false,
     });
   };
+
+  const useGetMessages = (
+    options: {
+      userId?: string;
+      params?: { page?: number; page_size?: number };
+    } = { params: { page_size: 10 } },
+  ) =>
+    useInfiniteQuery({
+      queryKey: ["messages", options.userId],
+
+      queryFn: async ({ pageParam = 1 }) => {
+        const res = await api.get(
+          `/chats/conversations/with/${options.userId}`,
+          {
+            params: {
+              page: pageParam,
+              page_size: options.params?.page_size || 20,
+            },
+          },
+        );
+
+        const data = res.data?.data;
+
+        // Transform the messages before returning them to the cache
+        if (data?.messages?.items) {
+          data.messages.items = data.messages.items.map((msg: any) => ({
+            ...msg,
+            delivery_status: "delivered",
+            read_at: msg.read_at || null,
+          }));
+        }
+
+        return data;
+      },
+
+      getNextPageParam: (lastPage: any) => {
+        const { page, total, page_size } = lastPage?.messages || {};
+
+        const hasMore = page * page_size < total;
+        return hasMore ? page + 1 : undefined;
+      },
+
+      initialPageParam: 1,
+      enabled: !!options.userId,
+    });
+
   // CONVERSATION HELPERS
   const addConversationIfMissing = async ({
     recipient,
@@ -264,16 +194,6 @@ const useChat = () => {
     recipient: CachedConversation["user"];
     message: any;
   }) => {
-    const db = await getDB(); //
-    if (!db) return;
-
-    const existingInDB = await db.conversations
-      .where("peer_id")
-      .equals(recipient.id)
-      .first();
-
-    if (existingInDB) return;
-
     const conversation: CachedConversation = {
       id: recipient.id,
       peer_id: recipient.id,
@@ -294,8 +214,6 @@ const useChat = () => {
       },
       updated_at: new Date().toISOString(),
     };
-
-    await db.conversations.put(conversation);
 
     // FIX: use ["conversations", {}] to match the actual registered query key
     queryClient.setQueryData(["conversations", {}], (old: any) => {
@@ -332,8 +250,6 @@ const useChat = () => {
     reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return;
-    const db = await getDB(); //
-    if (!db) return;
 
     const message = buildOptimisticMessage({
       recipient_id: recipient.id,
@@ -346,21 +262,11 @@ const useChat = () => {
       ...message,
       id: message.id,
       client_id: message.id,
+      pending: true,
     };
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
       mergeIntoQuery(old, messageWithClientId),
     );
-
-    const messageToSave = {
-      ...messageWithClientId,
-      id: message.id,
-      peer_id:
-        messageWithClientId.recipient_id === currentUser.id
-          ? messageWithClientId.sender_id
-          : messageWithClientId.recipient_id,
-    };
-
-    await db.messages.put(messageToSave);
 
     await addConversationIfMissing({
       recipient: {
@@ -389,25 +295,15 @@ const useChat = () => {
     serverMessage: any;
     peerId: string;
   }) => {
-    const db = await getDB(); //
-    if (!db) return;
-
     queryClient.setQueryData(["messages", peerId], (old: any) =>
       replaceOptimisticMessage(old, clientId, {
         ...serverMessage,
         peer_id: peerId,
         delivery_status: "sent",
         synced: true,
+        pending: false,
       }),
     );
-
-    await db.messages.delete(clientId);
-    await db.messages.put({
-      ...serverMessage,
-      peer_id: peerId,
-      delivery_status: "sent",
-      synced: true,
-    });
   };
   // MEDIA UPLOAD
   const useGetChatSignature = () =>
@@ -450,8 +346,6 @@ const useChat = () => {
     reply_to?: ReplyTarget | null;
   }) => {
     if (!currentUser) return null;
-    const db = await getDB(); //
-    if (!db) return null;
 
     const localUrls = files.map((file) => URL.createObjectURL(file));
 
@@ -475,16 +369,6 @@ const useChat = () => {
       mergeIntoQuery(old, messageWithClientId),
     );
 
-    const messageToSave = {
-      ...messageWithClientId,
-      peer_id:
-        messageWithClientId.recipient_id === currentUser.id
-          ? messageWithClientId.sender_id
-          : messageWithClientId.recipient_id,
-    };
-
-    await db.messages.put(messageToSave);
-
     await addConversationIfMissing({ recipient, message: messageWithClientId });
 
     return messageWithClientId.id;
@@ -507,9 +391,6 @@ const useChat = () => {
     clientId: string[];
     reply_to?: ReplyTarget | null;
   }) => {
-    const db = await getDB(); //
-    if (!db) return;
-
     try {
       const uploads = await Promise.all(
         files.map((file, index) => uploadToCloudinary(file, signatures[index])),
@@ -535,24 +416,16 @@ const useChat = () => {
         };
       });
 
-      for (const id of clientId) {
-        await db.messages.update(id, {
-          media_urls,
-          delivery_status: "sending",
-        });
-      }
-
       const stableClientId = clientId[0];
 
-websocket.emit("chat.upload_media", {
-  recipient_id,
-  media_urls,
-  body: caption,
-  client_id: stableClientId,
-  media_type: type,
-  reply_to_message_id: reply_to?.id,
-});
-
+      websocket.emit("chat.upload_media", {
+        recipient_id,
+        media_urls,
+        body: caption,
+        client_id: stableClientId,
+        media_type: type,
+        reply_to_message_id: reply_to?.id,
+      });
     } catch (err) {
       console.error("Media upload failed:", err);
 
@@ -573,10 +446,6 @@ websocket.emit("chat.upload_media", {
           })),
         };
       });
-
-      for (const id of clientId) {
-        await db.messages.update(id, { delivery_status: "failed" });
-      }
     }
   };
 
@@ -603,9 +472,6 @@ websocket.emit("chat.upload_media", {
   };
 
   const markMessageFailed = async (messageId: string, recipientId: string) => {
-    const db = await getDB(); //
-    if (!db) return;
-
     queryClient.setQueryData(["messages", recipientId], (old: any) => {
       if (!old) return old;
       return {
@@ -621,13 +487,12 @@ websocket.emit("chat.upload_media", {
         })),
       };
     });
-
-    await db.messages.update(messageId, { delivery_status: "failed" });
   };
 
   return {
     useGetConversations,
     useGetMessages,
+    prefetchMessages,
     transmitMessage,
     confirmMessage,
     prepareOptimisticMedia,

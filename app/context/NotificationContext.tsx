@@ -14,8 +14,6 @@ import {
   Notification,
   NotificationContextType,
 } from "../_utils/types/notification";
-import { syncEntity } from "../helpers/db-sync";
-import { useChatUtils } from "./ChatContext";
 import { MODAL_CLOSED, ModalState } from "../_utils/types/connection";
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
@@ -26,21 +24,21 @@ export const NotificationProvider = ({
   children: React.ReactNode;
 }) => {
   const queryClient = useQueryClient();
-  const { chatDBRef } = useChatUtils();
-
   const { getNotifications, unreadSummary } = useNotificationServices();
 
   const [connectionModal, setConnectionModal] =
     useState<ModalState>(MODAL_CLOSED);
-  // 1. Reactive System Unread
+
+  // Reactive System Unread
   const { data: summary } = unreadSummary();
   const systemUnread = summary?.notifications?.unread_count || 0;
+
+  // Track conversation state directly from cache
   const [conversations, setConversations] = useState<any>(() =>
-    queryClient.getQueryData(["conversations", {}]),
+    queryClient.getQueryData(["conversations"]),
   );
 
   useEffect(() => {
-    // Subscribe to any conversations cache key changes
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (
         event.query.queryKey[0] === "conversations" &&
@@ -64,13 +62,14 @@ export const NotificationProvider = ({
     }, 0);
   }, [conversations]);
 
-  // 3. Reactive Notifications
+  // Reactive Notifications
   const {
     data: notificationPages,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = getNotifications();
+
   const notifications = useMemo(
     () =>
       notificationPages?.pages?.flatMap((p: any) => p.data?.items || []) || [],
@@ -78,72 +77,52 @@ export const NotificationProvider = ({
   );
 
   const decrementUnread = useCallback(
-    async (userId: string) => {
-      const chatDB = chatDBRef.current; // ← read inside callback
-      if (!chatDB) return;
-      if (!chatDB) return;
-      await syncEntity({
-        db: chatDB,
-        queryClient,
-        store: "conversations",
-        key: "user_id",
-        keyValue: userId,
-        queryKey: ["conversations"],
-        selector: (old: any, updater: any) => {
-          const pages = old.pages.map((page: any) => ({
-            ...page,
-            items: page.items?.map((c: any) =>
-              c.user?.id === userId || c.user_id === userId ? updater(c) : c,
-            ),
-          }));
-          return { ...old, pages };
-        },
-        updater: (c: any) => {
-          if (!c) return c;
+    (userId: string) => {
+      queryClient.setQueriesData(
+        { queryKey: ["conversations"] },
+        (old: any) => {
+          if (!old?.pages) return old;
           return {
-            ...c,
-            unread_count: Math.max((c?.unread_count || 0) - 1, 0),
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items?.map((c: any) =>
+                c.user?.id === userId || c.user_id === userId
+                  ? {
+                      ...c,
+                      unread_count: Math.max((c?.unread_count || 0) - 1, 0),
+                    }
+                  : c,
+              ),
+            })),
           };
         },
-      });
+      );
     },
-    [queryClient, chatDBRef],
+    [queryClient],
   );
 
   const resetUnread = useCallback(
-    async (userId: string) => {
-      const chatDB = chatDBRef.current; // ← read inside callback
-      if (!chatDB) return;
-      if (!chatDB) return;
-      await syncEntity({
-        db: chatDB,
-        queryClient,
-        store: "conversations",
-        key: "peer_id",
-        keyValue: userId,
-        queryKey: ["conversations", {}], // ← match the actual query key
-        selector: (old: any, updater: any) => {
-          const pages = old.pages.map((page: any) => ({
-            ...page,
-            items: page.items?.map((c: any) =>
-              c.user?.id === userId || c.peer_id === userId ? updater(c) : c,
-            ),
-          }));
-          return { ...old, pages };
-        },
-        updater: (c: { unread_count: any }) => {
-          console.log("before", c?.unread_count);
-
-          const updated = {
-            ...c,
-            unread_count: 0,
+    (userId: string) => {
+      queryClient.setQueriesData(
+        { queryKey: ["conversations"] },
+        (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              items: page.items?.map((c: any) =>
+                c.user?.id === userId || c.peer_id === userId
+                  ? { ...c, unread_count: 0 }
+                  : c,
+              ),
+            })),
           };
-
-          return updated;
         },
-      });
+      );
     },
-    [queryClient, chatDBRef],
+    [queryClient],
   );
 
   const pushNotification = useCallback(

@@ -7,13 +7,15 @@ import UserImage from "../../_components/UserImage";
 import { useAuth } from "@/app/context/AuthContext";
 import { ChatUser } from "@/app/_utils/types/chat";
 import { useNotifications } from "@/app/context/NotificationContext";
+import useChat from "@/app/hooks/use-chat";
 
 const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const { chatId } = useParams();
   const router = useRouter();
   const { authDetails } = useAuth();
   const { resetUnread } = useNotifications();
-  const { typingUsers, prewarmMessages } = useChatUtils();
+  const { typingUsers } = useChatUtils();
+  const { prefetchMessages } = useChat();
   const chatUser = chat?.user;
   const currentUserId = authDetails?.user?.id;
 
@@ -21,6 +23,11 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const lastMessageTime = chat?.last_message?.created_at;
   const lastMessage = chat?.last_message;
   const isMine = lastMessage?.sender_id === currentUserId;
+  const handlePrefetch = () => {
+    if (chatUser?.id) {
+      prefetchMessages(chatUser.id);
+    }
+  };
 
   const renderLastMessage = () => {
     if (!lastMessage) {
@@ -73,7 +80,7 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
 
   const goToChat = async () => {
     resetUnread(chatUser.id);
-    await prewarmMessages(chatUser.id);
+    // await prewarmMessages(chatUser.id);
 
     router.push(`/app/chat/${chatUser.id}`);
   };
@@ -81,6 +88,8 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
   return (
     <div
       onClick={() => goToChat()}
+      onMouseEnter={handlePrefetch}
+      onTouchStart={handlePrefetch}
       key={chatUser?.id}
       className={`relative flex items-center gap-3 pt-3.25 pb-4.75 px-1 cursor-pointer hover:bg-gray-50 border-b-[0.53px] border-[#00000033] h-15.75 ${chatId === chatUser.id ? "bg-gray-100" : ""}`}
     >

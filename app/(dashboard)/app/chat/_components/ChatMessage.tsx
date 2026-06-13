@@ -6,7 +6,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { LuClock } from "react-icons/lu";
 import SwipeableMessage from "./SwipeableMessage";
 import ReplyPreview from "./ReplyPreview";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCheck } from "lucide-react";
 
 // TYPES
 
@@ -44,9 +44,10 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
   }, [msg?.body]);
 
   const isUploading = msg.delivery_status === "uploading";
-  const isSending = msg.delivery_status === "sending";
+  const isSending = msg.delivery_status === "sending" || msg.pending;
   const isFailed = msg.delivery_status === "failed";
-  const isSent = msg.delivery_status === "sent";
+  const isSent = msg.delivery_status === "sent" || !msg.read_at;
+  const isDelivered = msg.delivery_status === "delivered";
   const isRead = !!msg.read_at;
 
   // ─── STATUS
@@ -59,8 +60,9 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
     if (isFailed) return <AlertCircle size={12} className="text-red-500" />;
 
     if (isSending) return <LuClock size={10} />;
+    if (isDelivered) return renderCheck("delivered");
 
-    if (isRead) return renderCheck("read");
+    if (isRead) return renderCheck("read", styles.time);
 
     if (isSent) return renderCheck("sent");
     return <LuClock size={10} className="" />;

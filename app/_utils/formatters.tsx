@@ -161,10 +161,10 @@ export const getMessageLayout = (isSender: boolean) => ({
   time: isSender ? "text-white" : "text-black",
 });
 
-export const renderCheck = (status: string) => {
+export const renderCheck = (status: string, color?: string) => {
   if (status === "sent") return <Check size={12} />;
   if (status === "delivered") return <CheckCheck size={12} />;
-  if (status === "read") return <CheckCheck size={12} className="" />;
+  if (status === "read") return <CheckCheck size={12} className={`${color}`} />;
 };
 
 export const formatMessageDate = (dateString: string) => {

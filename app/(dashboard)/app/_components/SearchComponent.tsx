@@ -1,43 +1,51 @@
 "use client";
 import { useState, useMemo } from "react";
-import { Search, X } from "lucide-react";
+import { ArrowRight, Search, X } from "lucide-react";
 import SafeImage from "@/app/_components/SafeImage";
 import SearchUser from "./SearchUser";
 import useMatch from "@/app/hooks/use-match";
 import { SuggestedCandidate } from "@/app/_utils/types/payload";
 import { useAuth } from "@/app/context/AuthContext";
-import { Portal } from "@/app/protocols/Portal";
+import { useRouter } from "next/navigation";
 
 const SearchComponent = () => {
+  const router = useRouter();
   const { useGetMatches, useGetSuggestedCandidates } = useMatch();
   const { authDetails } = useAuth();
   const [isFocused, setIsFocused] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { data: matches } = useGetMatches();
-  const { data: suggestions } = useGetSuggestedCandidates();
 
-  // Memoized filtering logic based on name, handle, or tags
+  // Handling Infinite Query data structure
+  const { data: suggestData } = useGetSuggestedCandidates();
+
+  const handleViewAll = () => {
+    setIsFocused(false);
+    setSearchTerm("");
+    router.push("/app/explore");
+  };
+
   const filteredResults = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
     const keywords = query.split(/\s+/);
     const myId = authDetails?.user?.id;
 
-    // Filter for Matches (Nested structure: user / target_user)
+    // Flatten pages for infinite scroll
+    const allSuggestions =
+      suggestData?.pages.flatMap((page) => page.items) ?? [];
+
     const matchFilter = (item: any) => {
       const otherUser = item.user.id === myId ? item.target_user : item.user;
       const name = otherUser.full_name?.toLowerCase?.() || "";
       const username = otherUser.username?.toLowerCase?.() || "";
-
       return keywords.every(
         (word) => name.includes(word) || username.includes(word),
       );
     };
 
-    // Filter for Suggestions (Flat structure)
     const suggestionFilter = (item: any) => {
       const name = item.full_name?.toLowerCase?.() || "";
       const username = item.username?.toLowerCase?.() || "";
-
       return keywords.every(
         (word) => name.includes(word) || username.includes(word),
       );
@@ -45,11 +53,11 @@ const SearchComponent = () => {
 
     return {
       matched: (matches?.items ?? []).filter(matchFilter),
-      suggestions: (suggestions ?? []).filter(suggestionFilter),
+      suggestions: allSuggestions.filter(suggestionFilter),
     };
-  }, [searchTerm, matches?.items, suggestions]);
+  }, [searchTerm, matches?.items, suggestData]);
 
-  const isLoading = !matches?.items || !suggestions;
+  const isLoading = !matches?.items || !suggestData;
 
   return (
     <div
@@ -84,7 +92,7 @@ const SearchComponent = () => {
 
       {/* --- DROPDOWN RESULTS --- */}
       {isFocused && (
-        <div className="fixed md:absolute top-0 left-0 min-w-80 w-full max-h-109.75 pt-10 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden min-h-112.5 transition-all duration-200">
+        <div className="fixed md:absolute top-0 left-0 min-w-80 w-full max-h-109.75 pt-10 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-y-auto min-h-112.5 transition-all duration-200">
           {isLoading && (
             <div className="text-center py-6 text-sm text-gray-400">
               Loading results...
@@ -137,6 +145,20 @@ const SearchComponent = () => {
                 </div>
               )}
           </div>
+          {/* Show "View all results" ONLY if:
+       1. We are NOT actively searching (searchTerm is empty)
+       2. There is more data to fetch (hasNextPage is true)
+    */}
+          {!searchTerm && suggestData?.pages[0]?.nextCursor !== null && (
+            <button
+              onClick={handleViewAll}
+              className="w-max mx-auto px-6 py-3  border-t border-gray-100 bg-gray-50 flex items-center justify-center gap-2 text-sm text-black font-medium hover:bg-gray-100 transition-colors"
+            >
+              View all results
+              <ArrowRight className="size-4" />
+            </button>
+          )}
+
           {/* Bottom decorative padding as per wireframe */}
           <div className="h-12 border-t border-gray-50 mt-4" />
         </div>

@@ -6,13 +6,12 @@ import { slugify } from "@/app/_utils/slugify";
 import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
 import UserImage from "../../_components/UserImage";
 import useMatch from "@/app/hooks/use-match";
+import SafeImage from "@/app/_components/SafeImage";
 
 type Props = SuggestedCandidate & {
   onConnect: (id: string) => void;
   connectStatus?: ConnectStatus;
 };
-
-const interests = ["Reading", "Cooking", "Fitness"];
 const ExploreCard = ({
   full_name,
   user_id,
@@ -20,17 +19,18 @@ const ExploreCard = ({
   shared_interests,
   score,
   profile_pic,
+  profile_banner,
   onConnect,
   connectStatus = "idle",
 }: Props) => {
   const router = useRouter();
   const { useGetMatchesByUserId } = useMatch();
-  const {
-    data: connections,
-    isLoading: isConnectionLoading,
-    isError: isConnectionError,
-  } = useGetMatchesByUserId(user_id);
-  const followersCount = connections?.total ?? 0;
+  // const {
+  //   data: connections,
+  //   isLoading: isConnectionLoading,
+  //   isError: isConnectionError,
+  // } = useGetMatchesByUserId(user_id);
+  // const followersCount = connections?.total ?? 0;
 
   const goToProfile = () => {
     router.push(`/app/profile/${slugify(full_name)}_${user_id}`);
@@ -49,9 +49,14 @@ const ExploreCard = ({
       <div className="p-1.5 pb-0">
         {/* Header Image */}
         <div className="relative h-32.5 w-full rounded-[20px] bg-gray-100 ">
-          <img
-            src="https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&w=400&q=80"
-            alt="background"
+          <SafeImage
+            src={
+              profile_banner?.url ??
+              "https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&w=400&q=80"
+            }
+            alt="banner"
+            width={400}
+            height={100}
             className="w-full h-full object-cover rounded-[20px]"
           />
 
@@ -113,11 +118,11 @@ const ExploreCard = ({
           <p className="text-[#888888] text-[13px]"> @{user_id?.slice(0, 8)}</p>
 
           <p className="text-[#888888] text-xs leading-relaxed mb-[8.73px]">
-            {bio}
+            {bio || "."}
           </p>
         </div>
       </div>
-      <div className="flex-1 flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
+      {/* <div className="flex gap-2 mt-2 border-t-[0.53px] border-[#00000033] mx-4 pt-1.5">
         <p className="text-xs text-[#888888]">Followers:</p>{" "}
         <span className="font-medium text-[13px]">
           {isConnectionLoading ? (
@@ -126,8 +131,8 @@ const ExploreCard = ({
             Math.max(0, followersCount)
           )}
         </span>
-      </div>
-      <div className="flex-1 flex flex-wrap gap-2 mt-3.5 mb-5.75 px-4">
+      </div> */}
+      <div className="flex flex-wrap items-start justify-start gap-2 pt-3.5 mb-5.75 px-4  border-t-[0.53px] border-[#00000033]">
         {shared_interests?.length > 0 ? (
           shared_interests.slice(0, 3)?.map((interest, index) => (
             <span

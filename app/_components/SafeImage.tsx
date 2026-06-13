@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
+// You can import an icon from lucide-react if you want a nice fallback visual
+import { ImageOff } from "lucide-react";
 
 const SafeImage = ({
   src,
@@ -18,11 +20,20 @@ const SafeImage = ({
   style?: any;
   showLoader?: boolean;
 }) => {
-  const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+  // If the image fails to load entirely, show a fallback UI
+  if (hasError) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center bg-gray-100 text-gray-400 rounded-[10px] ${className ?? ""}`}
+        style={style}
+      >
+        <ImageOff className="size-4 mb-1" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full">
@@ -32,9 +43,7 @@ const SafeImage = ({
           className="absolute inset-0 rounded-[10px] overflow-hidden"
           aria-hidden
         >
-          {/* Base grey */}
           <div className="absolute inset-0 bg-[#d0d0d0] dark:bg-[#3a3a3a]" />
-          {/* Sweeping shimmer */}
           <div
             className="absolute inset-0"
             style={{
@@ -66,6 +75,11 @@ const SafeImage = ({
         }`}
         style={style}
         onLoad={() => setLoaded(true)}
+        onError={() => {
+          // Triggers if the connection resets, 404s, or the file is corrupted
+          setHasError(true);
+          setLoaded(true); // Ensures the shimmer turns off
+        }}
       />
     </div>
   );

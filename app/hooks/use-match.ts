@@ -13,15 +13,20 @@ const useMatch = () => {
   const queryClient = useQueryClient();
 
   const useGetSuggestedCandidates = () => {
-    return useQuery({
+    return useInfiniteQuery({
       queryKey: ["matches", "suggest"],
-      queryFn: async () => {
-        const res = await api.get("/matches/suggest");
-        return res?.data?.items || res?.data;
+      queryFn: async ({ pageParam = 1 }) => {
+        const res = await api.get(`/matches/suggest?page=${pageParam}`);
+        return res?.data; // Return the whole object to access 'has_next'
+      },
+      getNextPageParam: (lastPage) => {
+        return lastPage.has_next ? lastPage.page + 1 : undefined;
       },
       enabled: !!authDetails?.access_token,
+      initialPageParam: 1,
     });
   };
+
   const useGetMatchRequests = ({
     enabled = true,
   }: { enabled?: boolean } = {}) => {

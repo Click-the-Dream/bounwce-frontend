@@ -63,26 +63,26 @@ export const syncQueryEntity = ({
 export const syncEntity = async ({
   db,
   queryClient,
-  store,
-  key,
-  keyValue,
+  // store,
+  // key,
+  // keyValue,
   queryKey,
   updater,
   selector,
 }: any) => {
   syncQueryEntity({ queryClient, queryKey, selector, updater });
 
-  if (!db) return;
+  // if (!db) return;
 
-  updateDBEntity({
-    db,
-    store,
-    key,
-    keyValue,
-    updater,
-  }).catch((err) => {
-    console.error(`Failed DB sync for ${store}`, err);
-  });
+  // updateDBEntity({
+  //   db,
+  //   store,
+  //   key,
+  //   keyValue,
+  //   updater,
+  // }).catch((err) => {
+  //   console.error(`Failed DB sync for ${store}`, err);
+  // });
 };
 
 const markMessageAsReadSelector = (old: any, updater: any) => {
@@ -107,6 +107,7 @@ const markAsReadUpdater = (msgId: string, userId: string) => (msg: any) => {
     read_at: msg.read_at ?? new Date().toISOString(),
   };
 };
+
 export const syncMessageRead = async ({
   db,
   queryClient,
