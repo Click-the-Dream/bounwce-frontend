@@ -4,16 +4,36 @@ import { Search } from "lucide-react";
 import CategoryList from "./CategoryList";
 import { useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
+import { useAuth } from "../context/AuthContext";
 const SearchBar = () => {
   const router = useRouter();
+  const { authDetails } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [query, setQuery] = useState("");
 
-  const handleAuthSuccess = () => {
-    // setShowAuthModal(false);
-    // router.push(`/app?q=${encodeURIComponent(query.trim())}`);
+  const handleSearch = () => {
+    const trimmedQuery = query.trim();
 
-    router.push(`/waitlist`);
+    if (!trimmedQuery) {
+      return;
+    }
+
+    if (authDetails?.user) {
+      router.push(`/app?q=${encodeURIComponent(trimmedQuery)}`);
+    } else {
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      return;
+    }
+
+    setShowAuthModal(false);
+    router.push(`/app?q=${encodeURIComponent(trimmedQuery)}`);
   };
 
   return (
@@ -36,7 +56,7 @@ const SearchBar = () => {
           />
 
           <button
-            onClick={() => setShowAuthModal(true)}
+            onClick={handleSearch}
             className="cursor-pointer bg-[#FF5030] hover:bg-[#e4462a] text-black font-semibold px-6 md:px-7.5 py-3 md:py-3.75 rounded-lg md:rounded-[5px] border-2 border-black transition-all active:scale-[0.98] h-13 md:h-11.5 text-[14px] md:text-[13px] flex items-center justify-center"
           >
             <Search className="block lg:hidden" />
