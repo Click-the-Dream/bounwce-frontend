@@ -225,7 +225,7 @@ const isMyProfile =
   <div className="flex items-center justify-center gap-1">
     {isMyProfile ? (
       <>
-        <Share2 size={18} />
+        <Share2 size={18} className="hidden md:block" />
         Share Profile
       </>
     ) : (
