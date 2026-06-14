@@ -222,7 +222,7 @@ const isMyProfile =
     active:scale-[0.98]
   "
 >
-  <div className="flex items-center justify-center gap-2">
+  <div className="flex items-center justify-center gap-1">
     {isMyProfile ? (
       <>
         <Share2 size={18} />
@@ -230,7 +230,7 @@ const isMyProfile =
       </>
     ) : (
       <>
-        <MessageCircle size={18} />
+        <MessageCircle size={18} className="hidden md:block" />
         Message
       </>
     )}
