@@ -94,6 +94,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
             }}
             size={32}
             rounded="rounded-md bg-gray-100"
+            clickable={false}
           />
         </Link>
       </div>
