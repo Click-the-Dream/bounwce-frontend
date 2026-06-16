@@ -58,9 +58,24 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
       baseList.unshift(activeConversation);
     }
 
-    if (!searchQuery) return baseList;
+    const sortedList = baseList.sort((a: any, b: any) => {
+      const aIsBouwnce =
+        a.user?.username?.toLowerCase() === "bouwnce" ||
+        a.user?.id === "3c729ba4-a89d-4670-ba99-faa91737a5e7";
 
-    return baseList.filter((conversation: any) =>
+      const bIsBouwnce =
+        b.user?.username?.toLowerCase() === "bouwnce" ||
+        b.user?.id === "3c729ba4-a89d-4670-ba99-faa91737a5e7";
+
+      if (aIsBouwnce) return -1;
+      if (bIsBouwnce) return 1;
+
+      return 0;
+    });
+
+    if (!searchQuery) return sortedList;
+
+    return sortedList.filter((conversation: any) =>
       conversation.user?.full_name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()),
