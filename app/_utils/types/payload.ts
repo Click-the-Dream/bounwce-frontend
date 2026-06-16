@@ -5,7 +5,7 @@ export interface NewsletterPayload {
   description?: string;
 }
 
-export interface SuggestedCandidate {
+export interface SuggestedCandidateRaw {
   user_id: string;
   full_name: string;
   username?: string;
@@ -15,9 +15,16 @@ export interface SuggestedCandidate {
   distance_km?: number;
   shared_interests: string[];
   shared_traits?: string[];
-  profile_pic?: string; // URL to profile image
-  banner_url?: string;
+  profile_pic?: { url: string } | string | null;
+  banner_url?: { url: string } | string | null;
 }
+export type SuggestedCandidate = Omit<
+  SuggestedCandidateRaw,
+  "profile_pic" | "banner_url"
+> & {
+  profile_pic?: string;
+  banner_url?: string;
+};
 
 export type ConnectStatus = "idle" | "connected" | "pending" | "loading";
 export type Notification = {

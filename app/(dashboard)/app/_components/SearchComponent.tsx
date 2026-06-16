@@ -1,7 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
 import { ArrowRight, Search, X } from "lucide-react";
-import SafeImage from "@/app/_components/SafeImage";
 import SearchUser from "./SearchUser";
 import useMatch from "@/app/hooks/use-match";
 import { SuggestedCandidate } from "@/app/_utils/types/payload";

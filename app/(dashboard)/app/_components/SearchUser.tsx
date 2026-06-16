@@ -8,15 +8,19 @@ const SearchUser = ({ item }: { item: SuggestedCandidate }) => {
   const goToProfile = () => {
     router.push(`/app/profile/${slugify(item?.full_name)}_${item?.user_id}`);
   };
+  const profileSrc =
+    typeof item?.profile_pic === "string"
+      ? item.profile_pic
+      : item?.profile_pic?.url;
   return (
     <div
       onClick={goToProfile}
       className="flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer transition-colors rounded-xl group"
     >
       <div className="relative w-10 h-10 shrink-0">
-        {item?.profile_pic?.url ? (
+        {profileSrc ? (
           <SafeImage
-            src={item?.profile_pic?.url}
+            src={profileSrc}
             alt="Profile"
             width={40}
             height={40}
