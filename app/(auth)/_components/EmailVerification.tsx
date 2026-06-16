@@ -70,7 +70,7 @@ const VerifyAccount = ({
   // Start countdown once
   useEffect(() => {
     if (!userEmail) return;
-    if (timer === 0) setTimer(30);
+    if (timer === 0) setTimer(180);
   }, [userEmail]);
 
   // Decrease timer every second
@@ -139,7 +139,7 @@ const VerifyAccount = ({
         { email: userEmail },
         {
           onSuccess: () => {
-            setTimer(30);
+            setTimer(180);
             setOtp("");
           },
         },
@@ -161,6 +161,12 @@ const VerifyAccount = ({
       </motion.div>
     );
   }
+
+  const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
 
   return (
     <motion.div
@@ -224,7 +230,7 @@ const VerifyAccount = ({
             <p>
               Didn’t receive code?{" "}
               <span className="text-orange font-medium">
-                Resend in {timer}s
+                Resend in {formatTime(timer)}
               </span>
             </p>
           ) : (
