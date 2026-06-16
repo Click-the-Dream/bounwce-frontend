@@ -11,7 +11,7 @@ const SearchUser = ({ item }: { item: SuggestedCandidate }) => {
   const profileSrc =
     typeof item?.profile_pic === "string"
       ? item.profile_pic
-      : item?.profile_pic?.url;
+      : (item?.profile_pic as unknown as { url?: string })?.url;
   return (
     <div
       onClick={goToProfile}
