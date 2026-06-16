@@ -15,8 +15,8 @@ export interface SuggestedCandidateRaw {
   distance_km?: number;
   shared_interests: string[];
   shared_traits?: string[];
-  profile_pic?: { url: string } | string | null;
-  banner_url?: { url: string } | string | null;
+  profile_pic?: { url: string } | string;
+  banner_url?: { url: string } | string;
 }
 export type SuggestedCandidate = Omit<
   SuggestedCandidateRaw,
