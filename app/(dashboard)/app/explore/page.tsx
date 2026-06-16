@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useMatch from "@/app/hooks/use-match";
 import ExploreCard from "./_components/ExploreCard";
 import { ConnectStatus, SuggestedCandidate } from "@/app/_utils/types/payload";
@@ -84,7 +84,7 @@ const ExplorePage = () => {
             isOpen: true,
             userId,
             full_name: user.full_name ?? "USer",
-            profile_pic: user.profile_pic,
+            profile_pic: { url: user.profile_pic },
           });
         },
         onError: () => {

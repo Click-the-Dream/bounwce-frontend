@@ -19,7 +19,7 @@ const ExploreCard = ({
   shared_interests,
   score,
   profile_pic,
-  profile_banner,
+  banner_url,
   onConnect,
   connectStatus = "idle",
 }: Props) => {
@@ -49,16 +49,15 @@ const ExploreCard = ({
       <div className="p-1.5 pb-0">
         {/* Header Image */}
         <div className="relative h-32.5 w-full rounded-[20px] bg-gray-100 ">
-          <SafeImage
-            src={
-              profile_banner?.url ??
-              "https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&w=400&q=80"
-            }
-            alt="banner"
-            width={400}
-            height={100}
-            className="w-full h-full object-cover rounded-[20px]"
-          />
+          {banner_url && (
+            <SafeImage
+              src={banner_url}
+              alt="banner"
+              width={400}
+              height={100}
+              className="w-full h-full object-cover rounded-[20px]"
+            />
+          )}
 
           <button
             disabled={isDisabled}
@@ -102,7 +101,7 @@ const ExploreCard = ({
               user={{
                 id: user_id,
                 full_name,
-                profile_pic,
+                profile_pic: { url: profile_pic },
               }}
               size={61}
               style={{

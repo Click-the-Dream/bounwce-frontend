@@ -38,7 +38,7 @@ export interface ModalState {
   userId: string;
   full_name: string;
   profile_pic?: {
-    url: string;
+    url?: string;
   };
 }
 

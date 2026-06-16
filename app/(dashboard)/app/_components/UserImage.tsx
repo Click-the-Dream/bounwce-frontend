@@ -130,7 +130,7 @@ const UserImage = ({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+                  <div className="flex h-full items-center justify-center bg-linear-to-br from-slate-200 to-slate-300">
                     <span className="text-7xl font-bold text-slate-500">
                       {initials}
                     </span>
@@ -138,7 +138,7 @@ const UserImage = ({
                 )}
 
                 {/* Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
 
                 {/* User info overlay */}
                 <div className="absolute bottom-5 left-5 right-5">
