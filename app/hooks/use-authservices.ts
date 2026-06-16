@@ -103,7 +103,7 @@ const useAuthServices = () => {
     onSuccess: ({ data }) => {
       onSuccess({
         title: "OTP Requested!",
-        message: `Here is your otp ${data?.otp}`,
+        message:"check your mail for the otp"// `Here is your otp ${data?.otp}`,
       });
     },
     onError: (err: any) => {
