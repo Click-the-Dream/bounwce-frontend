@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { X, MessageCircle, Phone } from "lucide-react";
+import { X, MessageCircle,Share2, Phone } from "lucide-react";
 import SafeImage from "@/app/_components/SafeImage";
 import { slugify } from "@/app/_utils/slugify";
 import { useChatUtils } from "@/app/context/ChatContext";
+import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Portal } from "@/app/protocols/Portal";
 
@@ -26,6 +27,13 @@ const UserImage = ({
   style,
   rounded = "rounded-xl",
 }: UserImageProps) => {
+  const { authDetails } = useAuth();
+
+const isMyProfile =
+  authDetails?.user?.id &&
+  user?.id &&
+  String(authDetails.user.id) === String(user.id);
+  
   const { onlineUsers } = useChatUtils();
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
@@ -45,6 +53,24 @@ const UserImage = ({
     router.push(`/app/chat/${user?.id}`);
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+  e.stopPropagation();
+
+  const profileUrl = `${window.location.origin}/app/profile/${slugify(
+    user.full_name
+  )}_${user.id}`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: user.full_name,
+        url: profileUrl,
+      });
+    } else {
+      await navigator.clipboard.writeText(profileUrl);
+    }
+  } catch {}
+};
   return (
     <>
       {/* 1. Thumbnail Trigger */}
@@ -180,26 +206,36 @@ const UserImage = ({
               <div className="p-6">
                 <div className="flex gap-3">
                   <button
-                    onClick={handleMessage}
-                    className="
-                flex-1
-                rounded-[10px]
-                bg-green-500
-                px-4
-                py-2
-                font-semibold cursor-pointer
-                text-white
-                transition-all
-                hover:bg-green-600
-                hover:scale-[1.02]
-                active:scale-[0.98]
-              "
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <MessageCircle size={18} />
-                      Message
-                    </div>
-                  </button>
+  onClick={isMyProfile ? handleShare : handleMessage}
+  className="
+    flex-1
+    rounded-[10px]
+    bg-green-500
+    px-4
+    py-2
+    font-semibold
+    cursor-pointer
+    text-white
+    transition-all
+    hover:bg-green-600
+    hover:scale-[1.02]
+    active:scale-[0.98]
+  "
+>
+  <div className="flex items-center justify-center gap-1">
+    {isMyProfile ? (
+      <>
+        <Share2 size={18} className="hidden md:block" />
+        Share Profile
+      </>
+    ) : (
+      <>
+        <MessageCircle size={18} className="hidden md:block" />
+        Message
+      </>
+    )}
+  </div>
+</button>
 
                   <button
                     onClick={navigateToProfile}
