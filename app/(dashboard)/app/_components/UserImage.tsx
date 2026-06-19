@@ -94,6 +94,7 @@ const UserImage = ({
             width={size}
             height={size}
             className={`object-cover rounded-xl`}
+            style={{ width: size, height: size }}
           />
         ) : (
           <div
@@ -101,7 +102,7 @@ const UserImage = ({
             style={{ width: size, height: size }}
           >
             {initials}
-          </div>style={{ width: size, height: size }}
+          </div>
         )}
         {isOnline && (
           <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border border-white rounded-full" />
