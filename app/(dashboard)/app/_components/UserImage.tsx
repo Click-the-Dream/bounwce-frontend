@@ -85,7 +85,7 @@ const UserImage = ({
           setIsExpanded(true);
         }}
         className={`cursor-pointer relative shrink-0 border border-white bg-gray-100 ${rounded} `}
-        style={{ ...style, width: size, height: size }}
+        style={{ ...style }}
       >
         {user?.profile_pic?.url ? (
           <SafeImage
@@ -94,6 +94,7 @@ const UserImage = ({
             width={size}
             height={size}
             className={`object-cover rounded-xl`}
+            
           />
         ) : (
           <div
@@ -101,7 +102,7 @@ const UserImage = ({
             style={{ width: size, height: size }}
           >
             {initials}
-          </div>
+          </div>style={{ width: size, height: size }}
         )}
         {isOnline && (
           <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border border-white rounded-full" />
