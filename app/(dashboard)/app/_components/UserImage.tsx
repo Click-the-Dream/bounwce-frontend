@@ -93,7 +93,7 @@ const UserImage = ({
             alt={user.full_name}
             width={size}
             height={size}
-            className={`object-cover ${rounded}`}
+            className={`object-cover rounded-xl`}
           />
         ) : (
           <div
