@@ -98,7 +98,7 @@ const UserImage = ({
         ) : (
           <div
             className="flex items-center justify-center bg-gray-100 font-semibold text-black rounded-xl"
-            style={{ maxWidth: size, maxHeight: size }}
+            style={{ width: size, height: size }}
           >
             {initials}
           </div>
