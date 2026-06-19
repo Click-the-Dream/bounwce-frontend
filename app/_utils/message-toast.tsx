@@ -33,7 +33,7 @@ const MessageToast = ({ senderName, message, profile_pic, userId }: any) => {
         <UserImage
           user={{ id: userId, full_name: senderName, profile_pic }}
           size={38}
-          rounded="w-full h-full object-cover rounded-full"
+          rounded="w-full h-10 object-cover rounded-full"
         />
       </div>
 
