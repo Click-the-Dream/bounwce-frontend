@@ -123,11 +123,11 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                     />
 
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium line-clamp-1">
                         {user.full_name}
                       </span>
 
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 break-all line-clamp-1">
                         {user.username && `@${user.username}`}
                       </span>
                     </div>
