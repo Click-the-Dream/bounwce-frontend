@@ -213,7 +213,7 @@ const IdentityCard: React.FC<Props> = ({
             {data.name}
           </h2>
 
-          <p className="text-[#888888] text-[13px]">@{data.handle}</p>
+          <p className="text-[#888888] text-[13px] line-clamp-2">@{data.handle}</p>
         </div>
 
         {isOwnProfile && (
