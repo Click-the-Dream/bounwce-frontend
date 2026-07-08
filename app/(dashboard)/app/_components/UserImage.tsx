@@ -85,7 +85,7 @@ const UserImage = ({
           setIsExpanded(true);
         }}
         className={`cursor-pointer relative shrink-0 border border-white bg-gray-100 ${rounded} `}
-        style={style}
+        style={ {...style} }
       >
         {user?.profile_pic?.url ? (
           <SafeImage
@@ -94,6 +94,7 @@ const UserImage = ({
             width={size}
             height={size}
             className={`object-cover ${rounded}`}
+            style={{ width: size, height: size }}
           />
         ) : (
           <div
