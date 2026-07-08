@@ -153,3 +153,33 @@ export const CustomMapPinIcon = () => (
     </defs>
   </svg>
 );
+
+export const CancelTicketIcon = ({
+  className = "",
+}: {
+  className?: string;
+}) => {
+  return (
+    <svg
+      className={className}
+      width="40"
+      height="40"
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M33.9408 14.1439C37.065 17.2681 37.065 22.3334 33.9408 25.4576L25.4555 33.9429C22.3313 37.0671 17.266 37.0671 14.1418 33.9429L5.65653 25.4576C2.53234 22.3334 2.53234 17.2681 5.65653 14.1439L14.1418 5.65865C17.266 2.53445 22.3313 2.53445 25.4555 5.65865L33.9408 14.1439Z"
+        fill="#F2541B"
+      />
+      <path
+        d="M22.6849 22.6881L16.9102 16.9134M22.6849 16.9134L16.9102 22.6881"
+        stroke="white"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+};
+
+export default CancelTicketIcon;

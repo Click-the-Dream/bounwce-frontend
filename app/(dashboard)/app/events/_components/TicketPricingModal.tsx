@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Trash2, Info } from "lucide-react";
 import { TICKET_TYPES } from "@/app/_utils/utility";
+import CancelTicketIcon from "@/app/_utils/CustomIcons";
 interface TicketPricingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -40,18 +41,18 @@ function TicketPricingModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
       {/* Modal Card Box */}
-      <div className="w-full max-w-[540px] bg-white rounded-2xl border border-orange-500/20 p-5 shadow-xl relative transition-all">
+      <div className="w-full max-w-135 bg-white rounded-2xl border border-orange-500/20 p-5 shadow-xl relative transition-all">
         {/* Header Block */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-[#FF474D] text-white hover:bg-red-600 transition"
+              className="hover:scale-105 transition-transform"
             >
-              <X size={13} strokeWidth={2.5} />
+              <CancelTicketIcon />
             </button>
-            <span className="text-xs font-semibold text-gray-900 tracking-tight">
+            <span className="text-sm font-bold text-gray-900 tracking-tight">
               Ticket Pricing <span className="text-[#FF474D]">*</span>
             </span>
           </div>
@@ -91,7 +92,7 @@ function TicketPricingModal({
         <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-4 mb-4">
           {/* Section Column Sub-labels */}
           <div className="grid grid-cols-[1fr_1fr_24px] gap-4 mb-2 px-0.5">
-            <span className="text-xs font-bold text-gray-800">Regular</span>
+            <span className="text-xs font-bold text-gray-800">Ticket</span>
             <span className="text-xs font-bold text-gray-800">Price</span>
             <div></div>
           </div>
@@ -133,7 +134,7 @@ function TicketPricingModal({
         {/* Bottom Add Trigger Style Button */}
         <button
           type="button"
-          className="border border-dashed border-[#FF474D] text-[#FF474D] font-medium rounded-lg px-4 py-2 text-xs hover:bg-red-50/30 transition"
+          className="border border-dashed border-[#FF474D] text-[#FF474D] font-bold rounded-lg px-4 py-2 text-xs hover:bg-red-50/30 transition"
         >
           + Add Category
         </button>
