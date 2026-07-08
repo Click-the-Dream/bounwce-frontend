@@ -204,3 +204,12 @@ export const getRadius = (i: number, total: number) => {
 
   return "";
 };
+
+export const TICKET_TYPES = [
+  "Regular",
+  "VIP",
+  "VVIP",
+  "Free",
+  "Student",
+  "Table",
+];

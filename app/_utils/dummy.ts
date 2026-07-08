@@ -3,64 +3,7 @@ import { GoPeople } from "react-icons/go";
 import { AiOutlineBarChart } from "react-icons/ai";
 import { TbCurrencyNaira } from "react-icons/tb";
 import { Message } from "./types/buyer";
-
-export const UNIVERSITIES = [
-  {
-    label: "Olabisi Onabanjo University",
-    value: "Olabisi Onabanjo University",
-  },
-  { label: "Koladaisi University", value: "Koladaisi University" },
-  { label: "University of Ibadan", value: "University of Ibadan" },
-  { label: "Obafemi Awolowo University", value: "Obafemi Awolowo University" },
-  { label: "University of Lagos", value: "University of Lagos" },
-  {
-    label: "University of Nigeria, Nsukka",
-    value: "University of Nigeria, Nsukka",
-  },
-  { label: "Ahmadu Bello University", value: "Ahmadu Bello University" },
-  { label: "Covenant University", value: "Covenant University" },
-  { label: "Lagos State University", value: "Lagos State University" },
-  { label: "University of Benin", value: "University of Benin" },
-  {
-    label: "Federal University of Technology, Akure",
-    value: "Federal University of Technology, Akure",
-  },
-  { label: "University of Ilorin", value: "University of Ilorin" },
-  { label: "University of Jos", value: "University of Jos" },
-  {
-    label: "University of Port Harcourt",
-    value: "University of Port Harcourt",
-  },
-  { label: "Nnamdi Azikiwe University", value: "Nnamdi Azikiwe University" },
-  {
-    label: "Federal University of Technology, Owerri",
-    value: "Federal University of Technology, Owerri",
-  },
-  { label: "Ekiti State University", value: "Ekiti State University" },
-  { label: "Adekunle Ajasin University", value: "Adekunle Ajasin University" },
-  { label: "Bowen University", value: "Bowen University" },
-  { label: "Babcock University", value: "Babcock University" },
-  { label: "Redeemer’s University", value: "Redeemer’s University" },
-  {
-    label: "Ladoke Akintola University of Technology",
-    value: "Ladoke Akintola University of Technology",
-  },
-  { label: "University of Calabar", value: "University of Calabar" },
-  { label: "Delta State University", value: "Delta State University" },
-  { label: "Kwara State University", value: "Kwara State University" },
-  {
-    label: "Joseph Ayo Babalola University",
-    value: "Joseph Ayo Babalola University",
-  },
-  { label: "Pan-Atlantic University", value: "Pan-Atlantic University" },
-  { label: "Rivers State University", value: "Rivers State University" },
-  {
-    label: "Federal University, Oye-Ekiti",
-    value: "Federal University, Oye-Ekiti",
-  },
-  { label: "Osun State University", value: "Osun State University" },
-  { label: "Nile University of Nigeria", value: "Nile University of Nigeria" },
-];
+import { Event } from "./types/event";
 
 export const categories = [
   { value: "electronics", label: "Electronics" },
@@ -408,407 +351,6 @@ export const orders = [
   },
 ];
 
-export const cartItems = [
-  {
-    name: "Campus Books",
-    items: [
-      {
-        id: 1,
-        name: "Fictional Novel",
-        price: 8500,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f",
-      },
-    ],
-  },
-  {
-    name: "Fashion Hub",
-    items: [
-      {
-        id: 2,
-        name: "Leather Backpack",
-        price: 12500,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1593032465171-8f55c8a1c3c3",
-      },
-    ],
-  },
-  {
-    name: "Tech Gadgets",
-    items: [
-      {
-        id: 3,
-        name: "Premium Wireless Earbuds",
-        price: 15000,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1606220838315-056192d5e927",
-      },
-    ],
-  },
-  {
-    name: "Eco Store",
-    items: [
-      {
-        id: 4,
-        name: "Stainless Steel Water Bottle",
-        price: 3500,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8",
-      },
-    ],
-  },
-];
-
-export const vendors = [
-  {
-    id: 1,
-    name: "Urban Threads",
-    category: "Fashion",
-  },
-  {
-    id: 2,
-    name: "Elite Accessories",
-    category: "Accessories",
-  },
-  {
-    id: 3,
-    name: "Stride Footwear",
-    category: "Footwear",
-  },
-  {
-    id: 4,
-    name: "Tech Haven",
-    category: "Tech Gadgets",
-  },
-];
-
-export const products = [
-  {
-    id: 1,
-    name: "Blue Cotton Shirt",
-    category: "Clothing",
-    price: 12500,
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
-    vendorId: 1, // Urban Threads
-  },
-  {
-    id: 2,
-    name: "Leather Handbag",
-    category: "Accessories",
-    price: 28500,
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1594223274512-ad4803739b7c",
-    vendorId: 2, // Elite Accessories
-  },
-  {
-    id: 3,
-    name: "Running Sneakers",
-    category: "Footwear",
-    price: 32000,
-    rating: 4.6,
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff",
-    vendorId: 3, // Stride Footwear
-  },
-  {
-    id: 4,
-    name: "Wireless Headphones",
-    category: "Electronics",
-    price: 45000,
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad",
-    vendorId: 4, // Tech Haven
-  },
-  {
-    id: 5,
-    name: "Slim Fit Jeans",
-    category: "Clothing",
-    price: 18000,
-    rating: 4.4,
-    image: "https://images.unsplash.com/photo-1514996937319-344454492b37",
-    vendorId: 1, // Urban Threads
-  },
-  {
-    id: 6,
-    name: "Sports Watch",
-    category: "Accessories",
-    price: 22000,
-    rating: 4.6,
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
-    vendorId: 2, // Elite Accessories
-  },
-  {
-    id: 7,
-    name: "Headphones",
-    category: "Accessories",
-    price: 15000,
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
-    vendorId: 4, // Tech Haven (better grouping)
-  },
-  {
-    id: 8,
-    name: "Smartphone",
-    category: "Electronics",
-    price: 85000,
-    rating: 4.9,
-    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9",
-    vendorId: 4, // Tech Haven
-  },
-  {
-    id: 9,
-    name: "Formal Leather Shoes",
-    category: "Footwear",
-    price: 40000,
-    rating: 4.6,
-    image:
-      "https://images.unsplash.com/photo-1573253803478-d7146d61d09e?auto=format&fit=crop&w=500&q=80",
-    vendorId: 3, // Stride Footwear
-  },
-  {
-    id: 10,
-    name: "Cotton Polo Shirt",
-    category: "Clothing",
-    price: 9500,
-    rating: 4.3,
-    image:
-      "https://images.unsplash.com/photo-1593032465171-4b5062bc6bbd?auto=format&fit=crop&w=500&q=80",
-    vendorId: 1, // Urban Threads
-  },
-  {
-    id: 11,
-    name: "Bluetooth Speaker",
-    category: "Electronics",
-    price: 30000,
-    rating: 4.7,
-    image:
-      "https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=500&q=80",
-    vendorId: 4, // Tech Haven
-  },
-  {
-    id: 12,
-    name: "Running Shorts",
-    category: "Clothing",
-    price: 7000,
-    rating: 4.2,
-    image:
-      "https://images.unsplash.com/photo-1594737625785-d6f0d7beef26?auto=format&fit=crop&w=500&q=80",
-    vendorId: 1, // Urban Threads
-  },
-];
-
-export const SEARCH_RESULTS = {
-  matched: [
-    {
-      id: 1,
-      name: "John Doe",
-      handle: "b-john33333",
-      type: "image",
-      src: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      tags: ["gym", "partner", "fitness"],
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      handle: "j-smith99",
-      type: "image",
-      src: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jane",
-      tags: ["social", "gaming"],
-    },
-  ],
-  suggestions: [
-    {
-      id: 3,
-      name: "Victor Williams",
-      handle: "v-will",
-      type: "initials",
-      initials: "VW",
-      tags: ["gym", "partner"],
-    },
-    {
-      id: 4,
-      name: "Alex Rivera",
-      handle: "rivera_fit",
-      type: "initials",
-      initials: "AR",
-      tags: ["gym", "social"],
-    },
-    {
-      id: 5,
-      name: "Sarah Connor",
-      handle: "s-connor",
-      type: "image",
-      src: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-      tags: ["social", "partner"],
-    },
-  ],
-};
-
-export const CHATS = [
-  {
-    id: 1,
-    name: "Chidi Okechukwu",
-    msg: "Oga, did you see the update on the repo?",
-    time: "2m",
-    active: true,
-  },
-  {
-    id: 2,
-    name: "Amina Yusuf",
-    msg: "I just sent the invoice to your mail. Check it out.",
-    time: "15m",
-  },
-  {
-    id: 3,
-    name: "Tunde Balogun",
-    msg: "Guy, light don come. Let's hop on the call now.",
-    time: "1h",
-  },
-  {
-    id: 4,
-    name: "Blessing Effiong",
-    msg: "The UI design is looking sharp! Great job.",
-    time: "3h",
-  },
-  {
-    id: 5,
-    name: "Kelechi Nwosu",
-    msg: "Abeg, don't forget to push the latest changes.",
-    time: "5h",
-    type: "initials",
-    initials: "KN",
-  },
-];
-
-export const MESSAGES_DATA: Record<number, Message[]> = {
-  1: [
-    {
-      id: 1,
-      text: "How far, Habib? You don check that bug for the login page?",
-      timestamp: "09:15",
-      isSender: false,
-      status: "delivered",
-    },
-    {
-      id: 2,
-      text: "I dey on am. The API is returning a 500 error, debugging the controller now.",
-      timestamp: "09:18",
-      isSender: true,
-      status: "delivered",
-    },
-    {
-      id: 3,
-      text: "Omo, no wonder. Abeg, let me know once it's stable so I can test.",
-      timestamp: "09:20",
-      isSender: false,
-      status: "delivered",
-    },
-    {
-      id: 4,
-      text: "No wahala, I should be done in 30 mins. Send the Figma link again?",
-      timestamp: "09:22",
-      isSender: true,
-      status: "delivered",
-    },
-  ],
-
-  2: [
-    {
-      id: 1,
-      text: "Good morning. I just sent the invoice to your mail. Check it out.",
-      timestamp: "10:05",
-      isSender: false,
-      status: "delivered",
-    },
-    {
-      id: 2,
-      text: "Received! Will go through it before the end of the day.",
-      timestamp: "10:12",
-      isSender: true,
-      status: "delivered",
-    },
-    {
-      id: 3,
-      text: "Please do, the finance team needs the approval by 4 PM.",
-      timestamp: "10:15",
-      isSender: false,
-      status: "delivered",
-    },
-  ],
-
-  3: [
-    {
-      id: 1,
-      text: "Guy, light don come. Let's hop on the call now.",
-      timestamp: "11:30",
-      isSender: false,
-      status: "delivered",
-    },
-    {
-      id: 2,
-      text: "Oshey! My inverter was already crying. Give me 2 mins.",
-      timestamp: "11:32",
-      isSender: true,
-      status: "delivered",
-    },
-    {
-      id: 3,
-      text: "Sharp. I'm already in the Google Meet.",
-      timestamp: "11:33",
-      isSender: false,
-      status: "delivered",
-    },
-  ],
-
-  4: [
-    {
-      id: 1,
-      text: "The UI design for the dashboard is looking sharp! Great job.",
-      timestamp: "13:45",
-      isSender: false,
-      status: "delivered",
-    },
-    {
-      id: 2,
-      text: "Thanks, Blessing. I used the new design system we talked about.",
-      timestamp: "13:50",
-      isSender: true,
-      status: "delivered",
-    },
-    {
-      id: 3,
-      text: "It shows. The spacing is much better now. Client go like this one.",
-      timestamp: "13:52",
-      isSender: false,
-      status: "delivered",
-    },
-  ],
-
-  5: [
-    {
-      id: 1,
-      text: "Abeg, don't forget to push the latest changes to the repo.",
-      timestamp: "15:20",
-      isSender: false,
-      status: "delivered",
-    },
-    {
-      id: 2,
-      text: "Doing that right now. Just running the last test suite.",
-      timestamp: "15:25",
-      isSender: true,
-      status: "delivered",
-    },
-    {
-      id: 3,
-      text: "Correct guy. No let the CI/CD fail o! 😂",
-      timestamp: "15:26",
-      isSender: false,
-      status: "delivered",
-    },
-  ],
-};
-
 export const loadingSteps = [
   "Scanning nearby connections...",
   "Matching shared interests...",
@@ -820,4 +362,97 @@ export const placeholders = [
   "Find designers, founders, creatives...",
   "Discover matches by interest...",
   "Explore nearby connections...",
+];
+
+export const MOCK_EVENTS: Event[] = [
+  {
+    id: "1",
+    title: "Design Summit 2026",
+    status: "UPCOMING",
+    date: "March 28, 2025",
+    location: "O2 Arena",
+    image:
+      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&auto=format&fit=crop&q=60",
+    attendeesCount: 120,
+    attendeeAvatars: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60",
+    ],
+  },
+  {
+    id: "2",
+    title: "Design System Workshop",
+    status: "UPCOMING",
+    date: "March 28, 2025",
+    location: "O2 Arena",
+    image:
+      "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=600&auto=format&fit=crop&q=60",
+    attendeesCount: 120,
+    attendeeAvatars: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60",
+    ],
+  },
+  {
+    id: "3",
+    title: "Product Launch",
+    status: "UPCOMING",
+    date: "March 28, 2025",
+    location: "O2 Arena",
+    image:
+      "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=600&auto=format&fit=crop&q=60",
+    attendeesCount: 120,
+    attendeeAvatars: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60",
+    ],
+  },
+  {
+    id: "4",
+    title: "Fola Live in Concert",
+    status: "UPCOMING",
+    date: "March 28, 2025",
+    location: "O2 Arena",
+    image:
+      "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=60",
+    attendeesCount: 120,
+    attendeeAvatars: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60",
+    ],
+  },
+  {
+    id: "5",
+    title: "OOU Tech Seminar",
+    status: "UPCOMING",
+    date: "March 28, 2025",
+    location: "O2 Arena",
+    image:
+      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&auto=format&fit=crop&q=60",
+    attendeesCount: 120,
+    attendeeAvatars: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60",
+    ],
+  },
+  {
+    id: "6",
+    title: "Leadership Seminar",
+    status: "UPCOMING",
+    date: "March 28, 2025",
+    location: "O2 Arena",
+    image:
+      "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&auto=format&fit=crop&q=60",
+    attendeesCount: 120,
+    attendeeAvatars: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60",
+    ],
+  },
 ];

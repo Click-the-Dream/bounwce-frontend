@@ -1,6 +1,14 @@
 "use client";
 
-import { Compass, Home, X, Briefcase, LogOut, UserPlus } from "lucide-react";
+import {
+  Compass,
+  Home,
+  X,
+  Briefcase,
+  LogOut,
+  UserPlus,
+  LucideProps,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,12 +16,62 @@ import logo from "../../../assets/bouwnce-main.png";
 import logoIcon from "../../../assets/bouwnce-icon.png";
 import { LuSquareUserRound } from "react-icons/lu";
 import { PiDotsNineBold } from "react-icons/pi";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/context/AuthContext";
 import useAuthServices from "@/app/hooks/use-authservices";
 import useMatch from "@/app/hooks/use-match";
 import LogoutModal from "./LogoutModal";
+
+const EventCustomIcon = React.forwardRef<SVGSVGElement, LucideProps>(
+  ({ className, strokeWidth, ...props }, ref) => (
+    <svg
+      ref={ref}
+      width="15"
+      height="15"
+      viewBox="0 0 15 15"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={{ strokeWidth: strokeWidth ?? 1 }}
+      {...props}
+    >
+      <path
+        d="M7.49989 14.4992C8.35902 14.4992 9.05545 13.8724 9.05545 13.0992C9.05545 12.326 8.35902 11.6992 7.49989 11.6992C6.64076 11.6992 5.94434 12.326 5.94434 13.0992C5.94434 13.8724 6.64076 14.4992 7.49989 14.4992Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.83344 0.5H5.16678C3.70018 0.5 2.96689 0.5 2.51128 0.910053C2.05566 1.3201 2.05566 1.98007 2.05566 3.3V5.4C2.05566 6.71992 2.05566 7.37988 2.51128 7.78994C2.96689 8.2 3.70018 8.2 5.16678 8.2H6.33344L7.50011 9.6L8.66678 8.2H9.83344C11.3 8.2 12.0333 8.2 12.4889 7.78994C12.9446 7.37988 12.9446 6.71992 12.9446 5.4V3.3C12.9446 1.98007 12.9446 1.3201 12.4889 0.910053C12.0333 0.5 11.3 0.5 9.83344 0.5Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.16699 3.30078H7.50033"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.16699 5.39844H9.83366"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.05556 13.1016H14.5M5.94444 13.1016H0.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+);
+
+EventCustomIcon.displayName = "EventCustomIcon";
+
 const Sidebar = ({
   isMobile,
   onClose,
@@ -56,6 +114,14 @@ const Sidebar = ({
         name: "Business Hub",
         href: "/vendor",
         icon: Briefcase,
+      });
+    }
+
+    if (authDetails?.user) {
+      items.push({
+        name: "Events",
+        href: "/app/events",
+        icon: EventCustomIcon,
       });
     }
 
@@ -133,40 +199,46 @@ const Sidebar = ({
           {navItems.map((item) => {
             const active = isActive(item.href);
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={onClose}
-                className={`
+              <React.Fragment key={item.name}>
+                {item.name === "Events" && (
+                  <hr className="border-t-[0.53px] border-[#00000033] my-2" />
+                )}
+
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onClose}
+                  className={`
                   w-full flex items-center p-3 rounded-[7px] transition-colors
                   ${collapsed ? "justify-center" : "justify-start"}
                   ${active ? "bg-[#EFEFEF] text-black font-medium" : "text-[#333D42] hover:bg-[#F5F5F5] font-medium"}
                 `}
-              >
-                <item.icon
-                  strokeWidth={active ? 2 : 1}
-                  className={`size-5 shrink-0 ${collapsed ? "" : "mr-3.25"}`}
-                />
+                >
+                  <item.icon
+                    strokeWidth={active ? 2 : 1}
+                    className={`size-5 shrink-0 ${collapsed ? "" : "mr-3.25"}`}
+                  />
 
-                <AnimatePresence>
-                  {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      className="overflow-hidden whitespace-nowrap ml-3"
-                    >
-                      {item.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        className="overflow-hidden whitespace-nowrap ml-3"
+                      >
+                        {item.name}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
 
-                {typeof item.badge === "number" && item.badge > 0 ? (
-                  <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
-                    {item.badge}
-                  </span>
-                ) : null}
-              </Link>
+                  {typeof item.badge === "number" && item.badge > 0 ? (
+                    <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </Link>
+              </React.Fragment>
             );
           })}
 
