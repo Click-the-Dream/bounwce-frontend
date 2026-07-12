@@ -4,7 +4,7 @@ import React from "react";
 
 const EventCard = ({ event }: any) => {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col hover:shadow-[0_4px_25px_rgba(0,0,0,0.06)] transition duration-200">
+    <div className="bg-white rounded-[10px] border border-gray-100 shadow-[0_0px_19.1px_0px_#00000040] overflow-hidden flex flex-col transition duration-200">
       {/* Header Banner Content Area */}
       <div className="relative h-12 w-full bg-blue-900">
         {/* Dynamic Image Overlay Layer fallback to styled gradient if no img */}
