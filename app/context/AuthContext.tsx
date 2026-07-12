@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const updateAccessToken = useCallback((token: string) => {
     setAuthDetails((prev: any) => {
       if (!prev) return prev;
-      const updated = { ...prev, access_token: token };
+      const updated = { ...prev, token: token };
       localStorage.setItem("authUser", JSON.stringify(updated));
       websocket.reconnectWithToken(token);
       return updated;
@@ -153,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!token) return null;
 
       updateAccessToken(token);
-      return token; // 🔥 IMPORTANT FIX
+      return token;
     } catch (e: any) {
       if (e.message === "AUTH_EXPIRED") {
         await safeLogout();
@@ -193,26 +193,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    const token = authDetails?.access_token;
+    const token = authDetails?.token;
     if (!token) return;
     scheduleRefresh(token);
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
-  }, [authDetails?.access_token, scheduleRefresh]);
+  }, [authDetails?.token, scheduleRefresh]);
 
   // ---------------- VISIBILITY FIX ----------------
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState !== "visible") return;
-      const token = authDetails?.access_token;
+      const token = authDetails?.token;
       if (!token) return;
       if (isExpired(token)) await handleRefresh();
       else scheduleRefresh(token);
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [authDetails?.access_token, handleRefresh, scheduleRefresh]);
+  }, [authDetails?.token, handleRefresh, scheduleRefresh]);
 
   // ---------------- INIT ----------------
   useEffect(() => {
@@ -221,8 +221,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const parsed = JSON.parse(stored);
         setAuthDetails(parsed);
-        if (parsed?.access_token) {
-          websocket.connect(parsed.access_token);
+        if (parsed?.token) {
+          websocket.connect(parsed.token);
         }
       } catch {
         localStorage.removeItem("authUser");
@@ -260,8 +260,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setAuthDetails(user);
       localStorage.setItem("authUser", JSON.stringify(user));
-      if (user?.access_token) {
-        websocket.reconnectWithToken(user.access_token);
+      if (user?.token) {
+        websocket.reconnectWithToken(user.token);
       }
     },
     [safeLogout],

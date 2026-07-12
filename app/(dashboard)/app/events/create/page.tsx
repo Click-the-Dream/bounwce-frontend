@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import TicketPricingModal from "../_components/TicketPricingModal";
 import { TICKET_TYPES } from "@/app/_utils/utility";
+import BackBtn from "../_components/BackBtn";
 
 export default function CreateEventPage() {
   const [selectedTickets, setSelectedTickets] = useState<string[]>([
@@ -62,14 +63,7 @@ export default function CreateEventPage() {
         borderColor: "#00000033",
       }}
     >
-      <Link
-        href="/app/events"
-        className="w-max mb-6 flex items-center gap-1.5 rounded-lg border border-gray-200 border-r-4 border-r-[#00000014] bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-[9px_0px_4px_-7px_rgba(0,0,0,0.25),inset_-4px_0px_9.3px_-3px_rgba(0,0,0,0.25)] transition-all hover:bg-gray-100 hover:-translate-x-0.5"
-      >
-        <ArrowLeft size={14} />
-        Back
-      </Link>
-
+      <BackBtn />
       <div className="mb-8">
         <h1 className="text-2xl font-medium text-gray-900 tracking-tight">
           Create a New Event

@@ -1,5 +1,3 @@
-"use client";
-
 import { Plus } from "lucide-react";
 import { EventCard } from "./_components/EventCard";
 import { MOCK_EVENTS } from "@/app/_utils/dummy";
@@ -19,9 +17,12 @@ const EventsPage = () => {
 
         {/* Action Header Controls */}
         <div className="flex gap-3 items-center">
-          <button className="text-xs font-medium text-gray-700 bg-white border-[0.83px] border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 transition">
+          <Link
+            href="/app/events/manage"
+            className="text-xs font-medium text-gray-700 bg-white border-[0.83px] border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 transition"
+          >
             Manage Events
-          </button>
+          </Link>
           <Link
             href="/app/events/create"
             className="text-xs font-medium text-white bg-[#FF474D] rounded-lg px-4 py-2 hover:bg-[#e03e43] transition flex items-center gap-1.5 shadow-sm"
