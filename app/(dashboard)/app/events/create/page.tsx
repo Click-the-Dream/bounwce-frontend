@@ -40,12 +40,28 @@ export default function CreateEventPage() {
     }
   };
 
-  const addInterest = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === "Enter" || e.key === ",") && interestInput.trim()) {
-      e.preventDefault();
-      const cleanInput = interestInput.replace(/,/g, "").trim();
+  const handleInterestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.includes(",")) {
+      const parts = value.split(",");
 
-      if (cleanInput && !eventInterests.includes(cleanInput)) {
+      const tagCandidate = parts[0].trim();
+
+      if (tagCandidate && !eventInterests.includes(tagCandidate)) {
+        setEventInterests([...eventInterests, tagCandidate]);
+      }
+      setInterestInput(parts.slice(1).join(","));
+    } else {
+      setInterestInput(value);
+    }
+  };
+
+  const handleInterestKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && interestInput.trim()) {
+      e.preventDefault();
+      const cleanInput = interestInput.trim();
+
+      if (!eventInterests.includes(cleanInput)) {
         setEventInterests([...eventInterests, cleanInput]);
       }
       setInterestInput("");
@@ -149,7 +165,7 @@ export default function CreateEventPage() {
                 <button
                   type="button"
                   onClick={() => removeInterest(interest)}
-                  className="text-gray-400 hover:text-gray-700"
+                  className="text-sm text-gray-400 hover:text-gray-700"
                 >
                   ×
                 </button>
@@ -158,8 +174,8 @@ export default function CreateEventPage() {
 
             <input
               value={interestInput}
-              onChange={(e) => setInterestInput(e.target.value)}
-              onKeyDown={addInterest}
+              onChange={handleInterestChange}
+              onKeyDown={handleInterestKeyDown}
               placeholder={
                 eventInterests.length ? "" : "e.g. Entertainment, Party"
               }
