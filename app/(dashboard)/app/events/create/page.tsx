@@ -1,54 +1,104 @@
 "use client";
 
 import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import {
   UploadCloud,
   Calendar,
   HelpCircle,
   AlertCircle,
   Eye,
-  ArrowLeft,
 } from "lucide-react";
-import Link from "next/link";
 import TicketPricingModal from "../_components/TicketPricingModal";
-import { TICKET_TYPES } from "@/app/_utils/utility";
+import { EventFormInputs, TICKET_TYPES } from "@/app/_utils/utility";
 import BackBtn from "../_components/BackBtn";
 
 export default function CreateEventPage() {
-  const [selectedTickets, setSelectedTickets] = useState<string[]>([
-    "VIP",
-    "Regular",
-  ]);
   const [dragActive, setDragActive] = useState(false);
-  const [eventInterests, setEventInterests] = useState<string[]>([]);
   const [interestInput, setInterestInput] = useState("");
-  const [ticketPrices, setTicketPrices] = useState<
-    { type: string; price: string }[]
-  >([
-    { type: "VIP", price: "" },
-    { type: "Regular", price: "" },
-  ]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    control,
+    formState: { errors },
+  } = useForm<EventFormInputs>({
+    defaultValues: {
+      banner: null,
+      name: "",
+      description: "",
+      interests: [],
+      date: "",
+      ticketPrices: [],
+      locationType: "",
+      address: "",
+      meetingLink: "",
+    },
+  });
+
+  const locationType = watch("locationType");
+  const eventInterests = watch("interests") || [];
+  const ticketPrices = watch("ticketPrices") || [];
+  const selectedTickets = ticketPrices.map((item) => item.type);
+
+  const setSelectedTickets = (
+    types: string[] | ((prev: string[]) => string[]),
+  ) => {
+    const updatedTypes =
+      typeof types === "function" ? types(selectedTickets) : types;
+    const currentPrices = [...ticketPrices];
+
+    let updatedPrices = currentPrices.filter((p) =>
+      updatedTypes.includes(p.type),
+    );
+
+    updatedTypes.forEach((type) => {
+      const exists = updatedPrices.some((p) => p.type === type);
+      if (!exists) {
+        updatedPrices.push({ type, price: "" });
+      }
+    });
+
+    setValue("ticketPrices", updatedPrices, { shouldValidate: true });
+  };
+
+  const setTicketPrices = (
+    prices:
+      | { type: string; price: string }[]
+      | ((
+          prev: { type: string; price: string }[],
+        ) => { type: string; price: string }[]),
+  ) => {
+    const updatedPrices =
+      typeof prices === "function" ? prices(ticketPrices) : prices;
+    setValue("ticketPrices", updatedPrices, { shouldValidate: true });
+  };
+
   const toggleTicketType = (type: string) => {
-    if (selectedTickets.includes(type)) {
-      setSelectedTickets(selectedTickets.filter((t) => t !== type));
-      setTicketPrices(ticketPrices.filter((item) => item.type !== type));
+    const isSelected = selectedTickets.includes(type);
+    if (isSelected) {
+      const updatedPrices = ticketPrices.filter((item) => item.type !== type);
+      setValue("ticketPrices", updatedPrices, { shouldValidate: true });
     } else {
-      setSelectedTickets([...selectedTickets, type]);
-      setTicketPrices([...ticketPrices, { type, price: "" }]);
+      const updatedPrices = [...ticketPrices, { type, price: "" }];
+      setValue("ticketPrices", updatedPrices, { shouldValidate: true });
     }
   };
 
+  // Interest tags management
   const handleInterestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value.includes(",")) {
       const parts = value.split(",");
-
       const tagCandidate = parts[0].trim();
 
       if (tagCandidate && !eventInterests.includes(tagCandidate)) {
-        setEventInterests([...eventInterests, tagCandidate]);
+        setValue("interests", [...eventInterests, tagCandidate], {
+          shouldValidate: true,
+        });
       }
       setInterestInput(parts.slice(1).join(","));
     } else {
@@ -62,19 +112,42 @@ export default function CreateEventPage() {
       const cleanInput = interestInput.trim();
 
       if (!eventInterests.includes(cleanInput)) {
-        setEventInterests([...eventInterests, cleanInput]);
+        setValue("interests", [...eventInterests, cleanInput], {
+          shouldValidate: true,
+        });
       }
       setInterestInput("");
     }
   };
 
   const removeInterest = (interest: string) => {
-    setEventInterests(eventInterests.filter((item) => item !== interest));
+    setValue(
+      "interests",
+      eventInterests.filter((item) => item !== interest),
+      { shouldValidate: true },
+    );
   };
+
+  // Banner image handler
+  const handleBannerChange = (file: File | null) => {
+    if (file) {
+      setValue("banner", file, { shouldValidate: true });
+    }
+  };
+
+  // Final form submission payload
+  const onSubmit = (data: EventFormInputs) => {
+    console.log("Form Data Submitted Successfully:", data);
+    // Execute API calls here
+  };
+  const displayTickets = [
+    ...TICKET_TYPES,
+    ...selectedTickets.filter((t) => !TICKET_TYPES.includes(t)),
+  ];
 
   return (
     <div
-      className="min-h-screen  max-w-170 mx-auto px-6 py-8 border-l-[0.53px] border-r-[0.53px] mb-5 border-[#00000033]"
+      className="min-h-screen max-w-170 mx-auto px-6 py-8 border-l-[0.53px] border-r-[0.53px] mb-5 border-[#00000033]"
       style={{
         borderColor: "#00000033",
       }}
@@ -89,40 +162,70 @@ export default function CreateEventPage() {
         </p>
       </div>
 
-      <form className="space-y-4.75" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-4.75" onSubmit={handleSubmit(onSubmit)}>
         {/* Banner Drag and Drop Container */}
         <div>
           <label className="block text-xs font-medium text-gray-800 mb-2">
             Event Banner <span className="text-[#FF474D]">*</span>
           </label>
-          <div
-            className={`border-2 border-dashed rounded-[10px] p-8 flex flex-col items-center justify-center transition ${
-              dragActive
-                ? "border-[#FF474D] bg-red-50/10"
-                : "border-gray-200 bg-gray-50/30"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-            }}
-            onDragLeave={() => setDragActive(false)}
-            onDrop={() => setDragActive(false)}
-          >
-            <UploadCloud
-              className="text-gray-400 mb-2"
-              size={28}
-              strokeWidth={1.5}
-            />
-            <p className="text-xs text-gray-500">
-              Click to upload or drag and drop
+          <Controller
+            control={control}
+            name="banner"
+            rules={{ required: "Event banner is required" }}
+            render={({ field }) => (
+              <div
+                className={`border-2 border-dashed rounded-[10px] p-8 flex flex-col items-center justify-center transition relative ${
+                  dragActive
+                    ? "border-[#FF474D] bg-red-50/10"
+                    : "border-gray-200 bg-gray-50/30"
+                } ${errors.banner ? "border-[#FF474D]" : ""}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragActive(true);
+                }}
+                onDragLeave={() => setDragActive(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragActive(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleBannerChange(e.dataTransfer.files[0]);
+                  }
+                }}
+              >
+                <label
+                  htmlFor="banner-upload"
+                  className="flex flex-col items-center justify-center cursor-pointer w-full h-full"
+                >
+                  <UploadCloud
+                    className="text-gray-400 mb-2"
+                    size={28}
+                    strokeWidth={1.5}
+                  />
+                  <p className="text-xs text-gray-500">
+                    {field.value
+                      ? `Selected: ${(field.value as File).name}`
+                      : "Click to upload or drag and drop"}
+                  </p>
+                  <input
+                    type="file"
+                    className="hidden"
+                    id="banner-upload"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleBannerChange(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+          />
+          {errors.banner && (
+            <p className="text-[11px] text-[#FF474D] mt-1">
+              {errors.banner.message}
             </p>
-            <input
-              type="file"
-              className="hidden"
-              id="banner-upload"
-              accept="image/*"
-            />
-          </div>
+          )}
         </div>
 
         {/* Name Field Input */}
@@ -133,8 +236,18 @@ export default function CreateEventPage() {
           <input
             type="text"
             placeholder="e.g., Annual DevFest"
-            className="w-full border border-gray-200 rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300 transition"
+            className={`w-full border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 transition ${
+              errors.name
+                ? "border-[#FF474D] focus:ring-[#FF474D]"
+                : "border-gray-200 focus:ring-gray-300"
+            }`}
+            {...register("name", { required: "Event name is required" })}
           />
+          {errors.name && (
+            <p className="text-[11px] text-[#FF474D] mt-1">
+              {errors.name.message}
+            </p>
+          )}
         </div>
 
         {/* Description Field Input */}
@@ -144,9 +257,21 @@ export default function CreateEventPage() {
           </label>
           <textarea
             rows={4}
-            placeholder="Describe what the event is about"
-            className="w-full border border-gray-200 rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300 transition resize-none"
+            placeholder="include information about the event"
+            className={`w-full h-36.25 border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 transition resize-none ${
+              errors.description
+                ? "border-[#FF474D] focus:ring-[#FF474D]"
+                : "border-gray-200 focus:ring-gray-300"
+            }`}
+            {...register("description", {
+              required: "Event description is required",
+            })}
           />
+          {errors.description && (
+            <p className="text-[11px] text-[#FF474D] mt-1">
+              {errors.description.message}
+            </p>
+          )}
         </div>
 
         {/* Interests Selector Field */}
@@ -154,14 +279,17 @@ export default function CreateEventPage() {
           <label className="block text-xs font-medium text-gray-800 mb-2">
             Event Interest <span className="text-[#FF474D]">*</span>
           </label>
-          <div className="w-full min-h-11.5 border border-gray-200 rounded-[10px] px-3 py-2 flex flex-wrap items-center gap-2">
+          <div
+            className={`w-full min-h-11.5 border rounded-[10px] px-3 py-2 flex flex-wrap items-center gap-2 ${
+              errors.interests ? "border-[#FF474D]" : "border-gray-200"
+            }`}
+          >
             {eventInterests.map((interest) => (
               <span
                 key={interest}
                 className="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-[11px] text-gray-600"
               >
                 {interest}
-
                 <button
                   type="button"
                   onClick={() => removeInterest(interest)}
@@ -182,6 +310,20 @@ export default function CreateEventPage() {
               className="flex-1 min-w-30 text-xs outline-none bg-transparent"
             />
           </div>
+          {/* Hidden register register point to hook form rules */}
+          <input
+            type="hidden"
+            {...register("interests", {
+              validate: (value) =>
+                (value && value.length > 0) ||
+                "At least one interest is required",
+            })}
+          />
+          {errors.interests && (
+            <p className="text-[11px] text-[#FF474D] mt-1">
+              {errors.interests.message}
+            </p>
+          )}
         </div>
 
         {/* Date Time Picker Block */}
@@ -193,13 +335,23 @@ export default function CreateEventPage() {
             <input
               type="text"
               placeholder="Select Date"
-              className="w-full border border-gray-200 rounded-[10px] pl-4 pr-10 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300 transition"
+              className={`w-full border rounded-[10px] pl-4 pr-10 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 transition ${
+                errors.date
+                  ? "border-[#FF474D] focus:ring-[#FF474D]"
+                  : "border-gray-200 focus:ring-gray-300"
+              }`}
+              {...register("date", { required: "Date is required" })}
             />
             <Calendar
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400"
               size={16}
             />
           </div>
+          {errors.date && (
+            <p className="text-[11px] text-[#FF474D] mt-1">
+              {errors.date.message}
+            </p>
+          )}
         </div>
 
         {/* Pricing Segment Toggles */}
@@ -211,7 +363,11 @@ export default function CreateEventPage() {
             <HelpCircle size={14} className="text-gray-400 cursor-help" />
           </div>
 
-          <div className="border-[0.53px] border-gray-200 rounded-[10px] p-2.5 flex flex-wrap items-center gap-2 ">
+          <div
+            className={`border rounded-[10px] p-2.5 flex flex-wrap items-center gap-4 ${
+              errors.ticketPrices ? "border-[#FF474D]" : "border-gray-200"
+            }`}
+          >
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
@@ -219,13 +375,20 @@ export default function CreateEventPage() {
             >
               +
             </button>
-            {TICKET_TYPES.map((type) => {
+            {displayTickets.map((type) => {
               const isSelected = selectedTickets.includes(type);
               return (
                 <button
                   key={type}
                   type="button"
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    if (isSelected) {
+                      toggleTicketType(type);
+                    } else {
+                      toggleTicketType(type);
+                      setIsModalOpen(true);
+                    }
+                  }}
                   className={`text-[11px] px-2.75 py-1 rounded-[20px] border transition flex items-center gap-1 ${
                     isSelected
                       ? "bg-orange-50/40 border-[#FF474D] text-[#FF474D]"
@@ -244,31 +407,102 @@ export default function CreateEventPage() {
               className="text-gray-500 ml-auto hidden sm:block"
             />
           </div>
+          <input
+            type="hidden"
+            {...register("ticketPrices", {
+              validate: (value) =>
+                (value && value.length > 0) ||
+                "At least one ticket price option must be active",
+            })}
+          />
+          {errors.ticketPrices && (
+            <p className="text-[11px] text-[#FF474D] mt-1">
+              {errors.ticketPrices.message}
+            </p>
+          )}
         </div>
 
-        {/* Location Block */}
+        {/* Location Type Selection */}
         <div>
-          <label className="block text-xs font-medium text-gray-800 mb-2">
-            Location <span className="text-[#FF474D]">*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Virtual or Physical Address"
-            className="w-full border border-gray-200 rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300 transition"
-          />
+          <select
+            className={`w-full border rounded-[10px] px-2 py-3 text-xs text-gray-900 focus:outline-none focus:ring-1 transition ${
+              errors.locationType
+                ? "border-[#FF474D] focus:ring-[#FF474D]"
+                : "border-gray-200 focus:ring-gray-300"
+            }`}
+            {...register("locationType", {
+              required: "Please select a location setup",
+            })}
+          >
+            <option value="" disabled>
+              Location *
+            </option>
+            <option value="PHYSICAL">Physical</option>
+            <option value="VIRTUAL">Virtual</option>
+          </select>
+          {errors.locationType && (
+            <p className="text-[11px] text-[#FF474D] mt-1">
+              {errors.locationType.message}
+            </p>
+          )}
         </div>
 
-        {/* Optional Event Web Link Fields */}
-        <div>
-          <label className="block text-xs font-medium text-gray-800 mb-2">
-            Link
-          </label>
-          <input
-            type="url"
-            placeholder="Add link if event is virtual...etc..."
-            className="w-full border border-gray-200 rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300 transition"
-          />
-        </div>
+        {/* Conditional Address or Virtual Meeting Link field */}
+        {locationType === "PHYSICAL" && (
+          <div>
+            <label className="block text-xs font-medium text-gray-800 mb-2">
+              Event Address <span className="text-[#FF474D]">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Landmark Event Centre, Victoria Island, Lagos"
+              className={`w-full border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 transition ${
+                errors.address
+                  ? "border-[#FF474D] focus:ring-[#FF474D]"
+                  : "border-gray-200 focus:ring-gray-300"
+              }`}
+              {...register("address", {
+                required:
+                  locationType === "PHYSICAL"
+                    ? "Event location address is required"
+                    : false,
+              })}
+            />
+            {errors.address && (
+              <p className="text-[11px] text-[#FF474D] mt-1">
+                {errors.address.message}
+              </p>
+            )}
+          </div>
+        )}
+
+        {locationType === "VIRTUAL" && (
+          <div>
+            <label className="block text-xs font-medium text-gray-800 mb-2">
+              Meeting Link <span className="text-[#FF474D]">*</span>
+            </label>
+            <input
+              type="url"
+              placeholder="https://meet.google.com/... or https://zoom.us/..."
+              className={`w-full border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 transition ${
+                errors.meetingLink
+                  ? "border-[#FF474D] focus:ring-[#FF474D]"
+                  : "border-gray-200 focus:ring-gray-300"
+              }`}
+              {...register("meetingLink", {
+                required:
+                  locationType === "VIRTUAL"
+                    ? "A meeting connection URL is required"
+                    : false,
+              })}
+            />
+            {errors.meetingLink && (
+              <p className="text-[11px] text-[#FF474D] mt-1">
+                {errors.meetingLink.message}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Action Controls Group Footer */}
         <div className="pt-4 flex flex-wrap gap-1 items-center justify-between border-t border-gray-50">
@@ -296,6 +530,7 @@ export default function CreateEventPage() {
           </div>
         </div>
       </form>
+
       <TicketPricingModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

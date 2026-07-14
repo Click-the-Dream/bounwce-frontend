@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, Trash2, Info } from "lucide-react";
 import { TICKET_TYPES } from "@/app/_utils/utility";
 import CancelTicketIcon from "@/app/_utils/CustomIcons";
+
 interface TicketPricingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,17 +26,65 @@ function TicketPricingModal({
   setTicketPrices,
   setSelectedTickets,
 }: TicketPricingModalProps) {
+  const [error, setError] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const removeTicketRow = (type: string) => {
     setSelectedTickets(selectedTickets.filter((t) => t !== type));
     setTicketPrices(ticketPrices.filter((item) => item.type !== type));
+    setError(null);
   };
 
   const handlePriceChange = (index: number, value: string) => {
+    const numericValue = value.replace(/\D/g, "");
+
     const updated = [...ticketPrices];
-    updated[index].price = value;
+    updated[index].price = numericValue;
     setTicketPrices(updated);
+    if (error) setError(null);
+  };
+
+  const handleTypeChange = (index: number, value: string) => {
+    const updated = [...ticketPrices];
+    const oldType = updated[index].type;
+    updated[index].type = value;
+    setTicketPrices(updated);
+
+    // Keep the selectedTickets tracking array in sync
+    setSelectedTickets(selectedTickets.map((t) => (t === oldType ? value : t)));
+    if (error) setError(null);
+  };
+
+  const addNewCustomCategory = () => {
+    // Generate a default temporary name for the new custom row
+    const customTypeNumber =
+      ticketPrices.filter((t) => t.type.startsWith("Custom Category")).length +
+      1;
+    const newType = `Custom Category ${customTypeNumber}`;
+
+    setSelectedTickets([...selectedTickets, newType]);
+    setTicketPrices([...ticketPrices, { type: newType, price: "" }]);
+    setError(null);
+  };
+
+  // Intercept the close action to validate prices first
+  const handleCloseAttempt = () => {
+    const hasEmptyPrices = ticketPrices.some((ticket) => !ticket.price.trim());
+    const hasEmptyNames = ticketPrices.some((ticket) => !ticket.type.trim());
+
+    if (hasEmptyPrices) {
+      setError("Please provide a price for all selected tickets.");
+      return;
+    }
+
+    if (hasEmptyNames) {
+      setError("Please ensure all custom categories have names.");
+      return;
+    }
+
+    setError(null);
+    onClose();
   };
 
   return (
@@ -47,7 +96,7 @@ function TicketPricingModal({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCloseAttempt}
               className="hover:scale-105 transition-transform"
             >
               <CancelTicketIcon />
@@ -70,7 +119,10 @@ function TicketPricingModal({
               <button
                 key={type}
                 type="button"
-                onClick={() => toggleTicketType(type)}
+                onClick={() => {
+                  toggleTicketType(type);
+                  setError(null);
+                }}
                 className={`text-[11px] px-2.75 py-1 rounded-[20px] border transition flex items-center gap-1 font-medium ${
                   isSelected
                     ? "bg-orange-50/40 border-[#FF474D] text-[#FF474D]"
@@ -99,41 +151,61 @@ function TicketPricingModal({
 
           {/* Table Input Rows */}
           <div className="space-y-2.5">
-            {ticketPrices.map((ticket, index) => (
-              <div
-                key={ticket.type}
-                className="grid grid-cols-[1fr_1fr_24px] gap-4 items-center"
-              >
-                <input
-                  type="text"
-                  value={ticket.type}
-                  readOnly
-                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 outline-none select-none"
-                />
+            {ticketPrices.map((ticket, index) => {
+              const isCustom =
+                !TICKET_TYPES.includes(ticket.type) &&
+                !ticket.type.startsWith("Custom Category");
+              const isDefaultCustom = ticket.type.startsWith("Custom Category");
+              const editableType = isCustom || isDefaultCustom;
 
-                <input
-                  type="text"
-                  value={ticket.price}
-                  onChange={(e) => handlePriceChange(index, e.target.value)}
-                  placeholder="Enter price"
-                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 placeholder-gray-300 focus:outline-none focus:border-gray-300 transition"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => removeTicketRow(ticket.type)}
-                  className="text-gray-300 hover:text-gray-500 transition flex justify-center"
+              return (
+                <div
+                  key={ticket.type}
+                  className="grid grid-cols-[1fr_1fr_24px] gap-4 items-center"
                 >
-                  <Trash2 size={15} strokeWidth={1.5} />
-                </button>
-              </div>
-            ))}
+                  <input
+                    type="text"
+                    value={ticket.type}
+                    readOnly={!editableType}
+                    onChange={(e) => handleTypeChange(index, e.target.value)}
+                    placeholder="Category name"
+                    className={`w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 outline-none select-none ${
+                      editableType ? "focus:border-gray-300" : ""
+                    }`}
+                  />
+
+                  <input
+                    type="text"
+                    value={ticket.price}
+                    onChange={(e) => handlePriceChange(index, e.target.value)}
+                    placeholder="Enter price"
+                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 placeholder-gray-300 focus:outline-none focus:border-gray-300 transition"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => removeTicketRow(ticket.type)}
+                    className="text-gray-300 hover:text-gray-500 transition flex justify-center"
+                  >
+                    <Trash2 size={15} strokeWidth={1.5} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
+
+        {/* Error message block */}
+        {error && (
+          <p className="text-xs text-[#FF474D] font-medium mb-4 animate-pulse">
+            {error}
+          </p>
+        )}
 
         {/* Bottom Add Trigger Style Button */}
         <button
           type="button"
+          onClick={addNewCustomCategory}
           className="border border-dashed border-[#FF474D] text-[#FF474D] font-bold rounded-lg px-4 py-2 text-xs hover:bg-red-50/30 transition"
         >
           + Add Category

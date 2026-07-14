@@ -213,3 +213,15 @@ export const TICKET_TYPES = [
   "Student",
   "Table",
 ];
+
+export interface EventFormInputs {
+  banner: File | null;
+  name: string;
+  description: string;
+  interests: string[];
+  date: string;
+  ticketPrices: { type: string; price: string }[];
+  locationType: "PHYSICAL" | "VIRTUAL" | "";
+  address?: string;
+  meetingLink?: string;
+}
