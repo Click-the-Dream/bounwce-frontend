@@ -3,7 +3,15 @@ import { useState } from "react";
 import { Users, Minus, Plus } from "lucide-react";
 import { CustomCalendarIcon, CustomMapPinIcon } from "@/app/_utils/CustomIcons";
 
-const TICKET_CATEGORIES = [
+type TicketCategoryId = "regular" | "vip" | "vvip" | "table_10";
+
+type Quantities = Record<TicketCategoryId, number>;
+
+const TICKET_CATEGORIES: {
+  id: TicketCategoryId;
+  name: string;
+  price: number;
+}[] = [
   { id: "regular", name: "Regular", price: 1500 },
   { id: "vip", name: "VIP", price: 15000 },
   { id: "vvip", name: "VVIP", price: 50000 },
@@ -11,28 +19,35 @@ const TICKET_CATEGORIES = [
 ];
 
 export default function EventDetails() {
-  const [selectedCategoryId, setSelectedCategoryId] = useState("regular");
-  const [quantities, setQuantities] = useState({
+  const [selectedCategoryId, setSelectedCategoryId] =
+    useState<TicketCategoryId>("regular");
+
+  const [quantities, setQuantities] = useState<Quantities>({
     regular: 1,
     vip: 0,
     vvip: 0,
     table_10: 0,
   });
 
-  const handleSelectCategory = (id: any) => {
+  const handleSelectCategory = (id: TicketCategoryId) => {
     setSelectedCategoryId(id);
-    setQuantities((prev: any) => {
-      const next = { regular: 0, vip: 0, vvip: 0, table_10: 0 };
+    setQuantities((prev) => {
+      const next: Quantities = {
+        regular: 0,
+        vip: 0,
+        vvip: 0,
+        table_10: 0,
+      };
       next[id] = prev[id] > 0 ? prev[id] : 1;
       return next;
     });
   };
 
-  const updateQuantity = (id: string, amount: number) => {
+  const updateQuantity = (id: TicketCategoryId, amount: number) => {
     const minVal = id === selectedCategoryId ? 1 : 0;
     setQuantities((prev) => ({
       ...prev,
-      [id]: Math.max(minVal, (prev[id] || 0) + amount),
+      [id]: Math.max(minVal, prev[id] + amount),
     }));
   };
 
@@ -102,7 +117,7 @@ export default function EventDetails() {
               Choose a ticket category
             </p>
             <div className="space-y-3">
-              {TICKET_CATEGORIES.map((cat: any) => {
+              {TICKET_CATEGORIES.map((cat) => {
                 const isSelected = selectedCategoryId === cat.id;
                 const qty = quantities[cat.id] || 0;
 
