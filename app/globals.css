@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Irish+Grover&display=swap");
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -25,8 +26,7 @@
   --font-SFPro: "SFPro";
   --font-aeonik: "Aeonik TRIAL", "sans-serif";
   --font-pompiere: "Pompiere", "sans-serif";
-
-  /* Grid templates */
+  --font-irish: "Irish Grover", "system-ui"; /* Grid templates */
   --grid-template-columns-auto: repeat(auto-fill, minmax(220px, 1fr));
   --grid-template-columns-responsive: repeat(auto-fill, minmax(300px, 1fr));
   --grid-template-columns-mobile: repeat(auto-fill, minmax(100px, 1fr));

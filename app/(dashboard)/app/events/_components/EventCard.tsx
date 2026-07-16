@@ -5,6 +5,7 @@ import { MoreHorizontal, Share2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Event } from "@/app/_utils/types/event";
 import { CustomCalendarIcon, CustomMapPinIcon } from "@/app/_utils/CustomIcons";
+import Link from "next/link";
 
 interface EventCardProps {
   event: Event;
@@ -126,9 +127,12 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
             <span className="text-xs text-black">+{event.attendeesCount}</span>
           </div>
 
-          <button className="text-xs font-medium text-black/90 hover:text-black transition">
+          <Link
+            href={`/app/events/${event?.id}`}
+            className="text-xs font-medium text-black/90 hover:text-black transition"
+          >
             View Details
-          </button>
+          </Link>
         </div>
       </div>
     </div>
