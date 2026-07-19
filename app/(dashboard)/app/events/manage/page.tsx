@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal, Plus } from "lucide-react";
 import Link from "next/link";
 import EventCard from "./_components/EventCard";
 import BackBtn from "../_components/BackBtn";
+import useEvent from "@/app/hooks/useEvent";
 
 // Mock data array to fill the UI grids
 const MOCK_EVENTS = Array(9).fill({
@@ -19,6 +20,9 @@ const MOCK_EVENTS = Array(9).fill({
 });
 
 export default function ManageEventsPage() {
+  const { useMyEvents } = useEvent();
+  const { data } = useMyEvents();
+
   const [searchQuery, setSearchQuery] = useState("");
 
   return (

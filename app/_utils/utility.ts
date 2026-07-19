@@ -217,11 +217,12 @@ export const TICKET_TYPES = [
 export interface EventFormInputs {
   banner: File | null;
   name: string;
-  description: string;
+  desc: string;
   interests: string[];
   date: string;
-  ticketPrices: { type: string; price: string }[];
-  locationType: "PHYSICAL" | "VIRTUAL" | "";
-  address?: string;
-  meetingLink?: string;
+  ticket_info: { ticket_name: string; price: string }[];
+  location_type: "PHYSICAL" | "VIRTUAL" | "";
+  location?: string;
+  link?: string | null;
+  state: string;
 }

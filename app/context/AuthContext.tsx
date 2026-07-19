@@ -22,30 +22,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // FIX (Bug 1): keep a ref that is always current so the axios interceptor
-  // closure never reads stale state. Updated on every authDetails change.
   const authDetailsRef = useRef<any>(null);
   useEffect(() => {
     authDetailsRef.current = authDetails;
   }, [authDetails]);
 
-  // FIX (Bug 3 + safeLogout): a ref to the chat reset function injected from
-  // ChatContext via registerChatReset(). This lets AuthContext call
-  // resetChatState() without a circular import.
   const chatResetRef = useRef<(() => void) | null>(null);
   const registerChatReset = useCallback((fn: () => void) => {
     chatResetRef.current = fn;
   }, []);
 
-  // ---------------- GLOBAL GUARDS ----------------
-
+  // GLOBAL GUARDS
   const refreshInFlight = {
     current: null as Promise<string | null> | null,
   };
   const logoutLockRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ---------------- TOKEN HELPERS ----------------
   const getTokenExp = (token: string) => {
     try {
       return JSON.parse(atob(token.split(".")[1]))?.exp * 1000;
@@ -59,15 +52,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return !exp || Date.now() > exp - 30_000;
   };
 
-  // ---------------- SAFE LOGOUT ----------------
   const safeLogout = useCallback(async () => {
     if (logoutLockRef.current) return;
     logoutLockRef.current = true;
 
-    // 1. Wipe in-memory chat state (prewarmRef, selectedChat, etc.)
     chatResetRef.current?.();
-
-    // 2. Wipe IndexedDB for the current user — never block logout on failure
     try {
       const userId = authDetailsRef.current?.user?.id;
       if (userId) {
@@ -76,15 +65,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch {}
 
-    // 3. Clear React Query cache
     queryClient.clear();
 
-    // 4. Clear auth state + storage
     setAuthDetails(null);
-    localStorage.removeItem("authUser");
+    localStorage.removeItem("bouwnceUser");
     localStorage.removeItem("ws_token");
-
-    // 5. Disconnect websocket
     websocket.disconnect();
 
     setTimeout(() => {
@@ -92,13 +77,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, 3000);
   }, [queryClient]);
 
-  // ---------------- SINGLE REFRESH PIPELINE ----------------
-
   const updateAccessToken = useCallback((token: string) => {
     setAuthDetails((prev: any) => {
       if (!prev) return prev;
-      const updated = { ...prev, token: token };
-      localStorage.setItem("authUser", JSON.stringify(updated));
+      const updated = { ...prev, access_token: token };
+      localStorage.setItem("bouwnceUser", JSON.stringify(updated));
       websocket.reconnectWithToken(token);
       return updated;
     });
@@ -140,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return refreshInFlight.current;
   };
 
-  // ---------------- TOKEN REFRESH HANDLER ----------------
+  // TOKEN REFRESH HANDLER
   const handleRefresh = useCallback(async (): Promise<string | null> => {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       console.warn("[AUTH] offline → skip refresh");
@@ -162,7 +145,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [updateAccessToken, safeLogout]);
 
-  // ---------------- PROACTIVE REFRESH SCHEDULER ----------------
+  // PROACTIVE REFRESH SCHEDULER
   const scheduleRefresh = useCallback(
     (token: string) => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
@@ -193,39 +176,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    const token = authDetails?.token;
+    const token = authDetails?.access_token;
     if (!token) return;
     scheduleRefresh(token);
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
-  }, [authDetails?.token, scheduleRefresh]);
+  }, [authDetails?.access_token, scheduleRefresh]);
 
-  // ---------------- VISIBILITY FIX ----------------
+  // VISIBILITY FIX
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState !== "visible") return;
-      const token = authDetails?.token;
+      const token = authDetails?.access_token;
       if (!token) return;
       if (isExpired(token)) await handleRefresh();
       else scheduleRefresh(token);
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [authDetails?.token, handleRefresh, scheduleRefresh]);
+  }, [authDetails?.access_token, handleRefresh, scheduleRefresh]);
 
-  // ---------------- INIT ----------------
+  // INIT
   useEffect(() => {
-    const stored = localStorage.getItem("authUser");
+    const stored = localStorage.getItem("bouwnceUser");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         setAuthDetails(parsed);
-        if (parsed?.token) {
-          websocket.connect(parsed.token);
+        if (parsed?.access_token) {
+          websocket.connect(parsed.access_token);
         }
       } catch {
-        localStorage.removeItem("authUser");
+        localStorage.removeItem("bouwnceUser");
       }
     }
 
@@ -243,15 +226,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     setTimeout(() => setIsLoading(false), 50);
-
     return () => {
-      // FIX (Bug 4): clean up the websocket handler on unmount
       websocket.onAuthFailure = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally runs once
+  }, []);
 
-  // ---------------- PUBLIC UPDATERS ----------------
+  // PUBLIC UPDATERS
   const updateAuth = useCallback(
     (user: any) => {
       if (!user) {
@@ -259,9 +239,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       setAuthDetails(user);
-      localStorage.setItem("authUser", JSON.stringify(user));
-      if (user?.token) {
-        websocket.reconnectWithToken(user.token);
+      localStorage.setItem("bouwnceUser", JSON.stringify(user));
+      if (user?.access_token) {
+        websocket.reconnectWithToken(user.access_token);
       }
     },
     [safeLogout],
@@ -271,7 +251,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setAuthDetails((prev: any) => {
       if (!prev) return prev;
       const updated = { ...prev, user: { ...prev.user, ...patch } };
-      localStorage.setItem("authUser", JSON.stringify(updated));
+      localStorage.setItem("bouwnceUser", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -285,7 +265,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         showAuthModal,
         setShowAuthModal,
-        registerChatReset, // FIX: exposed so ChatProvider can register its reset fn
+        registerChatReset,
       }}
     >
       {children}

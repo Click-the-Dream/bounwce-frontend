@@ -9,10 +9,10 @@ interface TicketPricingModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedTickets: string[];
-  ticketPrices: { type: string; price: string }[];
+  ticketPrices: { ticket_name: string; price: string }[];
   toggleTicketType: (type: string) => void;
   setTicketPrices: React.Dispatch<
-    React.SetStateAction<{ type: string; price: string }[]>
+    React.SetStateAction<{ ticket_name: string; price: string }[]>
   >;
   setSelectedTickets: React.Dispatch<React.SetStateAction<string[]>>;
 }
@@ -32,7 +32,7 @@ function TicketPricingModal({
 
   const removeTicketRow = (type: string) => {
     setSelectedTickets(selectedTickets.filter((t) => t !== type));
-    setTicketPrices(ticketPrices.filter((item) => item.type !== type));
+    setTicketPrices(ticketPrices.filter((item) => item.ticket_name !== type));
     setError(null);
   };
 
@@ -47,8 +47,8 @@ function TicketPricingModal({
 
   const handleTypeChange = (index: number, value: string) => {
     const updated = [...ticketPrices];
-    const oldType = updated[index].type;
-    updated[index].type = value;
+    const oldType = updated[index].ticket_name;
+    updated[index].ticket_name = value;
     setTicketPrices(updated);
 
     // Keep the selectedTickets tracking array in sync
@@ -59,19 +59,21 @@ function TicketPricingModal({
   const addNewCustomCategory = () => {
     // Generate a default temporary name for the new custom row
     const customTypeNumber =
-      ticketPrices.filter((t) => t.type.startsWith("Custom Category")).length +
-      1;
+      ticketPrices.filter((t) => t.ticket_name.startsWith("Custom Category"))
+        .length + 1;
     const newType = `Custom Category ${customTypeNumber}`;
 
     setSelectedTickets([...selectedTickets, newType]);
-    setTicketPrices([...ticketPrices, { type: newType, price: "" }]);
+    setTicketPrices([...ticketPrices, { ticket_name: newType, price: "" }]);
     setError(null);
   };
 
   // Intercept the close action to validate prices first
   const handleCloseAttempt = () => {
     const hasEmptyPrices = ticketPrices.some((ticket) => !ticket.price.trim());
-    const hasEmptyNames = ticketPrices.some((ticket) => !ticket.type.trim());
+    const hasEmptyNames = ticketPrices.some(
+      (ticket) => !ticket.ticket_name.trim(),
+    );
 
     if (hasEmptyPrices) {
       setError("Please provide a price for all selected tickets.");
@@ -153,19 +155,20 @@ function TicketPricingModal({
           <div className="space-y-2.5">
             {ticketPrices.map((ticket, index) => {
               const isCustom =
-                !TICKET_TYPES.includes(ticket.type) &&
-                !ticket.type.startsWith("Custom Category");
-              const isDefaultCustom = ticket.type.startsWith("Custom Category");
+                !TICKET_TYPES.includes(ticket.ticket_name) &&
+                !ticket.ticket_name.startsWith("Custom Category");
+              const isDefaultCustom =
+                ticket.ticket_name.startsWith("Custom Category");
               const editableType = isCustom || isDefaultCustom;
 
               return (
                 <div
-                  key={ticket.type}
+                  key={ticket.ticket_name}
                   className="grid grid-cols-[1fr_1fr_24px] gap-4 items-center"
                 >
                   <input
                     type="text"
-                    value={ticket.type}
+                    value={ticket.ticket_name}
                     readOnly={!editableType}
                     onChange={(e) => handleTypeChange(index, e.target.value)}
                     placeholder="Category name"
@@ -184,7 +187,7 @@ function TicketPricingModal({
 
                   <button
                     type="button"
-                    onClick={() => removeTicketRow(ticket.type)}
+                    onClick={() => removeTicketRow(ticket.ticket_name)}
                     className="text-gray-300 hover:text-gray-500 transition flex justify-center"
                   >
                     <Trash2 size={15} strokeWidth={1.5} />

@@ -96,6 +96,16 @@ input:-webkit-autofill {
   transition: background-color 5000s ease-in-out 0s !important;
 }
 
+.hide-picker-icon::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: none;
+}
+
+.hide-picker-icon {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 @keyframes loadingWave {
   0% {
     transform: scale(0.8);

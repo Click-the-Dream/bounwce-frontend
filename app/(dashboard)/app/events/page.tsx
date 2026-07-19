@@ -1,9 +1,14 @@
+"use client";
 import { Plus } from "lucide-react";
 import { EventCard } from "./_components/EventCard";
 import { MOCK_EVENTS } from "@/app/_utils/dummy";
 import Link from "next/link";
+import useEvent from "@/app/hooks/useEvent";
 
 const EventsPage = () => {
+  const { useExploreEvents } = useEvent();
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useExploreEvents();
   return (
     <main className="w-full max-w-3xl bg-transparent mx-auto min-h-screen px-4 py-8 md:px-6 border-l-[0.53px] border-r-[0.53px] mb-5 border-[#00000033]">
       {/* Upper Content Bar */}
