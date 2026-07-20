@@ -224,5 +224,5 @@ export interface EventFormInputs {
   location_type: "PHYSICAL" | "VIRTUAL" | "";
   location?: string;
   link?: string | null;
-  state: string;
+  state: "live" | "draft" | "";
 }

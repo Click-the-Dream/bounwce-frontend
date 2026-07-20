@@ -1,13 +1,7 @@
 import React, { useRef, useState } from "react";
-import {
-  Controller,
-  UseFormRegister,
-  FieldErrors,
-  Control,
-} from "react-hook-form";
+import { Controller, UseFormRegister, Control } from "react-hook-form";
 import { Calendar, Clock, UploadCloud } from "lucide-react";
 import { EventFormInputs } from "@/app/_utils/utility";
-import { NIGERIAN_STATES } from "@/app/_utils/nigerian-states";
 
 //  BANNER UPLOAD
 interface BannerUploadProps {
@@ -250,38 +244,3 @@ export const DateInput: React.FC<DateInputProps> = ({
     </div>
   );
 };
-
-//  STATE SELECT
-interface StateSelectProps {
-  register: UseFormRegister<EventFormInputs>;
-  error?: string;
-}
-
-export const StateSelect: React.FC<StateSelectProps> = ({
-  register,
-  error,
-}) => (
-  <div>
-    <label className="block text-xs font-medium text-gray-800 mb-2">
-      State <span className="text-[#FF474D]">*</span>
-    </label>
-    <select
-      className={`w-full border rounded-[10px] px-4 py-3 text-xs text-gray-900 focus:outline-none focus:ring-1 transition ${
-        error
-          ? "border-[#FF474D] focus:ring-[#FF474D]"
-          : "border-gray-200 focus:ring-gray-300"
-      }`}
-      {...register("state", { required: "Please select a state" })}
-    >
-      <option value="" disabled>
-        Select State
-      </option>
-      {NIGERIAN_STATES.map((state) => (
-        <option key={state} value={state}>
-          {state}
-        </option>
-      ))}
-    </select>
-    {error && <p className="text-[11px] text-[#FF474D] mt-1">{error}</p>}
-  </div>
-);

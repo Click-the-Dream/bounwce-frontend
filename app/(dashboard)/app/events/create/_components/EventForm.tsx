@@ -10,13 +10,7 @@ import {
 } from "react-hook-form";
 import { EventFormInputs } from "@/app/_utils/utility";
 
-import {
-  BannerUpload,
-  TextInput,
-  TextArea,
-  DateInput,
-  StateSelect,
-} from "./form-fields";
+import { BannerUpload, TextInput, TextArea, DateInput } from "./form-fields";
 import { FormActions } from "./form-actions";
 import LocationSelector from "./LocationSelector";
 import { InterestTags } from "./interest-tags";
@@ -29,19 +23,16 @@ interface EventFormProps {
   control: Control<EventFormInputs>;
   errors: FieldErrors<EventFormInputs>;
 
-  // State
   bannerPreview: string | null;
   locationType: string;
   displayTickets: string[];
   ticketPrices: Array<{ ticket_name: string; price: string }>;
 
-  // Handlers
   onBannerChange: (file: File | null) => void;
   onToggleTicket: (type: string) => void;
   onOpenPricingModal: () => void;
   onSubmit: (data: EventFormInputs) => Promise<void>;
 
-  // UI state
   isLoading: boolean;
   eventInterests: string[];
 }
@@ -63,8 +54,19 @@ export const EventForm: React.FC<EventFormProps> = ({
   onSubmit,
   isLoading,
 }) => {
+  const handleDraft = () => {
+    setValue("state", "draft");
+    handleSubmit(onSubmit)();
+  };
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setValue("state", "live");
+    handleSubmit(onSubmit)();
+  };
+
   return (
-    <form className="space-y-4.75" onSubmit={handleSubmit(onSubmit)}>
+    <form className="space-y-4.75" onSubmit={handleCreate}>
       <BannerUpload
         control={control}
         bannerPreview={bannerPreview}
@@ -103,8 +105,6 @@ export const EventForm: React.FC<EventFormProps> = ({
         setValue={setValue}
       />
 
-      <StateSelect register={register} error={errors.state?.message} />
-
       <TicketSelector
         register={register}
         ticketPrices={ticketPrices}
@@ -124,7 +124,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       <FormActions
         isLoading={isLoading}
         onPreview={() => console.log("Preview")}
-        onSaveDraft={() => console.log("Save draft")}
+        onSaveDraft={handleDraft}
       />
     </form>
   );

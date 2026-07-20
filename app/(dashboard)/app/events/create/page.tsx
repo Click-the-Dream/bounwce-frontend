@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { EventFormInputs, TICKET_TYPES } from "@/app/_utils/utility";
 import EventForm from "./_components/EventForm";
@@ -8,12 +8,13 @@ import TicketPricingModal from "../_components/TicketPricingModal";
 import BackBtn from "../_components/BackBtn";
 import useChat from "@/app/hooks/use-chat";
 import useEvent from "@/app/hooks/useEvent";
+import { useRouter } from "next/navigation";
 
 export default function CreateEventPage() {
   const { useGetChatSignature, uploadToCloudinary } = useChat();
   const { createEvent } = useEvent();
   const [uploadingBanner, setUploadingBanner] = useState(false);
-
+  const router = useRouter();
   // FORM SETUP
   const {
     register,
@@ -29,11 +30,11 @@ export default function CreateEventPage() {
       desc: "",
       interests: [],
       date: "",
-      state: "",
       ticket_info: [],
       location_type: "",
       location: "",
       link: null,
+      state: "",
     },
   });
 
@@ -43,7 +44,6 @@ export default function CreateEventPage() {
   const isCreatingEvent =
     createEvent.isPending || signatureLoading || uploadingBanner;
 
-  // STATE
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -150,6 +150,9 @@ export default function CreateEventPage() {
         ...data,
         price: 0,
         banner_url: bannerUrl,
+        onSuccess: () => {
+          router.push("/app/events");
+        },
       });
     } catch (error) {
       setUploadingBanner(false);

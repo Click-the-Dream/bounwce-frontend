@@ -50,7 +50,14 @@ export const TicketSelector: React.FC<TicketSelectorProps> = ({
             <button
               key={type}
               type="button"
-              onClick={() => onToggleTicket(type)}
+              onClick={() => {
+                if (isSelected) {
+                  onToggleTicket(type);
+                } else {
+                  onToggleTicket(type);
+                  onAddClick();
+                }
+              }}
               className={`text-[11px] px-2.75 py-1 rounded-[20px] border transition flex items-center gap-1 ${
                 isSelected
                   ? "bg-orange-50/40 border-[#FF474D] text-[#FF474D]"
