@@ -8,6 +8,7 @@ import {
 } from "react-hook-form";
 import { Calendar, Clock, UploadCloud } from "lucide-react";
 import { EventFormInputs } from "@/app/_utils/utility";
+import SafeImage from "@/app/_components/SafeImage";
 
 //  BANNER UPLOAD
 interface BannerUploadProps {
@@ -54,9 +55,11 @@ export const BannerUpload: React.FC<BannerUploadProps> = ({
           >
             {bannerPreview || bannerUrl ? (
               <div className="relative w-full h-28">
-                <img
+                <SafeImage
                   src={bannerPreview || bannerUrl || ""}
                   alt="Event banner preview"
+                  width={600}
+                  height={200}
                   className="w-full h-full object-cover rounded-lg"
                 />
 
