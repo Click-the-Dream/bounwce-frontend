@@ -70,7 +70,10 @@ function TicketPricingModal({
 
   // Intercept the close action to validate prices first
   const handleCloseAttempt = () => {
-    const hasEmptyPrices = ticketPrices.some((ticket) => !ticket.price.trim());
+    const hasEmptyPrices = ticketPrices.some(
+      (ticket) => !String(ticket?.price ?? "").trim(),
+    );
+
     const hasEmptyNames = ticketPrices.some(
       (ticket) => !ticket.ticket_name.trim(),
     );
