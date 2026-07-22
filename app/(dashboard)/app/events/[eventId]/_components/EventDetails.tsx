@@ -1,225 +1,204 @@
 "use client";
-import { useState } from "react";
-import { Users, Minus, Plus } from "lucide-react";
-import { CustomCalendarIcon, CustomMapPinIcon } from "@/app/_utils/CustomIcons";
 
-type TicketCategoryId = "regular" | "vip" | "vvip" | "table_10";
+import Image from "next/image";
+import {
+  Calendar,
+  Clock,
+  User,
+  Share2,
+  Mail,
+  MapPin,
+  ExternalLink,
+  Smile,
+} from "lucide-react";
+import { useParams } from "next/navigation";
+import useEvents from "@/app/hooks/use-events";
+import EventBanner from "./EventBanner";
+import { formatEventTime, formatEventDate } from "@/app/_utils/date";
+import EventDetailsSkeleton from "./EventDetailsSkeleton";
 
-type Quantities = Record<TicketCategoryId, number>;
-
-const TICKET_CATEGORIES: {
-  id: TicketCategoryId;
-  name: string;
-  price: number;
-}[] = [
-  { id: "regular", name: "Regular", price: 1500 },
-  { id: "vip", name: "VIP", price: 15000 },
-  { id: "vvip", name: "VVIP", price: 50000 },
-  { id: "table_10", name: "Table for 10", price: 150000 },
+const AVATARS = [
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60",
 ];
 
-export default function EventDetails() {
-  const [selectedCategoryId, setSelectedCategoryId] =
-    useState<TicketCategoryId>("regular");
+export default function EventDetailsPage() {
+  const { eventId } = useParams<{ eventId: string }>();
+  const { useGetEvent } = useEvents();
+  const {
+    data: eventData = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetEvent(eventId);
 
-  const [quantities, setQuantities] = useState<Quantities>({
-    regular: 1,
-    vip: 0,
-    vvip: 0,
-    table_10: 0,
-  });
-
-  const handleSelectCategory = (id: TicketCategoryId) => {
-    setSelectedCategoryId(id);
-    setQuantities((prev) => {
-      const next: Quantities = {
-        regular: 0,
-        vip: 0,
-        vvip: 0,
-        table_10: 0,
-      };
-      next[id] = prev[id] > 0 ? prev[id] : 1;
-      return next;
-    });
-  };
-
-  const updateQuantity = (id: TicketCategoryId, amount: number) => {
-    const minVal = id === selectedCategoryId ? 1 : 0;
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: Math.max(minVal, prev[id] + amount),
-    }));
-  };
-
-  const activeCategory = TICKET_CATEGORIES.find(
-    (cat) => cat.id === selectedCategoryId,
-  );
-  const activeQty = quantities[selectedCategoryId] || 0;
-  const subtotal = activeCategory ? activeCategory.price * activeQty : 0;
-  const serviceFee = Math.round(subtotal * 0.05);
-  const total = subtotal + serviceFee;
-
-  const formatCurrency = (value: number) => {
-    return "₦" + value.toLocaleString("en-NG");
-  };
-
+  if (isLoading) {
+    return <EventDetailsSkeleton />;
+  }
   return (
-    <div className="pb-20">
-      {/* Page Title Header */}
-      <div className="my-8">
-        <h1 className="text-2xl font-medium tracking-tight text-black">
-          Get Ticket
-        </h1>
-        <p className="text-[13px] text-gray-700 font-medium mt-1">
-          Burnaboy Live in Concert -- O2 Arena
-        </p>
-      </div>
+    <div className="w-full max-w-6xl mx-auto px-4 py-6 md:px-6 font-sans text-black">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-5">
+          <EventBanner eventData={eventData} />
 
-      {/* Grid Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column - Event Card & Categories */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Featured Event Card */}
-          <div
-            className="relative rounded-[10px] overflow-hidden shadow-lg h-34 bg-cover bg-center flex flex-col justify-between p-2 pb-0 text-white"
-            style={{
-              backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80')`,
-            }}
-          >
-            <span className="absolute top-2 left-2 bg-white/20 backdrop-blur-xs border border-white/40 text-white text-[10px] font-medium tracking-wider px-2.5 py-1 rounded-md uppercase transition-all duration-300 group-hover:bg-white/30">
-              Upcoming
-            </span>
-            <div className="mt-auto space-y-2">
-              <h2 className="text-2xl font-irish font-bold tracking-wide">
-                Burnaboy Live in Concert
-              </h2>
+          {/* Key Metrics Grid (Date, Time, Attending) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Date Box */}
+            <div className="border-[0.53px] h-25.5 border-[#00000033] rounded-[10px] p-4 bg-transparent flex flex-col justify-between">
+              <div className="flex items-center text-gray-500 mb-3">
+                <Calendar size={18} strokeWidth={1} />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-gray-800 tracking-wider uppercase mb-0.5">
+                  DATE
+                </p>
+                <p className="text-xs text-gray-500 font-normal">
+                  {formatEventDate(eventData.date)}
+                </p>
+              </div>
+            </div>
 
-              <div className="space-x-4 mb-4 flex gap-1 flex-wrap items-center text-white">
-                <div className="flex items-center text-xs gap-1">
-                  <CustomCalendarIcon />
-                  <span>May 28, 2025</span>
-                </div>
-                <div className="flex items-center text-xs font-medium gap-1">
-                  <CustomMapPinIcon />
-                  <span>O2 Arena</span>
-                </div>
-                <div className="flex items-center gap-1 text-xs">
-                  <Users size={15} className="text-[#34D399]" />
-                  <span>400 going</span>
-                </div>
+            {/* Time Box */}
+            <div className="border-[0.53px] h-25.5 border-[#00000033] rounded-[10px] p-4 bg-transparent flex flex-col justify-between">
+              <div className="flex items-center text-gray-500 mb-3">
+                <Clock size={18} strokeWidth={1} />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-gray-800 tracking-wider uppercase mb-0.5">
+                  TIME
+                </p>
+                <p className="text-xs text-gray-500 font-normal">
+                  {formatEventTime(eventData.date)}
+                </p>
+              </div>
+            </div>
+
+            {/* Attending Box */}
+            <div className="border-[0.53px] h-25.5 border-[#00000033] rounded-[10px] p-4 bg-transparent flex flex-col justify-between">
+              <div className="flex items-center text-gray-500 mb-3">
+                <User size={18} strokeWidth={1} />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-gray-800 tracking-wider uppercase mb-0.5">
+                  ATTENDING
+                </p>
+                <p className="text-xs text-gray-500 font-normal">
+                  {eventData?.attending_count || 0} Going
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Category Selector */}
-          <div>
-            <p className="text-gray-500 my-4 text-[13px]">
-              Choose a ticket category
+          {/* About This Event */}
+          <div className="">
+            <h2 className="text-base font-medium text-black">
+              About this Event
+            </h2>
+            <p className="text-sm text-gray-600 tracking-wide mt-3">
+              {eventData.desc}
             </p>
-            <div className="space-y-3">
-              {TICKET_CATEGORIES.map((cat) => {
-                const isSelected = selectedCategoryId === cat.id;
-                const qty = quantities[cat.id] || 0;
 
-                return (
-                  <div
-                    key={cat.id}
-                    onClick={() => handleSelectCategory(cat.id)}
-                    className={`flex items-center justify-between p-4 bg-white rounded-[9px] cursor-pointer transition-all shadow-sm ${
-                      isSelected
-                        ? "border-[1.5px] border-orange outline-[0.53px] outline-offset-2 outline-orange"
-                        : "border-transparent hover:border-gray-200"
-                    }`}
-                  >
-                    {/* Selection Indicator & Name */}
-                    <div className="flex items-center gap-3.5">
-                      <div
-                        className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                          isSelected
-                            ? "outline-[1.5px] outline-orange"
-                            : "outline-[0.53px] outline-[#CDCDCD]"
-                        }`}
-                      >
-                        <div
-                          className={`w-4 h-4 rounded-full border-[0.5px]  ${isSelected ? "border-orange bg-orange" : "border-[#ccc] bg-white"}`}
-                        />
-                      </div>
-                      <span className="font-medium text-black text-sm">
-                        {cat.name}
-                      </span>
-                    </div>
+            {/* Category Tags */}
+            <div className="flex flex-wrap gap-2.5 pt-2">
+              {eventData?.interests?.map((tag: string, idx: number) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 rounded-lg text-xs text-orange bg-[#EFEFEF] font-medium capitalize"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
 
-                    {/* Quantity Controls & Cost */}
-                    <div
-                      className="flex items-center gap-5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center p-1">
-                        <button
-                          onClick={() => updateQuantity(cat.id, -1)}
-                          className="cursor-pointer p-1 hover:bg-gray-200 text-gray-500 transition  border border-gray-200 rounded-md"
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <span className="w-7 text-center text-[8.8px] text-black">
-                          {qty}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(cat.id, 1)}
-                          className="cursor-pointer p-1 hover:bg-gray-200 text-gray-500 transition  border border-gray-200 rounded-md"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                      <span className="font-semibold text-black text-right text-sm">
-                        {formatCurrency(cat.price)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Location Map Section */}
+          <div className="mt-10 min-h-22.25">
+            <h2 className="text-sm font-medium text-black">Location</h2>
+
+            <div className="mt-7.5 border-[0.53px] border-[#00000033] rounded-[10px] overflow-hidden bg-white flex flex-col md:flex-row">
+              {/* Left Placeholder Map Canvas */}
+              <div className="w-full md:w-1/3  bg-gray-200 relative flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-200/60">
+                <div className="flex items-center justify-center">
+                  <MapPin size={20} className="text-orange" />
+                </div>
+              </div>
+
+              {/* Right Address Details */}
+              <div className="p-4 md:p-5 flex flex-col justify-center">
+                <h3 className="text-[13px] font-semibold text-black">
+                  {eventData.location}
+                </h3>
+                <p className="text-[13px] text-gray-500">
+                  {eventData?.address}
+                </p>
+                <a
+                  href={`https://maps.google.com/?q=${encodeURIComponent(
+                    `${eventData.location}`,
+                  )}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-xs text-orange hover:underline mt-1"
+                >
+                  Get Direction
+                  <ExternalLink size={13} />
+                </a>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column - Order Summary */}
-        <div className="lg:col-span-5 lg:sticky lg:top-16">
-          <div className="bg-white rounded-xl p-6 shadow-xl border-[0.53px] border-black/10">
-            <h3 className="text-[13px] font-bold text-black mb-6">
-              Order Summary
-            </h3>
-
-            <div className="space-y-4 text-xs mb-6">
-              {/* Dynamically displays chosen item */}
-              {activeQty > 0 && activeCategory && (
-                <div className="flex justify-between items-center text-gray-600">
-                  <span>
-                    {activeCategory.name} x {activeQty}
-                  </span>
-                  <span className="font-semibold text-black">
-                    {formatCurrency(subtotal)}
-                  </span>
-                </div>
-              )}
-
-              {/* Service Fee */}
-              <div className="flex justify-between items-center text-gray-600">
-                <span>Service fee (5%)</span>
-                <span className="font-semibold text-gray-800">
-                  {formatCurrency(serviceFee)}
-                </span>
-              </div>
-
-              <div className="border-t border-dashed border-gray-200 pt-4 mt-4 flex justify-between items-center text-xs font-bold text-black">
-                <span>Total</span>
-                <span>{formatCurrency(total)}</span>
-              </div>
-            </div>
-
-            {/* Action Button */}
-            <button className="text-[13px] w-full bg-black hover:bg-neutral-800 text-white font-semibold py-2.5 rounded-[10px] tracking-wide transition shadow-md active:scale-[0.98]">
-              Pay {formatCurrency(total)}
+        {/* Right Section (Buy Ticket Sidebar) */}
+        <div className="space-y-4">
+          {/* Action Card */}
+          <div className="border-[0.53px] border-[#00000033] rounded-2xl p-5 py-10 shadow-2xs space-y-4">
+            <button className="w-full py-3 bg-black text-white text-xs font-semibold rounded-full hover:bg-gray-800 transition shadow-xs">
+              Continue to buy ticket
             </button>
+
+            <button className="w-full py-2.5 bg-white border border-gray-300 text-gray-800 text-xs font-medium rounded-full hover:bg-gray-50 transition flex items-center justify-center gap-2">
+              <Smile size={16} className="text-gray-600" />
+              See who is going
+            </button>
+
+            <hr className="border-gray-100" />
+
+            {/* Attendees Stack */}
+            <div className="absolute bottom-2 flex items-center justify-end gap-2 pt-1">
+              <div className="flex -space-x-2">
+                {AVATARS.map((src, i) => (
+                  <div
+                    key={i}
+                    className="relative w-6 h-6 rounded-full border-2 border-white overflow-hidden bg-gray-200"
+                  >
+                    <Image
+                      src={src}
+                      alt={`Attendee ${i + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+              <span className="text-xs font-medium text-gray-600">
+                +{AVATARS.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Share Event Footer Card */}
+          <div className="border-[0.53px] border-[#00000033] rounded-2xl p-5 py-10 shadow-2xs space-y-4">
+            <span className="text-xs font-medium text-gray-700">
+              Share this event
+            </span>
+            <div className="flex items-center gap-2">
+              <button className="p-2 border border-gray-200 rounded-full hover:bg-gray-50 text-gray-600 transition">
+                <Share2 size={14} />
+              </button>
+              <button className="p-2 border border-gray-200 rounded-full hover:bg-gray-50 text-gray-600 transition">
+                <Mail size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -75,3 +75,33 @@ export const getComparisonLabel = (
       return "from previous period";
   }
 };
+
+export function formatEventDate(date: string) {
+  if (!date) return;
+  const formatted = new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return formatted;
+}
+
+export const formatEventTime = (dateString?: string) => {
+  console.log(dateString);
+
+  if (!dateString) return "";
+
+  const [, time] = dateString.split("T");
+
+  const [hour, minute] = time.split(":");
+
+  const date = new Date();
+  date.setHours(Number(hour));
+  date.setMinutes(Number(minute));
+
+  return date.toLocaleTimeString("en-NG", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};

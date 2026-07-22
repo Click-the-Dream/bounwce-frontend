@@ -21,6 +21,7 @@ export default function CreateEventPage() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     control,
     formState: { errors },
   } = useForm<EventFormInputs>({
@@ -151,6 +152,10 @@ export default function CreateEventPage() {
         price: 0,
         banner_url: bannerUrl,
         onSuccess: () => {
+          reset();
+
+          setBannerPreview(null);
+
           router.push("/app/events");
         },
       });

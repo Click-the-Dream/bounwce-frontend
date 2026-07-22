@@ -11,6 +11,7 @@ const SafeImage = ({
   className,
   style,
   showLoader = false,
+  sizes,
 }: {
   src: string;
   alt: string;
@@ -19,6 +20,7 @@ const SafeImage = ({
   className?: string;
   style?: any;
   showLoader?: boolean;
+  sizes?: string;
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -80,6 +82,7 @@ const SafeImage = ({
           setHasError(true);
           setLoaded(true); // Ensures the shimmer turns off
         }}
+        sizes={sizes}
       />
     </div>
   );

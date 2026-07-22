@@ -73,7 +73,7 @@ const useEvent = () => {
 
   // GET EVENT BY ID
 
-  const useGetEvent = (eventId: string | number) =>
+  const useGetEvent = (eventId: string) =>
     useQuery({
       queryKey: ["events", eventId],
       queryFn: async () => {
