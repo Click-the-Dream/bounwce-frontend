@@ -247,3 +247,35 @@ export const STATUS_CONFIG = {
     dot: "bg-slate-400",
   },
 };
+
+export const handleShare = async (event: { name: string; id: string }) => {
+  const shareData = {
+    title: event.name,
+    text: `Check out this event: ${event.name}`,
+    url: `${window.location.origin}/events/${event.id}`,
+  };
+
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else {
+      await navigator.clipboard.writeText(shareData.url);
+      alert("Event link copied to clipboard.");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+export const isEmptyDraft = (draft: any) => {
+  return (
+    !draft.name &&
+    !draft.desc &&
+    !draft.date &&
+    !draft.location &&
+    !draft.location_type &&
+    !draft.link &&
+    (!draft.interests || draft.interests.length === 0) &&
+    (!draft.ticket_info || draft.ticket_info.length === 0)
+  );
+};

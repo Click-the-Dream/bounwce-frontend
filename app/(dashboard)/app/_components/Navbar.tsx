@@ -1,11 +1,9 @@
 import { Bell, Menu, MessageCircleMore } from "lucide-react";
-import userImg from "../../../assets/buyer/user.jpg";
 import SearchComponent from "./SearchComponent";
 import Link from "next/link";
 import { useMarketStore } from "@/app/context/StoreContext";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { useAuth } from "@/app/context/AuthContext";
-import SafeImage from "@/app/_components/SafeImage";
 import { useEffect, useRef, useState } from "react";
 import { NotificationPanel } from "@/app/_components/NotificationPanel";
 import { Portal } from "@/app/protocols/Portal";

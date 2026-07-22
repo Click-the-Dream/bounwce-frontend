@@ -215,6 +215,7 @@ export const TICKET_TYPES = [
 ];
 
 export interface EventFormInputs {
+  banner_url?: string;
   banner: File | null;
   name: string;
   desc: string;

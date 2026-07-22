@@ -87,14 +87,9 @@ export function formatEventDate(date: string) {
 }
 
 export const formatEventTime = (dateString?: string) => {
-  console.log(dateString);
-
   if (!dateString) return "";
-
   const [, time] = dateString.split("T");
-
   const [hour, minute] = time.split(":");
-
   const date = new Date();
   date.setHours(Number(hour));
   date.setMinutes(Number(minute));

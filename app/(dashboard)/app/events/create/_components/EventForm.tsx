@@ -7,6 +7,7 @@ import {
   UseFormSetValue,
   Control,
   FieldErrors,
+  UseFormWatch,
 } from "react-hook-form";
 import { EventFormInputs } from "@/app/_utils/utility";
 
@@ -32,9 +33,10 @@ interface EventFormProps {
   onToggleTicket: (type: string) => void;
   onOpenPricingModal: () => void;
   onSubmit: (data: EventFormInputs) => Promise<void>;
-
+  mode?: "create" | "update";
   isLoading: boolean;
   eventInterests: string[];
+  watch: UseFormWatch<any>;
 }
 
 export const EventForm: React.FC<EventFormProps> = ({
@@ -43,6 +45,7 @@ export const EventForm: React.FC<EventFormProps> = ({
   setValue,
   control,
   errors,
+  watch,
   bannerPreview,
   locationType,
   displayTickets,
@@ -53,6 +56,7 @@ export const EventForm: React.FC<EventFormProps> = ({
   onOpenPricingModal,
   onSubmit,
   isLoading,
+  mode = "create",
 }) => {
   const handleDraft = () => {
     setValue("state", "draft");
@@ -68,6 +72,7 @@ export const EventForm: React.FC<EventFormProps> = ({
   return (
     <form className="space-y-4.75" onSubmit={handleCreate}>
       <BannerUpload
+        watch={watch}
         control={control}
         bannerPreview={bannerPreview}
         onBannerChange={onBannerChange}
@@ -100,6 +105,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       />
 
       <DateInput
+        watch={watch}
         register={register}
         error={errors.date?.message}
         setValue={setValue}
@@ -122,6 +128,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       />
 
       <FormActions
+        mode={mode}
         isLoading={isLoading}
         onPreview={() => console.log("Preview")}
         onSaveDraft={handleDraft}

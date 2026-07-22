@@ -1,6 +1,7 @@
 import UserImage from "../(dashboard)/app/_components/UserImage";
 import { timeAgo } from "../_utils/formatters";
 import { Notification } from "../_utils/types/notification";
+import { useNotifications } from "../context/NotificationContext";
 import useNotificationServices from "../hooks/use-notification";
 import { useRouter } from "next/navigation";
 
@@ -15,6 +16,7 @@ export const NotificationItem = ({
   isSelected,
   onClose,
 }: Props) => {
+  const { resetUnread } = useNotifications();
   const { markAsRead } = useNotificationServices();
   const router = useRouter();
   const isChat = notification.event_type === "chat_message";
@@ -28,6 +30,7 @@ export const NotificationItem = ({
     if (isUnread) {
       markAsRead.mutate(notification.id);
     }
+    resetUnread(sender.id);
     router.push(target);
     onClose();
   };

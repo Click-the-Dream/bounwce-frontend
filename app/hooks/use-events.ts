@@ -142,7 +142,6 @@ const useEvent = () => {
   });
 
   // UPDATE EVENT
-
   const updateEvent = useMutation({
     mutationFn: async ({ id, ...eventData }: any) => {
       if (!id) throw Error("Event ID is required");
@@ -154,10 +153,8 @@ const useEvent = () => {
 
       return response.data.data;
     },
-
     onSuccess: () => {
       handleSuccess("Event Update", "Event updated successfully!");
-
       queryClient.invalidateQueries({
         queryKey: ["events"],
       });

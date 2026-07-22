@@ -22,14 +22,14 @@ export const EventCardSkeleton = () => {
             <div className="h-3 w-16 bg-gray-200 rounded-md" />
           </div>
           {/* Location Skeleton */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 h-18">
             <div className="h-4 w-4 bg-gray-200 rounded-full shrink-0" />
             <div className="h-3 w-20 bg-gray-200 rounded-md" />
           </div>
         </div>
 
         {/* Card Footer Skeleton */}
-        <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+        <div className="mt-auto border-t border-gray-50 flex items-center justify-between">
           {/* Avatar Stack Skeleton */}
           <div className="flex items-center gap-1.5">
             <div className="flex -space-x-1.5">

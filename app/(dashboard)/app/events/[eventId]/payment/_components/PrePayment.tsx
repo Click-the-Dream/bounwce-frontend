@@ -6,8 +6,8 @@ import { useParams } from "next/navigation";
 import { TicketInfo } from "@/app/_utils/types/event";
 import { formatEventTime } from "@/app/_utils/date";
 import Link from "next/link";
-import TicketCard from "./TicketCard";
 import useEvent from "@/app/hooks/use-events";
+import TicketCard from "./TicketCard";
 
 export default function PrePayment() {
   const { eventId } = useParams<{ eventId: string }>();

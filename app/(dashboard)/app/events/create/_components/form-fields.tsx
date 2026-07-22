@@ -1,10 +1,17 @@
-import React, { useRef, useState } from "react";
-import { Controller, UseFormRegister, Control } from "react-hook-form";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Controller,
+  UseFormRegister,
+  Control,
+  UseFormSetValue,
+  UseFormWatch,
+} from "react-hook-form";
 import { Calendar, Clock, UploadCloud } from "lucide-react";
 import { EventFormInputs } from "@/app/_utils/utility";
 
 //  BANNER UPLOAD
 interface BannerUploadProps {
+  watch: UseFormWatch<any>;
   control: Control<EventFormInputs>;
   bannerPreview: string | null;
   onBannerChange: (file: File | null) => void;
@@ -16,17 +23,28 @@ export const BannerUpload: React.FC<BannerUploadProps> = ({
   bannerPreview,
   onBannerChange,
   error,
+  watch,
 }) => {
+  const bannerUrl = watch("banner_url");
   return (
     <div>
       <label className="block text-xs font-medium text-gray-800 mb-2">
         Event Banner <span className="text-[#FF474D]">*</span>
       </label>
+
       <Controller
         control={control}
         name="banner"
-        rules={{ required: "Event banner is required" }}
-        render={({ field }) => (
+        rules={{
+          validate: (value) => {
+            if (!value && !bannerUrl && !bannerPreview) {
+              return "Event banner is required";
+            }
+
+            return true;
+          },
+        }}
+        render={() => (
           <div
             className={`border-2 border-dashed rounded-[10px] p-4 flex flex-col items-center justify-center transition relative overflow-hidden ${
               error
@@ -34,13 +52,14 @@ export const BannerUpload: React.FC<BannerUploadProps> = ({
                 : "border-gray-200 bg-gray-50/30"
             }`}
           >
-            {bannerPreview ? (
+            {bannerPreview || bannerUrl ? (
               <div className="relative w-full h-28">
                 <img
-                  src={bannerPreview}
+                  src={bannerPreview || bannerUrl || ""}
                   alt="Event banner preview"
                   className="w-full h-full object-cover rounded-lg"
                 />
+
                 <button
                   type="button"
                   onClick={() => onBannerChange(null)}
@@ -59,16 +78,19 @@ export const BannerUpload: React.FC<BannerUploadProps> = ({
                   size={28}
                   strokeWidth={1.5}
                 />
+
                 <p className="text-xs text-gray-500">
                   Click to upload or drag and drop
                 </p>
+
                 <p className="text-[10px] text-gray-400 mt-1">
                   PNG, JPG up to 10MB
                 </p>
+
                 <input
+                  id="banner-upload"
                   type="file"
                   className="hidden"
-                  id="banner-upload"
                   accept="image/*"
                   onChange={(e) => onBannerChange(e.target.files?.[0] || null)}
                 />
@@ -77,6 +99,7 @@ export const BannerUpload: React.FC<BannerUploadProps> = ({
           </div>
         )}
       />
+
       {error && <p className="text-[11px] text-[#FF474D] mt-1">{error}</p>}
     </div>
   );
@@ -107,7 +130,7 @@ export const TextInput: React.FC<TextInputProps> = ({
     <input
       type="text"
       placeholder={placeholder}
-      className={`w-full border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 transition ${
+      className={`w-full border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-[0.53px] transition ${
         error
           ? "border-[#FF474D] focus:ring-[#FF474D]"
           : "border-gray-200 focus:ring-gray-300"
@@ -143,7 +166,7 @@ export const TextArea: React.FC<TextAreaProps> = ({
     <textarea
       rows={4}
       placeholder={placeholder}
-      className={`w-full h-36.25 border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-1 transition resize-none ${
+      className={`w-full h-36.25 border rounded-[10px] px-4 py-3 text-xs text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-[0.53px] transition resize-none ${
         error
           ? "border-[#FF474D] focus:ring-[#FF474D]"
           : "border-gray-200 focus:ring-gray-300"
@@ -156,21 +179,34 @@ export const TextArea: React.FC<TextAreaProps> = ({
 
 //  DATE INPUT
 interface DateInputProps {
-  register: any;
-  error: any;
-  setValue: any;
+  register: UseFormRegister<any>;
+  setValue: UseFormSetValue<any>;
+  watch: UseFormWatch<any>;
+  error?: string;
 }
 
 export const DateInput: React.FC<DateInputProps> = ({
   register,
   error,
   setValue,
+  watch,
 }) => {
   const dateRef = useRef<HTMLInputElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
 
+  const formDate = watch("date");
+
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+
+  useEffect(() => {
+    if (formDate) {
+      const [savedDate, savedTime] = formDate.split("T");
+
+      setDate(savedDate || "");
+      setTime(savedTime?.slice(0, 5) || "");
+    }
+  }, [formDate]);
 
   const updateDateTime = (newDate: string, newTime: string) => {
     setValue("date", newDate && newTime ? `${newDate}T${newTime}` : newDate, {
@@ -186,8 +222,8 @@ export const DateInput: React.FC<DateInputProps> = ({
           required: "Date and start time are required",
         })}
       />
+
       <div className="grid grid-cols-2 gap-3">
-        {/* Date */}
         <div>
           <label className="block text-xs font-medium text-gray-800 mb-2">
             Date <span className="text-[#FF474D]">*</span>
@@ -213,7 +249,6 @@ export const DateInput: React.FC<DateInputProps> = ({
           </div>
         </div>
 
-        {/* Start Time */}
         <div>
           <label className="block text-xs font-medium text-gray-800 mb-2">
             Start Time <span className="text-[#FF474D]">*</span>

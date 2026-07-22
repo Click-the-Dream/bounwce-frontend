@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
-import { Plus, Loader2, AlertCircle, CalendarX2 } from "lucide-react";
+import { Plus, AlertCircle, CalendarX2 } from "lucide-react";
 import { EventCard } from "./_components/EventCard";
 import Link from "next/link";
 import { Event } from "@/app/_utils/types/event";
@@ -71,7 +71,7 @@ const EventsPage = () => {
         {isLoading && (
           <div className="grid grid-cols-store gap-x-2.5 gap-y-8.75 pb-12 justify-center">
             {[...Array(3)].map((_, i) => (
-              <EventCardSkeleton />
+              <EventCardSkeleton key={i} />
             ))}
           </div>
         )}
@@ -123,15 +123,16 @@ const EventsPage = () => {
               {events.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
+
+              {isFetchingNextPage &&
+                [...Array(3)].map((_, i) => (
+                  <EventCardSkeleton key={`skeleton-${i}`} />
+                ))}
             </div>
 
-            {/* Bottom Sentinel Element / Next Page Loader */}
-            <div ref={loadMoreRef} className="py-6 flex justify-center">
-              {isFetchingNextPage && (
-                <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                  <Loader2 size={16} className="animate-spin text-[#FF474D]" />
-                  Loading more events...
-                </div>
+            <div ref={loadMoreRef} className="h-10 flex justify-center">
+              {hasNextPage && !isFetchingNextPage && (
+                <span className="text-xs text-gray-400">Scroll for more</span>
               )}
             </div>
           </>

@@ -8,6 +8,8 @@ import Link from "next/link";
 import { Event } from "@/app/_utils/types/event";
 import SafeImage from "@/app/_components/SafeImage";
 import { formatEventTime } from "@/app/_utils/date";
+import { handleShare } from "@/app/_utils/formatters";
+import AttendeeAvatars from "../[eventId]/_components/AttendeeAvatars";
 
 interface EventCardProps {
   event: Event;
@@ -35,27 +37,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
     };
   }, []);
 
-  const handleShare = async () => {
-    const shareData = {
-      title: event.name,
-      text: `Check out this event: ${event.name}`,
-      url: `${window.location.origin}/events/${event.id}`,
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("Event link copied to clipboard.");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-
-    setShowMenu(false);
-  };
-
   // Check for valid image URL
   const hasValidBanner =
     event.banner_url &&
@@ -63,7 +44,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
     event.banner_url.trim() !== "";
 
   return (
-    <div className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_25px_rgba(0,0,0,0.06)] transition duration-300 flex flex-col h-full">
+    <div className="group bg-white border-[0.53px] border-[#00000033] rounded-[10px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_25px_rgba(0,0,0,0.06)] transition duration-300 flex flex-col h-full">
       {/* Event Image Banner */}
       <div className="relative w-full aspect-16/10 bg-gray-100 overflow-hidden">
         {hasValidBanner ? (
@@ -72,7 +53,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
             alt={event.name}
             width={300}
             height={200}
-            className="w-auto object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
@@ -98,7 +79,10 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
           {showMenu && (
             <div className="absolute right-0 mt-1 w-max overflow-hidden rounded-[10px] border border-gray-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-150 z-10">
               <button
-                onClick={handleShare}
+                onClick={() => {
+                  handleShare(event);
+                  setShowMenu(false);
+                }}
                 className="flex w-max items-center gap-3 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50"
               >
                 <Share2 size={16} />
@@ -156,29 +140,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         </div>
 
         {/* Card Footer */}
-        <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+        <div className="mt-auto border-t border-gray-50 flex items-center justify-between">
           <div className="flex items-center">
             {/* Overlapping Avatar Stack */}
 
-            <div className="flex -space-x-1.5 transition-transform duration-300 group-hover:translate-x-0.5">
-              {avatars.map((src, i) => (
-                <div
-                  key={i}
-                  className="relative w-5.25 h-5.25 rounded-full border border-white overflow-hidden bg-gray-200 shrink-0"
-                >
-                  <Image
-                    src={src}
-                    alt={`Attendee ${i + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <span className="text-xs text-black">
-              +{event.ticket_info.length}
-            </span>
+            <AttendeeAvatars className="transition-transform duration-300 group-hover:translate-x-0.5" />
           </div>
 
           <Link

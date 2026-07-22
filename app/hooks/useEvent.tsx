@@ -97,13 +97,28 @@ const useEvent = () => {
 
   // MY CREATED EVENTS
 
-  const useMyEvents = () =>
-    useQuery({
-      queryKey: ["events", "my-events"],
-      queryFn: async () => {
-        const response = await api.get("/outgoing/events/events/my-events");
+  const useMyEvents = (filters?: { name?: string; status?: string }) =>
+    useInfiniteQuery({
+      queryKey: ["events", "my-events", filters],
+
+      queryFn: async ({ pageParam = 1 }) => {
+        const response = await api.get("/outgoing/events/events/my-events", {
+          params: {
+            page: pageParam,
+            page_size: 10,
+            ...(filters?.name && { name: filters.name }),
+            ...(filters?.status && { status: filters.status }),
+          },
+        });
+
         return response.data.data;
       },
+
+      initialPageParam: 1,
+
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination?.next_page ?? undefined,
+
       enabled: !!authDetails?.access_token,
     });
 

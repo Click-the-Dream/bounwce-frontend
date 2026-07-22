@@ -5,12 +5,14 @@ interface FormActionsProps {
   isLoading: boolean;
   onPreview?: () => void;
   onSaveDraft?: () => void;
+  mode?: "create" | "update";
 }
 
 export const FormActions: React.FC<FormActionsProps> = ({
   isLoading,
   onPreview,
   onSaveDraft,
+  mode = "create",
 }) => (
   <div className="pt-4 flex flex-wrap gap-1 items-center justify-between border-t border-gray-50">
     <button
@@ -30,6 +32,7 @@ export const FormActions: React.FC<FormActionsProps> = ({
       >
         Save as Draft
       </button>
+
       <button
         type="submit"
         disabled={isLoading}
@@ -42,8 +45,10 @@ export const FormActions: React.FC<FormActionsProps> = ({
         {isLoading ? (
           <>
             <Loader2 size={14} className="animate-spin" />
-            Creating...
+            {mode === "update" ? "Updating..." : "Creating..."}
           </>
+        ) : mode === "update" ? (
+          "Update Event"
         ) : (
           "Create Event"
         )}

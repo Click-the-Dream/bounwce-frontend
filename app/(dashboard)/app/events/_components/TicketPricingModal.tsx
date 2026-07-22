@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { X, Trash2, Info } from "lucide-react";
 import { TICKET_TYPES } from "@/app/_utils/utility";
-import CancelTicketIcon from "@/app/_utils/CustomIcons";
+import { CancelTicketIcon } from "@/app/_utils/CustomIcons";
 
 interface TicketPricingModalProps {
   isOpen: boolean;
@@ -115,7 +115,7 @@ function TicketPricingModal({
           <span className="text-[11px] text-gray-400 font-medium mr-1.5">
             Quick add
           </span>
-          {TICKET_TYPES.map((type) => {
+          {TICKET_TYPES.map((type, idx) => {
             const isSelected = selectedTickets.includes(type);
             return (
               <button
@@ -163,7 +163,7 @@ function TicketPricingModal({
 
               return (
                 <div
-                  key={ticket.ticket_name}
+                  key={index}
                   className="grid grid-cols-[1fr_1fr_24px] gap-4 items-center"
                 >
                   <input
