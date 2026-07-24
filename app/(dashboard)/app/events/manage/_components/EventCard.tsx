@@ -9,10 +9,7 @@ const EventCard = ({ event }: { event: Event }) => {
   const router = useRouter();
 
   return (
-    <div
-      onClick={() => router.push(`/app/events/manage/${event.id}`)}
-      className="cursor-pointer group bg-white rounded-[10px] border border-gray-100 shadow-[0_0px_19.1px_0px_#00000040] overflow-hidden flex flex-col transition duration-200"
-    >
+    <div className="cursor-pointer group bg-white rounded-[10px] border border-gray-100 shadow-[0_0px_19.1px_0px_#00000040] overflow-hidden flex flex-col transition duration-200">
       {/* Header Banner Content Area */}
       <div className="relative h-12 w-full bg-blue-900">
         <div
@@ -42,7 +39,10 @@ const EventCard = ({ event }: { event: Event }) => {
       </div>
 
       {/* Inner Metadata Area */}
-      <div className="p-2 flex-1 flex flex-col justify-between">
+      <div
+        onClick={() => router.push(`/app/events/manage/${event.id}`)}
+        className="p-2 flex-1 flex flex-col justify-between"
+      >
         <div>
           <h3 className="text-sm font-medium text-black group-hover:text-orange tracking-tight mb-2 line-clamp-1">
             {event.name}
