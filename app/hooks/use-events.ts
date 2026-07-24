@@ -16,7 +16,7 @@ interface ExploreEventParams {
   location?: string;
 }
 
-const useEvent = () => {
+const useEvents = () => {
   const { authDetails } = useAuth();
   const queryClient = useQueryClient();
 
@@ -97,13 +97,28 @@ const useEvent = () => {
 
   // MY CREATED EVENTS
 
-  const useMyEvents = () =>
-    useQuery({
-      queryKey: ["events", "my-events"],
-      queryFn: async () => {
-        const response = await api.get("/outgoing/events/events/my-events");
+  const useMyEvents = (filters?: { name?: string; status?: string }) =>
+    useInfiniteQuery({
+      queryKey: ["events", "my-events", filters],
+
+      queryFn: async ({ pageParam = 1 }) => {
+        const response = await api.get("/outgoing/events/events/my-events", {
+          params: {
+            page: pageParam,
+            page_size: 10,
+            ...(filters?.name && { name: filters.name }),
+            ...(filters?.status && { status: filters.status }),
+          },
+        });
+
         return response.data.data;
       },
+
+      initialPageParam: 1,
+
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination?.next_page ?? undefined,
+
       enabled: !!authDetails?.access_token,
     });
 
@@ -142,6 +157,7 @@ const useEvent = () => {
   });
 
   // UPDATE EVENT
+
   const updateEvent = useMutation({
     mutationFn: async ({ id, ...eventData }: any) => {
       if (!id) throw Error("Event ID is required");
@@ -153,8 +169,10 @@ const useEvent = () => {
 
       return response.data.data;
     },
+
     onSuccess: () => {
       handleSuccess("Event Update", "Event updated successfully!");
+
       queryClient.invalidateQueries({
         queryKey: ["events"],
       });
@@ -277,4 +295,4 @@ const useEvent = () => {
   };
 };
 
-export default useEvent;
+export default useEvents;

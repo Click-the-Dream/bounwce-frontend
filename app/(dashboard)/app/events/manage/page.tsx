@@ -5,9 +5,9 @@ import { Search, SlidersHorizontal, Plus, CalendarX2 } from "lucide-react";
 import Link from "next/link";
 import EventCard from "./_components/EventCard";
 import BackBtn from "../_components/BackBtn";
-import useEvent from "@/app/hooks/useEvent";
 import { Event } from "@/app/_utils/types/event";
 import EventCardSkeleton from "./_components/EventCardSkeleton";
+import useEvent from "@/app/hooks/use-events";
 
 export default function ManageEventsPage() {
   const { useMyEvents } = useEvent();
@@ -120,13 +120,13 @@ export default function ManageEventsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-store gap-x-2.5 gap-y-8.75 pb-12 justify-center">
+            {!isLoading &&
+              events.map((event) => <EventCard key={event.id} event={event} />)}
+
             {isLoading &&
               Array.from({ length: 6 }).map((_, index) => (
                 <EventCardSkeleton key={index} />
               ))}
-
-            {!isLoading &&
-              events.map((event) => <EventCard key={event.id} event={event} />)}
           </div>
         )}
       </div>

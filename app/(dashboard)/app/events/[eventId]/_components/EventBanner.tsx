@@ -25,7 +25,7 @@ const EventBanner = ({ eventData }: any) => {
       {/* Share Button */}
       <button
         onClick={() => handleShare(eventData)}
-        className="absolute right-4.5 top-4 z-50 rounded-full bg-black/40 p-2 backdrop-blur-md transition-all duration-300 hover:scale-110 hover:bg-black/60"
+        className="absolute right-4.5 top-4 z-20 rounded-full bg-black/40 p-2 backdrop-blur-md transition-all duration-300 hover:scale-110 hover:bg-black/60"
       >
         <Share2 size={16} />
       </button>
