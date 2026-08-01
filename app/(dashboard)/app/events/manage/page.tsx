@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, Plus, CalendarX2 } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  Plus,
+  CalendarX2,
+  UserPlus,
+  DollarSign,
+  Tv,
+} from "lucide-react";
 import Link from "next/link";
 import EventCard from "./_components/EventCard";
 import BackBtn from "../_components/BackBtn";
 import { Event } from "@/app/_utils/types/event";
 import EventCardSkeleton from "./_components/EventCardSkeleton";
 import useEvent from "@/app/hooks/use-events";
+import MetricCard from "../_components/MetriCard";
 
 export default function ManageEventsPage() {
   const { useMyEvents } = useEvent();
@@ -38,6 +47,24 @@ export default function ManageEventsPage() {
 
   const events: Event[] =
     data?.pages.flatMap((page) => page.events ?? page) ?? [];
+
+  const metrics = [
+    {
+      title: "EVENT CREATED",
+      value: events.length.toLocaleString(),
+      icon: Tv,
+    },
+    {
+      title: "TOTAL SIGNUPS",
+      value: "8,532",
+      icon: UserPlus,
+    },
+    {
+      title: "TOTAL REVENUE",
+      value: "N350,000",
+      icon: DollarSign,
+    },
+  ];
   return (
     <div className="w-full max-w-3xl bg-transparent mx-auto min-h-screen px-4 py-8 md:px-6 border-l-[0.53px] border-r-[0.53px] mb-5 border-[#00000033]">
       {/* Top Main Actions Bar */}
@@ -53,12 +80,12 @@ export default function ManageEventsPage() {
       </div>
 
       {/* Filter and Count Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200 mb-4.5">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-medium text-gray-900 tracking-tight">
             Manage Event
           </h1>
-          <span className="bg-black text-white text-xs font-medium  rounded-full flex items-center justify-center min-w-5.25 h-5.25">
+          <span className="bg-black text-white text-xs font-medium rounded-full flex items-center justify-center min-w-5.25 h-5.25">
             {events?.length}
           </span>
         </div>
@@ -80,12 +107,29 @@ export default function ManageEventsPage() {
           </div>
           <button
             onClick={() => setStatus(status === "live" ? "" : "live")}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#949494] text-white rounded-lg text-xs font-medium hover:bg-gray-600 transition shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#949494] text-white rounded-[10px] text-xs font-medium hover:bg-gray-600 transition shadow-xs cursor-pointer"
           >
             <SlidersHorizontal size={13} strokeWidth={2.5} />
             Filter
           </button>
+          <button
+            onClick={() => setStatus(status === "live" ? "" : "live")}
+            className="flex items-center gap-1.5 px-3 py-2 bg-transparent border border-black text-black rounded-[10px] text-xs font-medium transition shadow-xs cursor-pointer"
+          >
+            Analytics
+          </button>
         </div>
+      </div>
+
+      <div className="mb-4.5 grid grid-cols-1 gap-6 md:grid-cols-3 border-b-[0.53px] border-gray-200 pb-4.5">
+        {metrics.map((metric) => (
+          <MetricCard
+            key={metric.title}
+            title={metric.title}
+            value={metric.value}
+            icon={metric.icon}
+          />
+        ))}
       </div>
 
       {isError && (

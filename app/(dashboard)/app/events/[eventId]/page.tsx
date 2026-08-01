@@ -1,5 +1,29 @@
+import { generatePageMetadata } from "@/app/_utils/metadata";
 import BackBtn from "../_components/BackBtn";
 import EventDetailsPage from "./_components/EventDetails";
+import { eventFetcher } from "@/app/_utils/server_functions/fetchers";
+
+export const generateMetadata = async ({ params }: any) => {
+  const { eventId } = await params;
+  if (!eventId) {
+    return generatePageMetadata({ title: "Event Not Found", noIndex: true });
+  }
+  try {
+    const event = await eventFetcher(eventId);
+    if (!event) {
+      return generatePageMetadata({ title: "Event Not Found", noIndex: true });
+    }
+    return generatePageMetadata({
+      title: event.name,
+      description: event.desc,
+      imageUrl: event.banner_url,
+      keywords: event.interests,
+    });
+  } catch (err) {
+    console.error("Failed to fetch event metadata:", err);
+    return generatePageMetadata({ title: "Event Not Found", noIndex: true });
+  }
+};
 
 const page = () => {
   return (

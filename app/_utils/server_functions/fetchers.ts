@@ -35,6 +35,15 @@ export const profileFetcher = async (userId: string) => {
   }
 };
 
+export const eventFetcher = async (eventId: string) => {
+  try {
+    const { data } = await api.get(`/outgoing/events/events/${eventId}`);
+    return data?.data || null;
+  } catch (err) {
+    return null; // prevent build crash
+  }
+};
+
 export const allUsersFetcher = async () => {
   try {
     let page = 1;

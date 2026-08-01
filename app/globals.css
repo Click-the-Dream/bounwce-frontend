@@ -105,6 +105,20 @@ input:-webkit-autofill {
   appearance: none;
   -webkit-appearance: none;
 }
+@keyframes flipOut {
+  0% {
+    transform: rotateX(0deg);
+  }
+
+  100% {
+    transform: rotateX(-90deg);
+  }
+}
+
+.animate-flip-out {
+  animation: flipOut 450ms ease-in forwards;
+  transform-style: preserve-3d;
+}
 
 @keyframes loadingWave {
   0% {
