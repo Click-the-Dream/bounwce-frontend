@@ -218,8 +218,39 @@ export default function EventEditor({
   };
 
   const startNewEvent = () => {
+    // Remove the saved local draft first
     startNew();
 
+    if (mode === "update") {
+      // Restore the original event data fetched from the API
+      reset({
+        banner: null,
+        name: defaultValues?.name ?? "",
+        desc: defaultValues?.desc ?? "",
+        interests: defaultValues?.interests ?? [],
+        date: defaultValues?.date ?? "",
+        ticket_info: defaultValues?.ticket_info ?? [],
+        location_type: defaultValues?.location_type ?? "",
+        location: defaultValues?.location ?? "",
+        link: defaultValues?.link ?? null,
+        state: defaultValues?.state ?? "",
+        banner_url: defaultValues?.banner_url ?? "",
+      });
+
+      // Restore the original banner
+      if (
+        typeof defaultValues?.banner_url === "string" &&
+        defaultValues.banner_url
+      ) {
+        setBannerPreview(defaultValues.banner_url);
+      } else {
+        setBannerPreview(null);
+      }
+
+      return;
+    }
+
+    // Create mode: start with a completely empty form
     reset({
       banner: null,
       name: "",
@@ -231,7 +262,10 @@ export default function EventEditor({
       location: "",
       link: null,
       state: "",
+      banner_url: "",
     });
+
+    setBannerPreview(null);
   };
 
   return (

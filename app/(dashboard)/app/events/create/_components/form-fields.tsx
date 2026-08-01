@@ -187,7 +187,6 @@ interface DateInputProps {
   watch: UseFormWatch<any>;
   error?: string;
 }
-
 export const DateInput: React.FC<DateInputProps> = ({
   register,
   error,
@@ -202,6 +201,26 @@ export const DateInput: React.FC<DateInputProps> = ({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
 
+  // Get current local date/time in the format required by
+  // <input type="date"> and <input type="time">
+  const getNow = () => {
+    const now = new Date();
+
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`,
+    };
+  };
+
+  const { date: minDate, time: minTime } = getNow();
+
   useEffect(() => {
     if (formDate) {
       const [savedDate, savedTime] = formDate.split("T");
@@ -212,9 +231,74 @@ export const DateInput: React.FC<DateInputProps> = ({
   }, [formDate]);
 
   const updateDateTime = (newDate: string, newTime: string) => {
-    setValue("date", newDate && newTime ? `${newDate}T${newTime}` : newDate, {
+    if (!newDate) {
+      setValue("date", "", {
+        shouldValidate: true,
+      });
+      return;
+    }
+
+    // If no time has been selected yet, allow the date to be stored.
+    if (!newTime) {
+      setValue("date", newDate, {
+        shouldValidate: true,
+      });
+      return;
+    }
+
+    const selectedDateTime = new Date(`${newDate}T${newTime}`);
+    const now = new Date();
+
+    // Prevent selecting a past date/time
+    if (selectedDateTime < now) {
+      setValue("date", "", {
+        shouldValidate: true,
+      });
+      return;
+    }
+
+    setValue("date", `${newDate}T${newTime}`, {
       shouldValidate: true,
     });
+  };
+
+  const handleDateChange = (newDate: string) => {
+    // Don't allow a date before today
+    if (newDate < minDate) {
+      return;
+    }
+
+    // If selecting today, make sure the existing time isn't already past
+    if (newDate === minDate && time) {
+      const selectedDateTime = new Date(`${newDate}T${time}`);
+
+      if (selectedDateTime < new Date()) {
+        setTime("");
+        updateDateTime(newDate, "");
+        setDate(newDate);
+        return;
+      }
+    }
+
+    setDate(newDate);
+    updateDateTime(newDate, time);
+  };
+
+  const handleTimeChange = (newTime: string) => {
+    if (!date) {
+      setTime(newTime);
+      return;
+    }
+
+    const selectedDateTime = new Date(`${date}T${newTime}`);
+
+    // Prevent a time in the past when the selected date is today
+    if (date === minDate && selectedDateTime < new Date()) {
+      return;
+    }
+
+    setTime(newTime);
+    updateDateTime(date, newTime);
   };
 
   return (
@@ -223,10 +307,22 @@ export const DateInput: React.FC<DateInputProps> = ({
         type="hidden"
         {...register("date", {
           required: "Date and start time are required",
+          validate: (value) => {
+            if (!value) return "Date and start time are required";
+
+            const selectedDateTime = new Date(value);
+
+            if (selectedDateTime < new Date()) {
+              return "Event date and time cannot be in the past";
+            }
+
+            return true;
+          },
         })}
       />
 
       <div className="grid grid-cols-2 gap-3">
+        {/* DATE */}
         <div>
           <label className="block text-xs font-medium text-gray-800 mb-2">
             Date <span className="text-[#FF474D]">*</span>
@@ -236,12 +332,10 @@ export const DateInput: React.FC<DateInputProps> = ({
             <input
               ref={dateRef}
               type="date"
+              min={minDate}
               className="hide-picker-icon w-full border rounded-[10px] pl-4 pr-10 py-3 text-xs text-gray-900 border-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-300"
               value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                updateDateTime(e.target.value, time);
-              }}
+              onChange={(e) => handleDateChange(e.target.value)}
             />
 
             <Calendar
@@ -252,6 +346,7 @@ export const DateInput: React.FC<DateInputProps> = ({
           </div>
         </div>
 
+        {/* TIME */}
         <div>
           <label className="block text-xs font-medium text-gray-800 mb-2">
             Start Time <span className="text-[#FF474D]">*</span>
@@ -261,12 +356,10 @@ export const DateInput: React.FC<DateInputProps> = ({
             <input
               ref={timeRef}
               type="time"
+              min={date === minDate ? minTime : undefined}
               className="hide-picker-icon w-full border rounded-[10px] pl-4 pr-10 py-3 text-xs text-gray-900 border-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-300"
               value={time}
-              onChange={(e) => {
-                setTime(e.target.value);
-                updateDateTime(date, e.target.value);
-              }}
+              onChange={(e) => handleTimeChange(e.target.value)}
             />
 
             <Clock

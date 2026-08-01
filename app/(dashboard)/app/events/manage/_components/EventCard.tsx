@@ -13,7 +13,7 @@ const EventCard = ({ event }: { event: Event }) => {
       {/* Header Banner Content Area */}
       <div className="relative h-12 w-full bg-blue-900">
         <div
-          className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-50"
+          className="absolute inset-0 bg-cover bg-center "
           style={{
             backgroundImage: `url(${event.banner_url})`,
           }}
