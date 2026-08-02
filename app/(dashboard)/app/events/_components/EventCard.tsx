@@ -144,7 +144,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
           <div className="flex items-center">
             {/* Overlapping Avatar Stack */}
 
-            <AttendeeAvatars className="transition-transform duration-300 group-hover:translate-x-0.5" />
+            <AttendeeAvatars eventId={event.id} className="transition-transform duration-300 group-hover:translate-x-0.5" />
           </div>
 
           <Link
