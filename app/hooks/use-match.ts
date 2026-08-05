@@ -97,7 +97,7 @@ const useMatch = () => {
     });
   };
 
-  const useSearchUsers = (message: string, page_size: number = 10) => {
+  const useBouwnceSearch = (message: string, page_size: number = 10) => {
     return useInfiniteQuery({
       queryKey: ["matches", "search", message, page_size],
 
@@ -106,21 +106,22 @@ const useMatch = () => {
       initialPageParam: 1,
 
       queryFn: async ({ pageParam = 1 }) => {
-        const res = await api.get("/matches/search", {
+        const res = await api.get("/search/parse", {
           params: {
             message,
+            domain: "buddy",
             page: pageParam,
             page_size,
           },
         });
 
-        return res?.data;
+        return res.data;
       },
 
       getNextPageParam: (lastPage, allPages) => {
-        const hasMore = lastPage?.items?.length === page_size;
+        const hasNext = lastPage?.data?.search_results?.has_next;
 
-        return hasMore ? allPages.length + 1 : undefined;
+        return hasNext ? allPages.length + 1 : undefined;
       },
     });
   };
@@ -129,7 +130,7 @@ const useMatch = () => {
     useGetSuggestedCandidates,
     useGetMatchRequests,
     useGetMatches,
-    useSearchUsers,
+    useBouwnceSearch,
     createMatchRequest,
     respondToMatchRequest,
     useGetMatchesByUserId,

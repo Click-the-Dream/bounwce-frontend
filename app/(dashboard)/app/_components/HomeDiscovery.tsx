@@ -10,7 +10,7 @@ import DiscoveryResults from "./discovery/DiscoveryResults";
 import { DiscoverySearchBar } from "./discovery/DiscoverySearchBar";
 
 const HomeDiscovery = () => {
-  const { useSearchUsers } = useMatch();
+  const { useBouwnceSearch } = useMatch();
   const { useGetUserInterests } = useInterest();
 
   const router = useRouter();
@@ -31,10 +31,12 @@ const HomeDiscovery = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useSearchUsers(urlQuery, 10);
+  } = useBouwnceSearch(urlQuery, 10);
 
   const searchResults =
-    data?.pages?.flatMap((page: any) => page.items || page) || [];
+    data?.pages?.flatMap(
+      (page: any) => page?.data?.search_results?.matches ?? [],
+    ) ?? [];
 
   useEffect(() => {
     if (urlQuery) {
