@@ -12,6 +12,7 @@ import audioController from "../_utils/audioController";
 import { ChatProvider } from "./ChatContext";
 import ChatResetBridge from "./Chatresetbridge ";
 import PushNotificationManager from "../_components/PushNotificationManager";
+import InstallApp from "../_components/InstallApp";
 
 const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
@@ -40,6 +41,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
         <ChatProvider>
           <NotificationProvider>
             <PushNotificationManager />
+            <InstallApp />
             <ChatResetBridge />
             <StoreProvider>
               <SocketConnect>{children}</SocketConnect>
