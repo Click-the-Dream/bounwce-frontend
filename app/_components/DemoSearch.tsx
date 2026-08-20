@@ -32,7 +32,7 @@ const DemoSearch = () => (
         </div>
         <input
           readOnly
-          value="Where can i get a shawarma"
+          value="I want to connect with"
           className="flex-1 text-[8px] outline-none placeholder:text-gray-400 font-medium bg-transparent"
         />
       </div>

@@ -1,4 +1,5 @@
 self.addEventListener("push", (event) => {
+  console.log("[PUSH SW] Push event received");
   if (!event.data) {
     return;
   }
@@ -14,12 +15,14 @@ self.addEventListener("push", (event) => {
     };
   }
 
+  console.log("[PUSH SW] Payload:", data);
+
   const title = data.title || "Bouwnce";
 
   const options = {
-    body: data.body || data.message || "",
-    icon: data.icon || "/favicon.ico",
-    badge: data.badge || "/favicon.ico",
+    body: data.body || data.message || "New notification",
+    icon: data.icon || "/icons/icon-192.png",
+    badge: data.badge || "/icons/icon-192.png",
 
     data: {
       url: data.url || "/",
