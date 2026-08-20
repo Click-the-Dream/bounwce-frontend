@@ -14,7 +14,13 @@ import { onSuccess } from "@/app/_utils/notification";
 import useUser from "@/app/hooks/use-user";
 import { Portal } from "@/app/protocols/Portal";
 
-const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
+const ProfileImage = ({
+  user,
+  isOwnProfile,
+  size = 50,
+  onUploaded,
+  onboarding = false,
+}: any) => {
   const { uploadProfilePicture } = useUser();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [openCrop, setOpenCrop] = useState(false);
@@ -26,6 +32,7 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
   const handlePickImage = (e: any) => {
     if (!isOwnProfile) return;
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -80,10 +87,13 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
             setOpenCrop(false);
             setImageSrc(null);
             onSuccess({ title: "Updated", message: "Profile photo updated" });
+            onUploaded?.();
           },
         },
       );
-    } catch {}
+    } catch (error) {
+      console.error("[PROFILE IMAGE] Upload failed", error);
+    }
   };
 
   return (
@@ -97,7 +107,12 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
       />
 
       {/* AVATAR + CAMERA BUTTON */}
-      <div className="relative w-fit mb-3.25">
+      <div
+        className={`relative w-fit mb-3.25 ${isOwnProfile && onboarding ? "cursor-pointer" : ""}`}
+        onClick={() => {
+          if (isOwnProfile && onboarding) fileRef.current?.click();
+        }}
+      >
         <UserImage
           user={{
             id: user.id,
@@ -108,11 +123,22 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
         />
         {isOwnProfile && (
           <button
-            onClick={() => fileRef.current?.click()}
-            className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-black/10 shadow-sm flex items-center justify-center hover:bg-[#f5f5f5] transition-colors cursor-pointer"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              fileRef.current?.click();
+            }}
+            className={
+              onboarding
+                ? "absolute -bottom-0.5 -right-0.5 w-10 h-10 rounded-full bg-orange border-4 border-[#fffdfb] shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                : "absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-orange/20 shadow-sm flex items-center justify-center hover:bg-[#fff5f1] transition-colors cursor-pointer"
+            }
             aria-label="Change profile photo"
           >
-            <Camera size={10} className="text-[#555]" />
+            <Camera
+              size={onboarding ? 17 : 10}
+              className={onboarding ? "text-white" : "text-[#555]"}
+            />
           </button>
         )}
       </div>
@@ -121,13 +147,13 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
       {isOwnProfile && openCrop && (
         <Portal>
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-10050 flex items-center justify-center p-4"
             style={{
               background: "rgba(0,0,0,0.6)",
               backdropFilter: "blur(6px)",
             }}
           >
-            <div className="w-full max-w-sm bg-white rounded-2xl overflow-hidden shadow-2xl">
+            <div className="w-full max-w-sm bg-[#fffdfb] rounded-3xl overflow-hidden shadow-[0_30px_90px_rgba(29,15,10,0.28)] border border-white/70">
               {/* MODAL HEADER */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.07]">
                 <div>
@@ -140,7 +166,7 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
                 </div>
                 <button
                   onClick={handleCancel}
-                  className="w-7 h-7 rounded-full border border-black/8 flex items-center justify-center hover:bg-[#f5f5f5] transition-colors"
+                  className="w-8 h-8 rounded-full border border-orange/15 flex items-center justify-center hover:bg-[#fff5f1] transition-colors"
                   aria-label="Cancel"
                 >
                   <X size={13} className="text-[#666]" />
@@ -182,7 +208,7 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
                   className="w-7 h-7 rounded-full border border-black/10 flex items-center justify-center hover:bg-[#f5f5f5] transition-colors"
                   aria-label="Zoom out"
                 >
-                  <ZoomOut size={13} className="text-[#555]" />
+                  <ZoomOut size={13} className="text-orange" />
                 </button>
 
                 <div className="flex-1 relative flex items-center">
@@ -230,7 +256,7 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
               <div className="flex items-center justify-between px-5 py-4">
                 <button
                   onClick={handleCancel}
-                  className="h-9 px-4 rounded-full border border-black/10 text-[13px] text-[#555] hover:bg-[#f5f5f5] transition-colors"
+                  className="h-10 px-4 rounded-full border border-black/10 text-[13px] text-[#555] hover:bg-[#fff5f1] transition-colors"
                 >
                   Cancel
                 </button>
@@ -238,7 +264,7 @@ const ProfileImage = ({ user, isOwnProfile, size = 50 }: any) => {
                 <button
                   onClick={handleUpload}
                   disabled={uploadProfilePicture.isPending}
-                  className="h-9 px-5 rounded-full bg-[#111] text-white text-[13px] font-medium flex items-center gap-2 hover:bg-[#333] transition-colors disabled:opacity-60"
+                  className="h-10 px-5 rounded-full bg-orange text-white text-[13px] font-semibold flex items-center gap-2 hover:bg-[#e64225] transition-colors disabled:opacity-60 shadow-[0_8px_20px_rgba(255,75,43,0.18)]"
                 >
                   {uploadProfilePicture.isPending ? (
                     <>

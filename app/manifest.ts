@@ -11,6 +11,12 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#ffffff",
     theme_color: "#ffffff",
     orientation: "portrait",
+    protocol_handlers: [
+      {
+        protocol: "web+bouwnce",
+        url: "/?action=%s",
+      },
+    ],
     icons: [
       {
         src: "/icons/icon-192.png",

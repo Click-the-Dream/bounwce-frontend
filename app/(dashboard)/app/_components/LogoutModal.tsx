@@ -24,7 +24,7 @@ const LogoutModal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-100 bg-black/30 backdrop-blur-[2px] flex items-center"
+            className="fixed inset-0 z-99999 bg-black/30 backdrop-blur-[2px] flex items-center"
             onClick={onCancel}
           />
 
@@ -35,7 +35,7 @@ const LogoutModal = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 8 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
-            className="fixed z-101 left-0 right-0 top-0 bottom-0 m-auto
+            className="fixed z-99999 left-0 right-0 top-0 bottom-0 m-auto
                      w-[calc(100vw-2rem)] max-w-sm h-max bg-white rounded-2xl shadow-xl
                      border border-[#00000014] p-6 flex flex-col items-center gap-4"
           >

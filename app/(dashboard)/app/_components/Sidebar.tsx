@@ -130,7 +130,6 @@ const Sidebar = ({
 
   return (
     <>
-      {/* ── Logout confirmation modal (rendered outside the aside so it's truly centered) */}
       <LogoutModal
         open={showLogoutModal}
         onConfirm={handleLogoutConfirm}
@@ -208,6 +207,7 @@ const Sidebar = ({
                   key={item.name}
                   href={item.href}
                   onClick={onClose}
+                  data-tour={`${isMobile ? "mobile-" : ""}${item.name.toLowerCase().replace(/\s+/g, "-")}`}
                   className={`
                   w-full flex items-center p-3 rounded-[7px] transition-colors
                   ${collapsed ? "justify-center" : "justify-start"}

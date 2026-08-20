@@ -13,6 +13,7 @@ import { ChatProvider } from "./ChatContext";
 import ChatResetBridge from "./Chatresetbridge ";
 import PushNotificationManager from "../_components/PushNotificationManager";
 import InstallApp from "../_components/InstallApp";
+import { OnboardingProvider } from "./OnboardingProvider";
 
 const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
@@ -44,7 +45,9 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
             <InstallApp />
             <ChatResetBridge />
             <StoreProvider>
-              <SocketConnect>{children}</SocketConnect>
+              <OnboardingProvider>
+                <SocketConnect>{children}</SocketConnect>
+              </OnboardingProvider>
 
               <ToastContainer
                 position="top-right"

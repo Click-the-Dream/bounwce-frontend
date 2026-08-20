@@ -42,6 +42,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
         {/* Mobile Menu Button */}
         <button
           onClick={onMenuClick}
+          data-tour="mobile-menu"
           className="lg:hidden p-2 rounded-md hover:bg-gray-100"
         >
           <Menu className="size-5" />
@@ -62,7 +63,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
             </span>
           </div>
         </Link> */}
-        <Link href="/app/chat" className="relative">
+        <Link href="/app/chat" data-tour="messages" className="relative">
           <MessageCircleMore className="shrink-0 size-5 cursor-pointer" />
           {totalUnread > 0 && (
             <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">
@@ -73,6 +74,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
         <div
           onClick={() => setIsPanelOpen(!isPanelOpen)}
+          data-tour="notifications"
           className="relative cursor-pointer"
         >
           <Bell strokeWidth={1.5} className="size-5 cursor-pointer" />
@@ -83,7 +85,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           )}
         </div>
 
-        <Link href="/app/profile" className="w-8 h-8 bg-gray-100 rounded-md">
+        <Link href="/app/profile" data-tour="profile-avatar" className="w-8 h-8 bg-gray-100 rounded-md">
           <UserImage
             user={{
               id: authDetails?.user?.id,
