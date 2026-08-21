@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
-  const ORIGIN = "https://localhost:3000";
+  const ORIGIN = process.env.NEXT_PUBLIC_APP_URL;
 
   return {
     id: "/",
