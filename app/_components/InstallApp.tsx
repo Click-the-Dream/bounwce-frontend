@@ -604,7 +604,7 @@ export default function InstallApp() {
             <X size={16} />
           </button>
 
-          <div className="flex items-center gap-3 pr-7">
+          <div className="flex items-center flex-wrap  gap-3 pr-7">
             <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
               <Image
                 src="/icon.png"
@@ -617,11 +617,11 @@ export default function InstallApp() {
             </div>
 
             <div className="min-w-0 flex-1 font-SFPro">
-              <p className="text-sm font-semibold text-foreground">
+              <p className="text-sm font-semibold text-foreground line-clamp-1">
                 Open Bouwnce App
               </p>
 
-              <p className="mt-1 text-xs leading-4 text-ash">
+              <p className="mt-1 text-xs leading-4 text-ash line-clamp-2">
                 Bouwnce is already installed on this device.
               </p>
             </div>
@@ -630,7 +630,7 @@ export default function InstallApp() {
               <button
                 type="button"
                 onClick={handleContinueWeb}
-                className="shrink-0 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
+                className="shrink-0 rounded-xl w-full sm:w-auto text-center bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
               >
                 Open from Home Screen
               </button>
@@ -638,7 +638,7 @@ export default function InstallApp() {
               <button
                 type="button"
                 onClick={handleOpenApp}
-                className="shrink-0 flex items-center gap-1.5 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
+                className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
               >
                 <ExternalLink size={14} />
                 Open App
