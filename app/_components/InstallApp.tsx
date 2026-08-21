@@ -393,7 +393,7 @@ export default function InstallApp() {
             type="button"
             onClick={handleClose}
             aria-label="Close"
-            className="absolute top-1.5 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
+            className="absolute top-1 right-1.5 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
           >
             <X size={16} />
           </button>
@@ -412,17 +412,17 @@ export default function InstallApp() {
               </div>
 
               <div className="min-w-0 font-SFPro">
-                <p className="text-sm font-semibold text-foreground">
+                <p className="text-sm font-semibold text-foreground line-clamp-2">
                   Bouwnce App Available
                 </p>
 
-                <p className="mt-1 text-xs leading-4 text-ash">
+                <p className="mt-1 text-xs leading-4 text-ash line-clamp-2">
                   Open the Bouwnce app or continue using the web version.
                 </p>
               </div>
             </div>
 
-            <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2 shrink-0">
+            <div className="flex w-full sm:w-auto flex-col gap-2 shrink-0 sm:pr-2">
               <button
                 type="button"
                 onClick={handleOpenApp}
