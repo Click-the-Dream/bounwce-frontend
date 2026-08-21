@@ -35,6 +35,7 @@ type InstallState =
 
 const DISMISS_KEY = "bouwnce_install_popup_dismissed";
 const INSTALLED_KEY = "bouwnce_pwa_installed";
+const INITIAL_DELAY_MS = 3000; // Gives users a moment before interrupting
 
 export default function InstallApp() {
   const [state, setState] = useState<InstallState>("hidden");
@@ -47,9 +48,7 @@ export default function InstallApp() {
   const mounted = useRef(false);
 
   const isStandalone = useCallback((): boolean => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+    if (typeof window === "undefined") return false;
 
     const nav = navigator as NavigatorPWA;
 
@@ -60,10 +59,9 @@ export default function InstallApp() {
       nav.standalone === true
     );
   }, []);
+
   const detectIOS = useCallback((): boolean => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+    if (typeof window === "undefined") return false;
 
     return (
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -72,16 +70,12 @@ export default function InstallApp() {
   }, []);
 
   const detectIOSSafari = useCallback((): boolean => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+    if (typeof window === "undefined") return false;
 
     const ua = navigator.userAgent;
-
     const ios =
       /iPad|iPhone|iPod/.test(ua) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
     const safari =
       /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(ua);
 
@@ -89,66 +83,41 @@ export default function InstallApp() {
   }, []);
 
   const hasInstalledMarker = useCallback((): boolean => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
+    if (typeof window === "undefined") return false;
     return localStorage.getItem(INSTALLED_KEY) === "true";
   }, []);
 
   const hideForStandalone = useCallback(() => {
     setStandalone(true);
     setState("hidden");
-
     promptRef.current = null;
     setPrompt(null);
-
     sessionStorage.removeItem(DISMISS_KEY);
   }, []);
 
   const syncBrowserState = useCallback(() => {
-    if (!mounted.current || typeof window === "undefined") {
-      return;
-    }
+    if (!mounted.current || typeof window === "undefined") return;
 
-    const standaloneNow = isStandalone();
-
-    if (standaloneNow) {
+    if (isStandalone()) {
       hideForStandalone();
       return;
     }
 
     setStandalone(false);
-
     const dismissed = sessionStorage.getItem(DISMISS_KEY) === "true";
 
     if (hasInstalledMarker()) {
-      if (!dismissed) {
-        setState("open-app");
-      } else {
-        setState("hidden");
-      }
-
+      setState(dismissed ? "hidden" : "open-app");
       return;
     }
 
     if (promptRef.current) {
-      if (!dismissed) {
-        setState("installable");
-      } else {
-        setState("hidden");
-      }
-
+      setState(dismissed ? "hidden" : "installable");
       return;
     }
 
     if (isIOSSafari) {
-      if (!dismissed) {
-        setState("ios-installable");
-      } else {
-        setState("hidden");
-      }
-
+      setState(dismissed ? "hidden" : "ios-installable");
       return;
     }
 
@@ -156,9 +125,7 @@ export default function InstallApp() {
   }, [hasInstalledMarker, hideForStandalone, isIOSSafari, isStandalone]);
 
   const checkInstalledRelatedApps = useCallback(async () => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+    if (typeof window === "undefined") return false;
 
     try {
       const nav = navigator as NavigatorInstalledApps;
@@ -189,18 +156,18 @@ export default function InstallApp() {
     setIsIOSDevice(ios);
     setIsIOSSafari(safari);
 
-    syncBrowserState();
+    let delayTimer: NodeJS.Timeout;
+
+    // Delay evaluation slightly to improve initial UX
+    delayTimer = setTimeout(() => {
+      syncBrowserState();
+    }, INITIAL_DELAY_MS);
 
     const handleBeforeInstallPrompt = (event: Event) => {
-      if (!mounted.current) {
-        return;
-      }
+      if (!mounted.current) return;
 
       event.preventDefault();
-
       const installEvent = event as BeforeInstallPromptEvent;
-
-      console.log("[PWA] beforeinstallprompt fired.");
 
       promptRef.current = installEvent;
       setPrompt(installEvent);
@@ -221,78 +188,47 @@ export default function InstallApp() {
     };
 
     const handleInstalled = () => {
-      if (!mounted.current) {
-        return;
-      }
-
-      console.log("[PWA] appinstalled fired.");
+      if (!mounted.current) return;
 
       localStorage.setItem(INSTALLED_KEY, "true");
-
       promptRef.current = null;
       setPrompt(null);
-
       setState("hidden");
-
       sessionStorage.removeItem(DISMISS_KEY);
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-
-      window.setTimeout(() => {
-        syncBrowserState();
-      }, 200);
+      if (document.visibilityState !== "visible") return;
+      window.setTimeout(() => syncBrowserState(), 200);
     };
 
     const mediaQuery = window.matchMedia("(display-mode: standalone)");
 
     const handleDisplayModeChange = (event: MediaQueryListEvent) => {
-      if (!mounted.current) {
-        return;
-      }
+      if (!mounted.current) return;
 
       if (event.matches) {
-        console.log("[PWA] Entered standalone Bouwnce app.");
-
         localStorage.setItem(INSTALLED_KEY, "true");
-
         hideForStandalone();
-
         return;
       }
 
-      console.log("[PWA] Returned to browser.");
-
       setStandalone(false);
-
-      window.setTimeout(() => {
-        syncBrowserState();
-      }, 200);
+      window.setTimeout(() => syncBrowserState(), 200);
     };
 
     const handleFocus = () => {
-      window.setTimeout(() => {
-        syncBrowserState();
-      }, 200);
+      window.setTimeout(() => syncBrowserState(), 200);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
     window.addEventListener("appinstalled", handleInstalled);
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
     window.addEventListener("focus", handleFocus);
-
     mediaQuery.addEventListener("change", handleDisplayModeChange);
-    void checkInstalledRelatedApps().then((installed) => {
-      if (!mounted.current) {
-        return;
-      }
 
+    void checkInstalledRelatedApps().then((installed) => {
+      if (!mounted.current) return;
       if (installed && !isStandalone()) {
         syncBrowserState();
       }
@@ -300,18 +236,14 @@ export default function InstallApp() {
 
     return () => {
       mounted.current = false;
-
+      clearTimeout(delayTimer);
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
       );
-
       window.removeEventListener("appinstalled", handleInstalled);
-
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-
       window.removeEventListener("focus", handleFocus);
-
       mediaQuery.removeEventListener("change", handleDisplayModeChange);
     };
   }, [
@@ -325,73 +257,50 @@ export default function InstallApp() {
 
   const handleInstall = async () => {
     const installPrompt = promptRef.current;
-
-    if (!installPrompt) {
-      console.log("[PWA] No beforeinstallprompt event available.");
-      return;
-    }
+    if (!installPrompt) return;
 
     setState("installing");
 
     try {
       await installPrompt.prompt();
-
       const choice = await installPrompt.userChoice;
 
-      console.log("[PWA] Install result:", choice.outcome);
-
-      /**
-       * beforeinstallprompt can only be used once.
-       */
       promptRef.current = null;
       setPrompt(null);
 
       if (choice.outcome === "accepted") {
-        console.log("[PWA] Installation accepted.");
-
         localStorage.setItem(INSTALLED_KEY, "true");
-
-        setState("hidden");
-
         sessionStorage.removeItem(DISMISS_KEY);
-      } else {
-        console.log("[PWA] Installation dismissed.");
-
-        setState("hidden");
       }
+      setState("hidden");
     } catch (error) {
       console.error("[PWA] Install prompt failed:", error);
-
       promptRef.current = null;
       setPrompt(null);
-
       setState("hidden");
     }
   };
 
   const handleIOSInstalled = () => {
     localStorage.setItem(INSTALLED_KEY, "true");
-
     sessionStorage.removeItem(DISMISS_KEY);
-
     setState("hidden");
-
-    console.log("[PWA] iOS installation confirmed by user.");
   };
 
   const handleOpenApp = () => {
-    console.log("[PWA] Attempting to open Bouwnce app.");
+    // Gracefully handle app scheme fallback if protocol isn't bound on device
+    const fallbackTimer = setTimeout(() => {
+      window.location.reload();
+    }, 1500);
 
     try {
       window.location.href = "web+bouwnce://open";
+      window.addEventListener("blur", () => clearTimeout(fallbackTimer), {
+        once: true,
+      });
     } catch (error) {
       console.error("[PWA] Could not open Bouwnce app:", error);
     }
-  };
-
-  const handleContinueWeb = () => {
-    sessionStorage.setItem(DISMISS_KEY, "true");
-    setState("hidden");
   };
 
   const handleClose = () => {
@@ -399,124 +308,69 @@ export default function InstallApp() {
     setState("hidden");
   };
 
-  if (standalone || isStandalone()) {
+  if (standalone || isStandalone() || state === "hidden") {
     return null;
   }
 
-  if (state === "hidden") {
-    return null;
-  }
+  return (
+    <div
+      role="region"
+      aria-label="App Installation Prompt"
+      aria-live="polite"
+      className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg pointer-events-none"
+    >
+      <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash pointer-events-auto">
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label="Close"
+          className="absolute top-1.5 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-black/10"
+        >
+          <X size={16} />
+        </button>
 
-  if (state === "installing") {
-    return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
-        <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close"
-            className="absolute top-1.5 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
-          >
-            <X size={16} />
-          </button>
-
+        {state === "installing" && (
           <div className="flex items-center gap-3 pr-7">
-            <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
-              <Image
-                src="/icon.png"
-                alt="Bouwnce Logo"
-                width={28}
-                height={28}
-                priority
-                className="h-7 w-7 object-contain"
-              />
-            </div>
-
+            <AppIcon />
             <div className="min-w-0 flex-1 font-SFPro">
               <p className="text-sm font-semibold text-foreground">
                 Installing Bouwnce...
               </p>
-
               <p className="mt-1 text-xs leading-4 text-ash">
                 Please wait while the app is being installed.
               </p>
             </div>
-
             <span className="shrink-0 flex h-9 items-center gap-2 rounded-xl bg-gray-100 px-3 text-xs font-semibold text-gray-600">
               <span className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 border-t-brand-orange animate-spin" />
               <span className="hidden sm:inline">Installing...</span>
             </span>
           </div>
-        </div>
-      </div>
-    );
-  }
+        )}
 
-  if (state === "ios-installable") {
-    return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
-        <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close"
-            className="absolute top-1.5 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
-          >
-            <X size={16} />
-          </button>
-
+        {state === "ios-installable" && (
           <div className="flex items-start gap-3 pr-7">
-            <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
-              <Image
-                src="/icon.png"
-                alt="Bouwnce Logo"
-                width={28}
-                height={28}
-                priority
-                className="h-7 w-7 object-contain"
-              />
-            </div>
-
+            <AppIcon />
             <div className="min-w-0 flex-1 font-SFPro">
               <p className="text-sm font-semibold text-foreground">
                 Get Bouwnce App
               </p>
-
               <p className="mt-1 text-xs leading-4 text-ash">
                 Install Bouwnce on your iPhone for faster access and push
                 notifications.
               </p>
 
               <div className="mt-3 space-y-2.5">
-                <div className="flex items-center gap-2 text-xs text-foreground">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lighter-ash/70">
-                    <Share size={14} />
-                  </span>
-
-                  <span>
-                    Tap the <strong>Share</strong> button in Safari.
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-foreground">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lighter-ash/70">
-                    <PlusSquare size={14} />
-                  </span>
-
-                  <span>
-                    Tap <strong>Add to Home Screen</strong>.
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-foreground">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lighter-ash/70 text-green-600 font-bold">
-                    ✓
-                  </span>
-
-                  <span>
-                    Tap <strong>Add</strong> to finish.
-                  </span>
-                </div>
+                <StepInstruction icon={<Share size={14} />}>
+                  Tap the <strong>Share</strong> button in Safari.
+                </StepInstruction>
+                <StepInstruction icon={<PlusSquare size={14} />}>
+                  Tap <strong>Add to Home Screen</strong>.
+                </StepInstruction>
+                <StepInstruction
+                  icon={<span className="text-green-600 font-bold">✓</span>}
+                >
+                  Tap <strong>Add</strong> to finish.
+                </StepInstruction>
               </div>
 
               <div className="mt-3 flex gap-2">
@@ -527,10 +381,9 @@ export default function InstallApp() {
                 >
                   I've Added Bouwnce
                 </button>
-
                 <button
                   type="button"
-                  onClick={handleContinueWeb}
+                  onClick={handleClose}
                   className="rounded-xl bg-lighter-ash px-4 py-2.5 text-xs font-semibold text-foreground transition-all hover:opacity-90 active:scale-95"
                 >
                   Not Now
@@ -538,46 +391,19 @@ export default function InstallApp() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    );
-  }
+        )}
 
-  if (state === "installable" && prompt) {
-    return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
-        <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close"
-            className="absolute top-1.5 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
-          >
-            <X size={16} />
-          </button>
-
+        {state === "installable" && prompt && (
           <div className="flex items-center gap-3 pr-7">
-            <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
-              <Image
-                src="/icon.png"
-                alt="Bouwnce Logo"
-                width={28}
-                height={28}
-                priority
-                className="h-7 w-7 object-contain"
-              />
-            </div>
-
+            <AppIcon />
             <div className="min-w-0 flex-1 font-SFPro">
               <p className="text-sm font-semibold text-foreground">
                 Get Bouwnce App
               </p>
-
               <p className="mt-1 text-xs leading-4 text-ash">
                 Faster access and push notifications.
               </p>
             </div>
-
             <button
               type="button"
               onClick={handleInstall}
@@ -586,41 +412,15 @@ export default function InstallApp() {
               Install
             </button>
           </div>
-        </div>
-      </div>
-    );
-  }
+        )}
 
-  if (state === "open-app") {
-    return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
-        <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close"
-            className="absolute top-1.5 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
-          >
-            <X size={16} />
-          </button>
-
-          <div className="flex items-center flex-wrap  gap-3 pr-7">
-            <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
-              <Image
-                src="/icon.png"
-                alt="Bouwnce Logo"
-                width={28}
-                height={28}
-                priority
-                className="h-7 w-7 object-contain"
-              />
-            </div>
-
+        {state === "open-app" && (
+          <div className="flex items-center flex-wrap gap-3 pr-7">
+            <AppIcon />
             <div className="min-w-0 flex-1 font-SFPro">
               <p className="text-sm font-semibold text-foreground line-clamp-1">
                 Open Bouwnce App
               </p>
-
               <p className="mt-1 text-xs leading-4 text-ash line-clamp-2">
                 Bouwnce is already installed on this device.
               </p>
@@ -629,7 +429,7 @@ export default function InstallApp() {
             {isIOSDevice ? (
               <button
                 type="button"
-                onClick={handleContinueWeb}
+                onClick={handleClose}
                 className="shrink-0 rounded-xl w-full sm:w-auto text-center bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
               >
                 Open from Home Screen
@@ -645,10 +445,40 @@ export default function InstallApp() {
               </button>
             )}
           </div>
-        </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  return null;
+function AppIcon() {
+  return (
+    <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
+      <Image
+        src="/icon.png"
+        alt="Bouwnce Logo"
+        width={28}
+        height={28}
+        priority
+        className="h-7 w-7 object-contain"
+      />
+    </div>
+  );
+}
+
+function StepInstruction({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-foreground">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lighter-ash/70">
+        {icon}
+      </span>
+      <span>{children}</span>
+    </div>
+  );
 }
