@@ -6,42 +6,28 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
-
   userChoice: Promise<{
     outcome: "accepted" | "dismissed";
     platform: string;
   }>;
 }
 
-interface InstalledRelatedApp {
-  platform?: string;
-  id?: string;
-  url?: string;
-  version?: string;
-}
-
 interface NavigatorPWA extends Navigator {
   standalone?: boolean;
-
-  getInstalledRelatedApps?: () => Promise<InstalledRelatedApp[]>;
 }
 
-type InstallState = "hidden" | "installable" | "installing" | "installed";
+type InstallState = "hidden" | "installable" | "installing";
 
-const INSTALLED_KEY = "bouwnce_pwa_installed";
 const DISMISS_KEY = "bouwnce_install_popup_dismissed";
-
-const BOUWNCE_PWA_ID = "/";
-const BOUWNCE_PWA_URL = "https://localhost:3000";
 
 export default function InstallApp() {
   const [state, setState] = useState<InstallState>("hidden");
-
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-
   const [standalone, setStandalone] = useState(false);
 
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const mounted = useRef(false);
+
   const isStandalone = useCallback((): boolean => {
     if (typeof window === "undefined") {
       return false;
@@ -57,131 +43,87 @@ export default function InstallApp() {
     );
   }, []);
 
-  const checkInstalledRelatedApp = useCallback(async (): Promise<
-    boolean | null
-  > => {
-    const nav = navigator as NavigatorPWA;
+  const hideForStandalone = useCallback(() => {
+    setStandalone(true);
+    setState("hidden");
 
-    if (typeof nav.getInstalledRelatedApps !== "function") {
-      return null;
-    }
+    promptRef.current = null;
+    setPrompt(null);
 
-    try {
-      const apps = await nav.getInstalledRelatedApps();
-
-      console.log("[PWA] Installed related apps:", apps);
-
-      const bouwnceApp = apps.find((app) => {
-        if (app.platform !== "webapp") {
-          return false;
-        }
-
-        return (
-          app.id === BOUWNCE_PWA_ID ||
-          app.url === BOUWNCE_PWA_URL ||
-          app.url === `${BOUWNCE_PWA_URL}/`
-        );
-      });
-
-      if (bouwnceApp) {
-        console.log("[PWA] Bouwnce PWA detected:", bouwnceApp);
-
-        return true;
-      }
-      console.log("[PWA] Related-app API did not identify Bouwnce.");
-
-      return null;
-    } catch (error) {
-      console.warn("[PWA] getInstalledRelatedApps failed:", error);
-
-      return null;
-    }
+    sessionStorage.removeItem(DISMISS_KEY);
   }, []);
-
-  const detectInstalled = useCallback(async (): Promise<boolean> => {
-    if (isStandalone()) {
-      return true;
-    }
-
-    const localInstalled = localStorage.getItem(INSTALLED_KEY) === "true";
-
-    console.log("[PWA] Local installed flag:", localInstalled);
-    if (localInstalled) {
-      return true;
-    }
-
-    const relatedInstalled = await checkInstalledRelatedApp();
-
-    if (relatedInstalled === true) {
-      localStorage.setItem(INSTALLED_KEY, "true");
-
-      return true;
-    }
-    return false;
-  }, [checkInstalledRelatedApp, isStandalone]);
-
-  const checkAndShowInstalledPopup = useCallback(async () => {
+  const syncBrowserState = useCallback(() => {
     if (!mounted.current) {
       return;
     }
-    if (isStandalone()) {
-      setStandalone(true);
-      setState("hidden");
+
+    const standaloneNow = isStandalone();
+
+    if (standaloneNow) {
+      hideForStandalone();
+      return;
+    }
+
+    setStandalone(false);
+
+    if (promptRef.current) {
+      const dismissed = sessionStorage.getItem(DISMISS_KEY) === "true";
+
+      if (!dismissed) {
+        setState("installable");
+      } else {
+        setState("hidden");
+      }
 
       return;
     }
 
-    const dismissed = sessionStorage.getItem(DISMISS_KEY) === "true";
-    console.log("[PWA] INSTALLED_KEY:", localStorage.getItem(INSTALLED_KEY));
-    console.log("[PWA] DISMISS_KEY:", sessionStorage.getItem(DISMISS_KEY));
-    console.log("[PWA] Is standalone:", isStandalone());
+    setState("hidden");
+  }, [hideForStandalone, isStandalone]);
 
-    if (dismissed) {
-      console.log("[PWA] Popup dismissed for this tab.");
-
-      return;
-    }
-
-    const installed = await detectInstalled();
-
-    if (!mounted.current || isStandalone()) {
-      return;
-    }
-
-    if (!installed) {
-      console.log("[PWA] Bouwnce app is not detected as installed.");
-
-      return;
-    }
-
-    console.log(
-      "[PWA] Bouwnce detected as installed — showing Open App popup.",
-    );
-
-    setState("installed");
-  }, [detectInstalled, isStandalone]);
   useEffect(() => {
     mounted.current = true;
-    void checkAndShowInstalledPopup();
 
+    syncBrowserState();
     const handleBeforeInstallPrompt = (event: Event) => {
+      if (!mounted.current) {
+        return;
+      }
+
       event.preventDefault();
 
       const installEvent = event as BeforeInstallPromptEvent;
 
       console.log("[PWA] beforeinstallprompt fired.");
 
+      promptRef.current = installEvent;
       setPrompt(installEvent);
-      setState("installable");
-    };
-    const handleInstalled = () => {
-      console.log("[PWA] appinstalled fired.");
 
-      localStorage.setItem(INSTALLED_KEY, "true");
       sessionStorage.removeItem(DISMISS_KEY);
 
+      if (isStandalone()) {
+        hideForStandalone();
+        return;
+      }
+
+      setStandalone(false);
+      setState("installable");
+    };
+
+    const handleInstalled = () => {
+      if (!mounted.current) {
+        return;
+      }
+
+      console.log("[PWA] appinstalled fired.");
+
+      promptRef.current = null;
       setPrompt(null);
       setState("hidden");
+
+      sessionStorage.removeItem(DISMISS_KEY);
+
+      setStandalone(false);
     };
 
     const handleVisibilityChange = () => {
@@ -190,8 +132,8 @@ export default function InstallApp() {
       }
 
       window.setTimeout(() => {
-        void checkAndShowInstalledPopup();
-      }, 400);
+        syncBrowserState();
+      }, 150);
     };
 
     const mediaQuery = window.matchMedia("(display-mode: standalone)");
@@ -203,26 +145,24 @@ export default function InstallApp() {
 
       if (event.matches) {
         console.log("[PWA] Entered standalone Bouwnce app.");
-
-        setStandalone(true);
-        setState("hidden");
-        setPrompt(null);
-
+        hideForStandalone();
         return;
       }
 
       console.log("[PWA] Returned to browser.");
 
       setStandalone(false);
-
       window.setTimeout(() => {
-        void checkAndShowInstalledPopup();
-      }, 200);
+        syncBrowserState();
+      }, 150);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
     window.addEventListener("appinstalled", handleInstalled);
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+
     mediaQuery.addEventListener("change", handleDisplayModeChange);
 
     return () => {
@@ -239,58 +179,72 @@ export default function InstallApp() {
 
       mediaQuery.removeEventListener("change", handleDisplayModeChange);
     };
-  }, [checkAndShowInstalledPopup]);
+  }, [hideForStandalone, isStandalone, syncBrowserState]);
 
   const handleInstall = async () => {
-    if (!prompt) {
+    const installPrompt = promptRef.current;
+
+    if (!installPrompt) {
+      console.log("[PWA] No install prompt available.");
       return;
     }
 
     setState("installing");
 
     try {
-      await prompt.prompt();
+      await installPrompt.prompt();
 
-      const choice = await prompt.userChoice;
+      const choice = await installPrompt.userChoice;
 
       console.log("[PWA] Install result:", choice.outcome);
+      promptRef.current = null;
+      setPrompt(null);
+
       if (choice.outcome === "accepted") {
-        localStorage.setItem(INSTALLED_KEY, "true");
-        sessionStorage.removeItem(DISMISS_KEY);
-
-        setPrompt(null);
-        setState("hidden");
-
         console.log("[PWA] Installation accepted.");
 
-        return;
+        setState("hidden");
+        sessionStorage.removeItem(DISMISS_KEY);
+      } else {
+        console.log("[PWA] Installation dismissed.");
+
+        setState("hidden");
       }
-      setPrompt(null);
-      setState("hidden");
     } catch (error) {
       console.error("[PWA] Install prompt failed:", error);
 
+      promptRef.current = null;
       setPrompt(null);
       setState("hidden");
     }
   };
+
   const handleOpenApp = () => {
-    window.location.href = "web+bouwnce://open";
+    try {
+      window.location.href = "web+bouwnce://open";
+    } catch (error) {
+      console.error("[PWA] Could not open Bouwnce app:", error);
+    }
   };
+
   const handleContinueWeb = () => {
     sessionStorage.setItem(DISMISS_KEY, "true");
-
     setState("hidden");
   };
 
   const handleClose = () => {
     sessionStorage.setItem(DISMISS_KEY, "true");
-
     setState("hidden");
   };
-  if (standalone || state === "hidden") {
+
+  if (standalone) {
     return null;
   }
+
+  if (state === "hidden") {
+    return null;
+  }
+
   if (state === "installing") {
     return (
       <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
@@ -312,7 +266,7 @@ export default function InstallApp() {
                 width={28}
                 height={28}
                 priority
-                className="h-7 w-auto object-contain"
+                className="h-7 w-7 object-contain"
               />
             </div>
 
@@ -328,7 +282,6 @@ export default function InstallApp() {
 
             <span className="shrink-0 flex h-9 items-center gap-2 rounded-xl bg-gray-100 px-3 text-xs font-semibold text-gray-600">
               <span className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 border-t-brand-orange animate-spin" />
-
               <span className="hidden sm:inline">Installing...</span>
             </span>
           </div>
@@ -358,7 +311,7 @@ export default function InstallApp() {
                 width={28}
                 height={28}
                 priority
-                className="h-7 w-auto object-contain"
+                className="h-7 w-7 object-contain"
               />
             </div>
 
@@ -379,66 +332,6 @@ export default function InstallApp() {
             >
               Install
             </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (state === "installed") {
-    return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
-        <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close"
-            className="absolute top-1 right-1.5 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
-          >
-            <X size={16} />
-          </button>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3 min-w-0 flex-1 pr-7 sm:pr-0">
-              <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
-                <Image
-                  src="/icon.png"
-                  alt="Bouwnce Logo"
-                  width={28}
-                  height={28}
-                  priority
-                  className="h-7 w-auto object-contain"
-                />
-              </div>
-
-              <div className="min-w-0 font-SFPro">
-                <p className="text-sm font-semibold text-foreground line-clamp-2">
-                  Bouwnce App Available
-                </p>
-
-                <p className="mt-1 text-xs leading-4 text-ash line-clamp-2">
-                  Open the Bouwnce app or continue using the web version.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex w-full sm:w-auto flex-col gap-2 shrink-0 sm:pr-2">
-              <button
-                type="button"
-                onClick={handleOpenApp}
-                className="w-full sm:w-auto rounded-xl bg-brand-orange px-4 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
-              >
-                Open App
-              </button>
-
-              <button
-                type="button"
-                onClick={handleContinueWeb}
-                className="w-full sm:w-auto rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 sm:py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
-              >
-                Continue on Web
-              </button>
-            </div>
           </div>
         </div>
       </div>
