@@ -827,4 +827,31 @@ export default function InstallApp() {
 
             </div>
 
-            {/* Responsive 
+            div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2 shrink-0">
+
+              <button
+                type="button"
+                onClick={handleOpenApp}
+                className="w-full sm:w-auto rounded-xl bg-brand-orange px-4 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
+              >
+                Open App
+              </button>
+
+              <button
+                type="button"
+                onClick={handleContinueWeb}
+                className="w-full sm:w-auto rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 sm:py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
+              >
+                Continue on Web
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
