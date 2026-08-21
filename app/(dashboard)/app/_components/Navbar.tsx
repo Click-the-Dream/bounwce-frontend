@@ -1,5 +1,4 @@
 import { Bell, Menu, MessageCircleMore } from "lucide-react";
-import SearchComponent from "./SearchComponent";
 import Link from "next/link";
 import { useMarketStore } from "@/app/context/StoreContext";
 import { useNotifications } from "@/app/context/NotificationContext";
@@ -7,6 +6,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useEffect, useRef, useState } from "react";
 import { NotificationPanel } from "@/app/_components/NotificationPanel";
 import { Portal } from "@/app/protocols/Portal";
+import SearchComponent from "./SearchComponent";
 import UserImage from "./UserImage";
 
 const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
@@ -47,10 +47,8 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
         >
           <Menu className="size-5" />
         </button>
-
-        {/* Search */}
-
-        <SearchComponent />
+        {/* 
+        <SearchComponent /> */}
       </div>
 
       {/* RIGHT SECTION */}
@@ -85,7 +83,11 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           )}
         </div>
 
-        <Link href="/app/profile" data-tour="profile-avatar" className="w-8 h-8 bg-gray-100 rounded-md">
+        <Link
+          href="/app/profile"
+          data-tour="profile-avatar"
+          className="w-8 h-8 bg-gray-100 rounded-md"
+        >
           <UserImage
             user={{
               id: authDetails?.user?.id,

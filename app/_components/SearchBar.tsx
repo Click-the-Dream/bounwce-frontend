@@ -13,8 +13,8 @@ const SearchBar = () => {
 
   const handleSearch = () => {
     const trimmedQuery = query.trim();
-router.push("/waitlist")
-/*
+    router.push("/waitlist");
+    /*
     if (!trimmedQuery) {
       return;
     }
@@ -52,7 +52,7 @@ router.push("/waitlist")
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             //onKeyDown={(e) => e.key === 'Enter' && handleSearch()} // Search on Enter key
-            placeholder="Where can i get a shawarma"
+            placeholder="I want to connect with..."
             className="grow rounded-lg md:rounded-[5px] px-4 md:px-6 py-4 md:py-3 bg-[#F4F4F5] text-gray-700 outline-none placeholder:text-gray-400 font-medium text-[13px]"
           />
 
