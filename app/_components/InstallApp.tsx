@@ -19,10 +19,25 @@ export default function InstallApp() {
     useState<BeforeInstallPromptEvent | null>(null);
 
   const [showBanner, setShowBanner] = useState(false);
+
+  /**
+   * This means the current page is running inside
+   * the installed PWA.
+   */
   const [isStandalone, setIsStandalone] = useState(false);
 
   /**
-   * Check whether the website is currently running
+   * This is ONLY a UI state for the current web page.
+   *
+   * It is intentionally NOT stored in localStorage.
+   *
+   * After the PWA is uninstalled and the website is
+   * opened again, this will naturally start as false.
+   */
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  /**
+   * Check whether the current page is running
    * as an installed PWA.
    */
   const checkStandalone = () => {
@@ -32,7 +47,9 @@ export default function InstallApp() {
 
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      (navigator as Navigator & {
+        standalone?: boolean;
+      }).standalone === true;
 
     setIsStandalone(standalone);
 
@@ -44,30 +61,45 @@ export default function InstallApp() {
       return;
     }
 
-    /*
-     * First check whether we are already inside
-     * the installed PWA.
+    /**
+     * If we're already inside the installed PWA,
+     * don't show the web install banner.
      */
     if (checkStandalone()) {
+      setIsInstalled(true);
+      setShowBanner(false);
       return;
     }
 
     /**
-     * Fired by supported browsers when the website
-     * is eligible for installation.
+     * Browser says the website can be installed.
      */
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
 
-      const promptEvent = event as BeforeInstallPromptEvent;
+      const promptEvent =
+        event as BeforeInstallPromptEvent;
 
       setInstallPrompt(promptEvent);
 
-      /*
-       * Dismissal only lasts for the current browser session.
-       * This prevents the old permanent localStorage problem.
+      /**
+       * We are back on the web version, so this is
+       * definitely not the standalone PWA.
        */
-      const dismissed = sessionStorage.getItem(DISMISS_KEY);
+      setIsStandalone(false);
+
+      /**
+       * A previous installation is no longer considered
+       * active once we're back on the web.
+       */
+      setIsInstalled(false);
+
+      /**
+       * Only respect dismissal for the current
+       * browser session.
+       */
+      const dismissed =
+        sessionStorage.getItem(DISMISS_KEY);
 
       if (!dismissed) {
         setShowBanner(true);
@@ -75,20 +107,30 @@ export default function InstallApp() {
     };
 
     /**
-     * Fired after the PWA has actually been installed.
+     * Browser fires this after successful installation.
      */
     const handleAppInstalled = () => {
       console.log("Bouwnce PWA installed");
 
-      setInstallPrompt(null);
-      setShowBanner(false);
+      /**
+       * Keep the banner visible temporarily.
+       *
+       * The user is currently on the website, so we
+       * can show:
+       *
+       *   Open App
+       *   Continue on Web
+       */
+      setIsInstalled(true);
 
-      /*
-       * Clear any old dismissal state.
+      setInstallPrompt(null);
+
+      setShowBanner(true);
+
+      /**
+       * Clear dismissal state.
        */
       sessionStorage.removeItem(DISMISS_KEY);
-
-      checkStandalone();
     };
 
     window.addEventListener(
@@ -96,23 +138,26 @@ export default function InstallApp() {
       handleBeforeInstallPrompt
     );
 
-    window.addEventListener("appinstalled", handleAppInstalled);
+    window.addEventListener(
+      "appinstalled",
+      handleAppInstalled
+    );
 
     /**
-     * Re-check standalone mode after a short delay.
-     *
-     * Some browsers need a little time before their
-     * display-mode state is available.
+     * Check display mode again after the browser
+     * has had time to update it.
      */
     const timer = window.setTimeout(() => {
-      checkStandalone();
+      const standalone = checkStandalone();
+
+      if (standalone) {
+        setIsInstalled(true);
+        setShowBanner(false);
+      }
     }, 1000);
 
     /**
-     * Re-check when the user returns to the page.
-     *
-     * This is useful when the user installs/uninstalls
-     * the PWA and then returns to the website.
+     * Detect returning to the page.
      */
     const handleVisibilityChange = () => {
       if (document.visibilityState !== "visible") {
@@ -122,8 +167,31 @@ export default function InstallApp() {
       const standalone = checkStandalone();
 
       if (standalone) {
-        setInstallPrompt(null);
+        /**
+         * We are inside the PWA.
+         */
+        setIsInstalled(true);
         setShowBanner(false);
+
+        return;
+      }
+
+      /**
+       * We are on the web.
+       *
+       * Don't automatically set isInstalled here because
+       * the browser may simply have opened the website.
+       *
+       * beforeinstallprompt will determine whether the
+       * website can currently be installed.
+       */
+      if (installPrompt) {
+        const dismissed =
+          sessionStorage.getItem(DISMISS_KEY);
+
+        if (!dismissed) {
+          setShowBanner(true);
+        }
       }
     };
 
@@ -133,23 +201,30 @@ export default function InstallApp() {
     );
 
     /**
-     * Also listen for display-mode changes.
+     * Detect display-mode changes.
      */
     const mediaQuery = window.matchMedia(
       "(display-mode: standalone)"
     );
 
-    const handleDisplayModeChange = (event: MediaQueryListEvent) => {
+    const handleDisplayModeChange = (
+      event: MediaQueryListEvent
+    ) => {
       const standalone =
         event.matches ||
-        (navigator as Navigator & { standalone?: boolean }).standalone ===
-          true;
+        (navigator as Navigator & {
+          standalone?: boolean;
+        }).standalone === true;
 
       setIsStandalone(standalone);
 
       if (standalone) {
-        setInstallPrompt(null);
+        /**
+         * Now running inside the installed app.
+         */
+        setIsInstalled(true);
         setShowBanner(false);
+        setInstallPrompt(null);
       }
     };
 
@@ -184,12 +259,12 @@ export default function InstallApp() {
   }, []);
 
   /**
-   * Open the browser's native PWA installation dialog.
+   * Trigger native browser installation.
    */
   const handleInstall = async () => {
     if (!installPrompt) {
       console.warn(
-        "Install prompt is not currently available."
+        "beforeinstallprompt is not available"
       );
 
       return;
@@ -198,131 +273,229 @@ export default function InstallApp() {
     try {
       await installPrompt.prompt();
 
-      const choice = await installPrompt.userChoice;
+      const choice =
+        await installPrompt.userChoice;
 
       console.log(
-        "PWA installation choice:",
+        "Installation result:",
         choice.outcome
       );
 
       if (choice.outcome === "accepted") {
-        setShowBanner(false);
-
+        /**
+         * Don't immediately hide the banner.
+         *
+         * appinstalled will handle the successful
+         * installation state.
+         */
         sessionStorage.removeItem(DISMISS_KEY);
       } else {
-        /*
-         * The user rejected the native browser prompt.
-         * Hide our banner for this browser session.
+        /**
+         * User rejected the native prompt.
          */
-        sessionStorage.setItem(DISMISS_KEY, "true");
+        sessionStorage.setItem(
+          DISMISS_KEY,
+          "true"
+        );
 
         setShowBanner(false);
       }
     } catch (error) {
       console.error(
-        "Failed to display PWA install prompt:",
+        "Failed to install Bouwnce:",
         error
       );
     } finally {
-      /*
-       * beforeinstallprompt can only be used once.
+      /**
+       * The native prompt can only be used once.
        */
       setInstallPrompt(null);
     }
   };
 
   /**
-   * Dismiss the custom install banner.
-   *
-   * This is intentionally sessionStorage instead of
-   * localStorage so it does not permanently suppress
-   * the install UI.
+   * Open the installed Bouwnce app.
+   */
+  const handleOpenApp = () => {
+    window.location.href =
+      "web+bouwnce://open";
+  };
+
+  /**
+   * Continue using Bouwnce in the browser.
    */
   const handleDismiss = () => {
-    sessionStorage.setItem(DISMISS_KEY, "true");
+    sessionStorage.setItem(
+      DISMISS_KEY,
+      "true"
+    );
 
     setShowBanner(false);
   };
 
-  /*
-   * Never display the install banner when the app
-   * is already running as an installed PWA.
+  /**
+   * Never display this component inside the
+   * installed PWA.
    */
   if (isStandalone) {
     return null;
   }
 
-  /*
-   * Do not display anything until the browser has
-   * supplied a real install prompt.
+  /**
+   * Nothing to display.
    */
-  if (!showBanner || !installPrompt) {
+  if (!showBanner) {
     return null;
   }
 
-  return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 z-[1000] md:max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
+  /**
+   * ------------------------------------------------
+   * INSTALLED STATE
+   * ------------------------------------------------
+   *
+   * The app has just been installed, but the user
+   * is still viewing the website.
+   */
+  if (isInstalled && !installPrompt) {
+    return (
+      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 z-[1000] md:max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
 
-        {/* Dismiss */}
-        <button
-          type="button"
-          onClick={handleDismiss}
-          aria-label="Dismiss install prompt"
-          className="absolute top-1 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
-        >
-          <X size={16} />
-        </button>
+          {/* Dismiss */}
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Dismiss prompt"
+            className="absolute top-1 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
+          >
+            <X size={16} />
+          </button>
 
-        {/* App information */}
-        <div className="flex items-center gap-3 pr-6 sm:pr-0 flex-1 min-w-0">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
-            <Image
-              src="/icon.png"
-              alt="Bouwnce Logo"
-              width={28}
-              height={28}
-              priority
-              className="h-7 w-auto object-contain"
-            />
+          {/* App information */}
+          <div className="flex items-center gap-3 pr-6 sm:pr-0 flex-1 min-w-0">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
+              <Image
+                src="/icon.png"
+                alt="Bouwnce Logo"
+                width={28}
+                height={28}
+                priority
+                className="h-7 w-auto object-contain"
+              />
+            </div>
+
+            <div className="flex-1 min-w-0 font-SFPro">
+              <p className="text-sm font-semibold tracking-tight text-foreground truncate">
+                Bouwnce App Available
+              </p>
+
+              <p className="text-xs text-ash truncate">
+                Open app or stay on web
+              </p>
+            </div>
           </div>
 
-          <div className="flex-1 min-w-0 font-SFPro">
-            <p className="text-sm font-semibold tracking-tight text-foreground truncate">
-              Get Bouwnce App
-            </p>
+          {/* Actions */}
+          <div className="w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
 
-            <p className="text-xs text-ash truncate">
-              Faster access & push notifications
-            </p>
-          </div>
-        </div>
+              {/* Open App */}
+              <button
+                type="button"
+                onClick={handleOpenApp}
+                className="w-full sm:w-auto rounded-xl bg-brand-orange px-4 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm text-center whitespace-nowrap"
+              >
+                Open App
+              </button>
 
-        {/* Actions */}
-        <div className="w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+              {/* Continue on Web */}
+              <button
+                type="button"
+                onClick={handleDismiss}
+                className="w-full sm:w-auto rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 sm:py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors text-center whitespace-nowrap"
+              >
+                Continue on Web
+              </button>
 
-            {/* Install */}
-            <button
-              type="button"
-              onClick={handleInstall}
-              className="w-full sm:w-auto rounded-xl bg-brand-orange px-5 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm text-center whitespace-nowrap"
-            >
-              Install
-            </button>
-
-            {/* Continue on Web */}
-            <button
-              type="button"
-              onClick={handleDismiss}
-              className="w-full sm:w-auto rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 sm:py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors text-center whitespace-nowrap"
-            >
-              Continue on Web
-            </button>
-
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-        }
+    );
+  }
+
+  /**
+   * ------------------------------------------------
+   * INSTALL STATE
+   * ------------------------------------------------
+   */
+  if (installPrompt) {
+    return (
+      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 z-[1000] md:max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
+
+          {/* Dismiss */}
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Dismiss install prompt"
+            className="absolute top-1 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors"
+          >
+            <X size={16} />
+          </button>
+
+          {/* App information */}
+          <div className="flex items-center gap-3 pr-6 sm:pr-0 flex-1 min-w-0">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
+              <Image
+                src="/icon.png"
+                alt="Bouwnce Logo"
+                width={28}
+                height={28}
+                priority
+                className="h-7 w-auto object-contain"
+              />
+            </div>
+
+            <div className="flex-1 min-w-0 font-SFPro">
+              <p className="text-sm font-semibold tracking-tight text-foreground truncate">
+                Get Bouwnce App
+              </p>
+
+              <p className="text-xs text-ash truncate">
+                Faster access & push notifications
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+
+              {/* Install */}
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="w-full sm:w-auto rounded-xl bg-brand-orange px-5 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm text-center whitespace-nowrap"
+              >
+                Install
+              </button>
+
+              {/* Continue on Web */}
+              <button
+                type="button"
+                onClick={handleDismiss}
+                className="w-full sm:w-auto rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 sm:py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors text-center whitespace-nowrap"
+              >
+                Continue on Web
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+            }
