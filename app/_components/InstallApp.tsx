@@ -2,45 +2,50 @@
 
 import { X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
+
   userChoice: Promise<{
     outcome: "accepted" | "dismissed";
     platform: string;
   }>;
 }
 
-interface NavigatorPWA extends Navigator {
-  standalone?: boolean;
-  getInstalledRelatedApps?: () => Promise<
-    Array<{
-      platform?: string;
-      id?: string;
-      url?: string;
-    }>
-  >;
+interface InstalledRelatedApp {
+  platform?: string;
+  id?: string;
+  url?: string;
+  version?: string;
 }
 
-type InstallState =
-  | "hidden"
-  | "installable"
-  | "installing"
-  | "installed";
+interface NavigatorPWA extends Navigator {
+  standalone?: boolean;
+
+  getInstalledRelatedApps?: () => Promise<InstalledRelatedApp[]>;
+}
+
+type InstallState = "hidden" | "installable" | "installing" | "installed";
 
 const INSTALLED_KEY = "bouwnce_pwa_installed";
 const DISMISS_KEY = "bouwnce_install_popup_dismissed";
 
+const BOUWNCE_PWA_ID = "/";
+const BOUWNCE_PWA_URL = "https://localhost:3000";
+
 export default function InstallApp() {
   const [state, setState] = useState<InstallState>("hidden");
-  const [prompt, setPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [standalone, setStandalone] = useState(false);
-  const mounted = useRef(true);
 
-  const isStandalone = () => {
-    if (typeof window === "undefined") return false;
+  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  const [standalone, setStandalone] = useState(false);
+
+  const mounted = useRef(false);
+  const isStandalone = useCallback((): boolean => {
+    if (typeof window === "undefined") {
+      return false;
+    }
 
     const nav = navigator as NavigatorPWA;
 
@@ -50,169 +55,196 @@ export default function InstallApp() {
       window.matchMedia("(display-mode: minimal-ui)").matches ||
       nav.standalone === true
     );
-  };
+  }, []);
 
-  const checkInstalled = async (): Promise<boolean | null> => {
+  const checkInstalledRelatedApp = useCallback(async (): Promise<
+    boolean | null
+  > => {
     const nav = navigator as NavigatorPWA;
 
-    if (!nav.getInstalledRelatedApps) return null;
+    if (typeof nav.getInstalledRelatedApps !== "function") {
+      return null;
+    }
 
     try {
       const apps = await nav.getInstalledRelatedApps();
-      return apps.length > 0;
-    } catch {
+
+      console.log("[PWA] Installed related apps:", apps);
+
+      const bouwnceApp = apps.find((app) => {
+        if (app.platform !== "webapp") {
+          return false;
+        }
+
+        return (
+          app.id === BOUWNCE_PWA_ID ||
+          app.url === BOUWNCE_PWA_URL ||
+          app.url === `${BOUWNCE_PWA_URL}/`
+        );
+      });
+
+      if (bouwnceApp) {
+        console.log("[PWA] Bouwnce PWA detected:", bouwnceApp);
+
+        return true;
+      }
+      console.log("[PWA] Related-app API did not identify Bouwnce.");
+
+      return null;
+    } catch (error) {
+      console.warn("[PWA] getInstalledRelatedApps failed:", error);
+
       return null;
     }
-  };
+  }, []);
 
-  useEffect(() => {
-    mounted.current = true;
-
+  const detectInstalled = useCallback(async (): Promise<boolean> => {
     if (isStandalone()) {
-      setStandalone(true);
-      return () => {
-        mounted.current = false;
-      };
+      return true;
     }
 
-    const dismissed =
-      sessionStorage.getItem(DISMISS_KEY) === "true";
+    const localInstalled = localStorage.getItem(INSTALLED_KEY) === "true";
 
-    const initialize = async () => {
-      const previouslyInstalled =
-        localStorage.getItem(INSTALLED_KEY) === "true";
+    console.log("[PWA] Local installed flag:", localInstalled);
+    if (localInstalled) {
+      return true;
+    }
 
-      if (!previouslyInstalled) return;
+    const relatedInstalled = await checkInstalledRelatedApp();
 
-      const installed = await checkInstalled();
+    if (relatedInstalled === true) {
+      localStorage.setItem(INSTALLED_KEY, "true");
 
-      if (!mounted.current) return;
+      return true;
+    }
+    return false;
+  }, [checkInstalledRelatedApp, isStandalone]);
 
-      if (installed === false) {
-        localStorage.removeItem(INSTALLED_KEY);
-        return;
-      }
+  const checkAndShowInstalledPopup = useCallback(async () => {
+    if (!mounted.current) {
+      return;
+    }
+    if (isStandalone()) {
+      setStandalone(true);
+      setState("hidden");
 
-      if (!dismissed) {
-        setState("installed");
-      }
-    };
+      return;
+    }
 
-    initialize();
+    const dismissed = sessionStorage.getItem(DISMISS_KEY) === "true";
+    console.log("[PWA] INSTALLED_KEY:", localStorage.getItem(INSTALLED_KEY));
+    console.log("[PWA] DISMISS_KEY:", sessionStorage.getItem(DISMISS_KEY));
+    console.log("[PWA] Is standalone:", isStandalone());
 
-    const handleBeforeInstall = (event: Event) => {
+    if (dismissed) {
+      console.log("[PWA] Popup dismissed for this tab.");
+
+      return;
+    }
+
+    const installed = await detectInstalled();
+
+    if (!mounted.current || isStandalone()) {
+      return;
+    }
+
+    if (!installed) {
+      console.log("[PWA] Bouwnce app is not detected as installed.");
+
+      return;
+    }
+
+    console.log(
+      "[PWA] Bouwnce detected as installed — showing Open App popup.",
+    );
+
+    setState("installed");
+  }, [detectInstalled, isStandalone]);
+  useEffect(() => {
+    mounted.current = true;
+    void checkAndShowInstalledPopup();
+
+    const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
 
-      const installEvent =
-        event as BeforeInstallPromptEvent;
+      const installEvent = event as BeforeInstallPromptEvent;
 
-      localStorage.removeItem(INSTALLED_KEY);
+      console.log("[PWA] beforeinstallprompt fired.");
+
       setPrompt(installEvent);
       setState("installable");
     };
-
     const handleInstalled = () => {
+      console.log("[PWA] appinstalled fired.");
+
       localStorage.setItem(INSTALLED_KEY, "true");
       sessionStorage.removeItem(DISMISS_KEY);
+
       setPrompt(null);
       setState("hidden");
     };
 
-    const handleVisibility = () => {
-      if (document.visibilityState !== "visible") return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
 
-      setTimeout(async () => {
-        if (!mounted.current || isStandalone()) return;
-
-        const previouslyInstalled =
-          localStorage.getItem(INSTALLED_KEY) === "true";
-
-        if (!previouslyInstalled) return;
-
-        const installed = await checkInstalled();
-
-        if (!mounted.current) return;
-
-        if (installed === false) {
-          localStorage.removeItem(INSTALLED_KEY);
-          setState("hidden");
-          return;
-        }
-
-        if (
-          sessionStorage.getItem(DISMISS_KEY) !== "true" &&
-          !prompt
-        ) {
-          setState("installed");
-        }
-      }, 500);
+      window.setTimeout(() => {
+        void checkAndShowInstalledPopup();
+      }, 400);
     };
 
-    const mediaQuery = window.matchMedia(
-      "(display-mode: standalone)"
-    );
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
 
-    const handleDisplayMode = (
-      event: MediaQueryListEvent
-    ) => {
-      if (!mounted.current) return;
+    const handleDisplayModeChange = (event: MediaQueryListEvent) => {
+      if (!mounted.current) {
+        return;
+      }
 
       if (event.matches) {
+        console.log("[PWA] Entered standalone Bouwnce app.");
+
         setStandalone(true);
         setState("hidden");
         setPrompt(null);
-      } else {
-        setStandalone(false);
+
+        return;
       }
+
+      console.log("[PWA] Returned to browser.");
+
+      setStandalone(false);
+
+      window.setTimeout(() => {
+        void checkAndShowInstalledPopup();
+      }, 200);
     };
 
-    window.addEventListener(
-      "beforeinstallprompt",
-      handleBeforeInstall
-    );
-
-    window.addEventListener(
-      "appinstalled",
-      handleInstalled
-    );
-
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibility
-    );
-
-    mediaQuery.addEventListener(
-      "change",
-      handleDisplayMode
-    );
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleInstalled);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    mediaQuery.addEventListener("change", handleDisplayModeChange);
 
     return () => {
       mounted.current = false;
 
       window.removeEventListener(
         "beforeinstallprompt",
-        handleBeforeInstall
+        handleBeforeInstallPrompt,
       );
 
-      window.removeEventListener(
-        "appinstalled",
-        handleInstalled
-      );
+      window.removeEventListener("appinstalled", handleInstalled);
 
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibility
-      );
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
 
-      mediaQuery.removeEventListener(
-        "change",
-        handleDisplayMode
-      );
+      mediaQuery.removeEventListener("change", handleDisplayModeChange);
     };
-  }, []);
+  }, [checkAndShowInstalledPopup]);
 
   const handleInstall = async () => {
-    if (!prompt) return;
+    if (!prompt) {
+      return;
+    }
 
     setState("installing");
 
@@ -221,35 +253,47 @@ export default function InstallApp() {
 
       const choice = await prompt.userChoice;
 
-      if (choice.outcome === "dismissed") {
+      console.log("[PWA] Install result:", choice.outcome);
+      if (choice.outcome === "accepted") {
+        localStorage.setItem(INSTALLED_KEY, "true");
+        sessionStorage.removeItem(DISMISS_KEY);
+
         setPrompt(null);
         setState("hidden");
+
+        console.log("[PWA] Installation accepted.");
+
+        return;
       }
-    } catch {
+      setPrompt(null);
+      setState("hidden");
+    } catch (error) {
+      console.error("[PWA] Install prompt failed:", error);
+
       setPrompt(null);
       setState("hidden");
     }
   };
-
   const handleOpenApp = () => {
     window.location.href = "web+bouwnce://open";
   };
-
   const handleContinueWeb = () => {
     sessionStorage.setItem(DISMISS_KEY, "true");
+
     setState("hidden");
   };
 
   const handleClose = () => {
     sessionStorage.setItem(DISMISS_KEY, "true");
+
     setState("hidden");
   };
-
-  if (standalone || state === "hidden") return null;
-
+  if (standalone || state === "hidden") {
+    return null;
+  }
   if (state === "installing") {
     return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-[1000] md:max-w-lg">
+      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
         <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
           <button
             type="button"
@@ -276,6 +320,7 @@ export default function InstallApp() {
               <p className="text-sm font-semibold text-foreground">
                 Installing Bouwnce...
               </p>
+
               <p className="mt-1 text-xs leading-4 text-ash">
                 Please wait while the app is being installed.
               </p>
@@ -283,9 +328,8 @@ export default function InstallApp() {
 
             <span className="shrink-0 flex h-9 items-center gap-2 rounded-xl bg-gray-100 px-3 text-xs font-semibold text-gray-600">
               <span className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 border-t-brand-orange animate-spin" />
-              <span className="hidden sm:inline">
-                Installing...
-              </span>
+
+              <span className="hidden sm:inline">Installing...</span>
             </span>
           </div>
         </div>
@@ -295,7 +339,7 @@ export default function InstallApp() {
 
   if (state === "installable" && prompt) {
     return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-[1000] md:max-w-lg">
+      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
         <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
           <button
             type="button"
@@ -322,6 +366,7 @@ export default function InstallApp() {
               <p className="text-sm font-semibold text-foreground">
                 Get Bouwnce App
               </p>
+
               <p className="mt-1 text-xs leading-4 text-ash">
                 Faster access and push notifications.
               </p>
@@ -342,7 +387,7 @@ export default function InstallApp() {
 
   if (state === "installed") {
     return (
-      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-[1000] md:max-w-lg">
+      <div className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg">
         <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash">
           <button
             type="button"
@@ -370,6 +415,7 @@ export default function InstallApp() {
                 <p className="text-sm font-semibold text-foreground">
                   Bouwnce App Available
                 </p>
+
                 <p className="mt-1 text-xs leading-4 text-ash">
                   Open the Bouwnce app or continue using the web version.
                 </p>
@@ -400,4 +446,4 @@ export default function InstallApp() {
   }
 
   return null;
-      }
+}
