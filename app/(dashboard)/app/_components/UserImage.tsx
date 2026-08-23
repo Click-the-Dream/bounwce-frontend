@@ -6,7 +6,7 @@ import SafeImage from "@/app/_components/SafeImage";
 import { slugify } from "@/app/_utils/slugify";
 import { useChatUtils } from "@/app/context/ChatContext";
 import { useAuth } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Portal } from "@/app/protocols/Portal";
 
 interface UserImageProps {
@@ -32,7 +32,7 @@ const UserImage = ({
   clickable = true,
 }: UserImageProps) => {
   const { authDetails } = useAuth();
-
+  const pathname = usePathname();
   const isMyProfile =
     authDetails?.user?.id &&
     user?.id &&
@@ -49,6 +49,9 @@ const UserImage = ({
     setIsExpanded(false);
     router.push(`/app/profile/${slugify(user?.full_name)}_${user?.id}`);
   };
+  const profilePath = `/app/profile/${slugify(user?.full_name)}_${user?.id}`;
+
+  const isCurrentProfilePage = pathname === profilePath;
 
   const handleMessage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,7 +88,7 @@ const UserImage = ({
           setIsExpanded(true);
         }}
         className={`cursor-pointer relative shrink-0 border border-white bg-gray-100 ${rounded} `}
-        style={ {...style} }
+        style={{ ...style }}
       >
         {user?.profile_pic?.url ? (
           <SafeImage
@@ -214,59 +217,78 @@ const UserImage = ({
               {/* Actions */}
               <div className="p-6">
                 <div className="flex gap-3">
-                  <button
-                    onClick={isMyProfile ? handleShare : handleMessage}
-                    className="
-    flex-1
-    rounded-[10px]
-    bg-green-500
-    px-4
-    py-2
-    font-semibold
-    cursor-pointer
-    text-white
-    transition-all
-    hover:bg-green-600
-    hover:scale-[1.02]
-    active:scale-[0.98]
-  "
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      {isMyProfile ? (
-                        <>
-                          <Share2 size={18} className="hidden md:block" />
-                          Share Profile
-                        </>
-                      ) : (
-                        <>
+                  {isCurrentProfilePage ? (
+                    <button
+                      onClick={handleShare}
+                      className="
+          flex-1
+          rounded-[10px]
+          bg-green-500
+          px-4
+          py-2
+          font-semibold
+          cursor-pointer
+          text-white
+          transition-all
+          hover:bg-green-600
+          hover:scale-[1.02]
+          active:scale-[0.98]
+        "
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Share2 size={18} className="hidden md:block" />
+                        Share Profile
+                      </div>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleMessage}
+                        className="
+            flex-1
+            rounded-[10px]
+            bg-green-500
+            px-4
+            py-2
+            font-semibold
+            cursor-pointer
+            text-white
+            transition-all
+            hover:bg-green-600
+            hover:scale-[1.02]
+            active:scale-[0.98]
+          "
+                      >
+                        <div className="flex items-center justify-center gap-2">
                           <MessageCircle
                             size={18}
                             className="hidden md:block"
                           />
                           Message
-                        </>
-                      )}
-                    </div>
-                  </button>
+                        </div>
+                      </button>
 
-                  <button
-                    onClick={navigateToProfile}
-                    className="
-                flex-1
-                rounded-[10px]
-                border
-                border-slate-200
-                bg-slate-50
-                px-4
-                py-2
-                font-semibold cursor-pointer
-                text-slate-700
-                transition-all
-                hover:bg-slate-100
-              "
-                  >
-                    View Profile
-                  </button>
+                      <button
+                        onClick={navigateToProfile}
+                        className="
+            flex-1
+            rounded-[10px]
+            border
+            border-slate-200
+            bg-slate-50
+            px-4
+            py-2
+            font-semibold
+            cursor-pointer
+            text-slate-700
+            transition-all
+            hover:bg-slate-100
+          "
+                      >
+                        View Profile
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

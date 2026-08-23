@@ -1,9 +1,9 @@
 export const slugify = (text: string) => {
   return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+    ?.toLowerCase()
+    ?.trim()
+    ?.replace(/[^a-z0-9]+/g, "-")
+    ?.replace(/(^-|-$)/g, "");
 };
 
 export const getIDFromSlug = (param?: string) => {
