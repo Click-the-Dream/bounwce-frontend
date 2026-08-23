@@ -14,6 +14,7 @@ import ChatResetBridge from "./Chatresetbridge ";
 import PushNotificationManager from "../_components/PushNotificationManager";
 import InstallApp from "../_components/InstallApp";
 import { OnboardingProvider } from "./OnboardingProvider";
+import PWARestore from "../_components/PWARestore";
 
 const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
@@ -39,6 +40,7 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <PWARestore />
         <ChatProvider>
           <NotificationProvider>
             <PushNotificationManager />

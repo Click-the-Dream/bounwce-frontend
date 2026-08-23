@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, MessageCircle, Share2, Phone } from "lucide-react";
+import { X, MessageCircle, Share2, User as UserIcon } from "lucide-react";
 import SafeImage from "@/app/_components/SafeImage";
 import { slugify } from "@/app/_utils/slugify";
 import { useChatUtils } from "@/app/context/ChatContext";
@@ -16,7 +16,7 @@ interface UserImageProps {
     profile_pic?: { url?: string };
   };
   size?: number;
-  style?: any;
+  style?: React.CSSProperties;
   rounded?: string;
   clickable?: boolean;
 }
@@ -33,36 +33,29 @@ const UserImage = ({
 }: UserImageProps) => {
   const { authDetails } = useAuth();
   const pathname = usePathname();
-  const isMyProfile =
-    authDetails?.user?.id &&
-    user?.id &&
-    String(authDetails.user.id) === String(user.id);
-
   const { onlineUsers } = useChatUtils();
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
 
   const isOnline = !!user?.id && !!onlineUsers?.[user.id];
   const initials = user?.full_name?.trim()?.slice(0, 2)?.toUpperCase() || "NA";
+
   const navigateToProfile = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(false);
     router.push(`/app/profile/${slugify(user?.full_name)}_${user?.id}`);
   };
-  const profilePath = `/app/profile/${slugify(user?.full_name)}_${user?.id}`;
 
-  const isCurrentProfilePage = pathname === profilePath;
+  const isCurrentProfilePage = pathname.includes("/app/profile");
 
   const handleMessage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(false);
-    // Navigate to chat or trigger message action
     router.push(`/app/chat/${user?.id}`);
   };
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-
     const profileUrl = `${window.location.origin}/app/profile/${slugify(
       user.full_name,
     )}_${user.id}`;
@@ -78,6 +71,7 @@ const UserImage = ({
       }
     } catch {}
   };
+
   return (
     <>
       {/* 1. Thumbnail Trigger */}
@@ -87,7 +81,7 @@ const UserImage = ({
           e.stopPropagation();
           setIsExpanded(true);
         }}
-        className={`cursor-pointer relative shrink-0 border border-white bg-gray-100 ${rounded} `}
+        className={`cursor-pointer relative shrink-0 border border-white bg-slate-100 ${rounded} transition-transform hover:scale-[1.03] active:scale-[0.97]`}
         style={{ ...style }}
       >
         {user?.profile_pic?.url ? (
@@ -101,66 +95,38 @@ const UserImage = ({
           />
         ) : (
           <div
-            className="flex items-center justify-center bg-gray-100 font-semibold text-black rounded-xl"
+            className="flex items-center justify-center bg-slate-100 font-semibold text-slate-800 rounded-xl"
             style={{ width: size, height: size }}
           >
             {initials}
           </div>
         )}
         {isOnline && (
-          <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border border-white rounded-full" />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
         )}
       </div>
 
-      {/* 2. Full Screen Overlay */}
+      {/* 2. Redesigned Overlay Card */}
       {isExpanded && (
         <Portal>
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 transition-all"
             onClick={() => setIsExpanded(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="
-          relative
-          w-full
-          max-w-md
-          overflow-hidden
-          rounded-3xl
-          bg-white
-          shadow-[0_25px_80px_rgba(0,0,0,0.25)]
-          animate-in
-          fade-in
-          zoom-in-95
-          duration-300
-        "
+              className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200"
             >
-              {/* Close */}
+              {/* Close Button */}
               <button
                 onClick={() => setIsExpanded(false)}
-                className="
-            absolute
-            right-4
-            top-4
-            z-20
-            flex
-            h-10
-            w-10
-            items-center
-            justify-center
-            rounded-full
-            bg-black/20
-            text-white
-            backdrop-blur-md
-            transition
-            hover:bg-black/30
-          "
+                className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md ring-1 ring-white/20 transition hover:bg-black/60 active:scale-95"
               >
                 <X size={18} />
               </button>
 
-              {/* Cover */}
-              <div className="relative h-72 overflow-hidden">
+              {/* Banner / Image Display */}
+              <div className="relative h-80 w-full bg-slate-900">
                 {user?.profile_pic?.url ? (
                   <img
                     src={user.profile_pic.url}
@@ -168,124 +134,62 @@ const UserImage = ({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center bg-linear-to-br from-slate-200 to-slate-300">
-                    <span className="text-7xl font-bold text-slate-500">
+                  <div className="flex h-full w-full items-center justify-center bg-linear-to-tr from-slate-800 to-slate-700">
+                    <span className="text-6xl font-bold tracking-widest text-slate-300">
                       {initials}
                     </span>
                   </div>
                 )}
 
-                {/* Gradient */}
-                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+                {/* Subtle Gradient Gradient Overlay for Text Visibility */}
+                <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
 
-                {/* User info overlay */}
-                <div className="absolute bottom-5 left-5 right-5">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="h-16 w-16 overflow-hidden rounded-full border-4 border-white shadow-xl">
-                        {user?.profile_pic?.url ? (
-                          <img
-                            src={user.profile_pic.url}
-                            alt={user.full_name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-white font-bold">
-                            {initials}
-                          </div>
-                        )}
-                      </div>
-
-                      {isOnline && (
-                        <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-green-500" />
-                      )}
+                {/* User Info Overlay */}
+                <div className="absolute bottom-4 left-5 right-5 space-y-1">
+                  <h2 className="text-2xl font-bold tracking-tight text-white">
+                    {user.full_name}
+                  </h2>
+                  {isOnline ? (
+                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 backdrop-blur-md ring-1 ring-emerald-500/20">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                      </span>
+                      Active now
                     </div>
-
-                    <div>
-                      <h2 className="text-xl font-bold text-white">
-                        {user.full_name}
-                      </h2>
-
-                      <p className="text-sm text-white/80">
-                        {isOnline ? "Active now" : ""}
-                      </p>
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-xs text-slate-300">Offline</p>
+                  )}
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="p-6">
-                <div className="flex gap-3">
+              {/* Action Buttons */}
+              <div className="p-4 bg-white">
+                <div className="flex items-center gap-2">
                   {isCurrentProfilePage ? (
                     <button
                       onClick={handleShare}
-                      className="
-          flex-1
-          rounded-[10px]
-          bg-green-500
-          px-4
-          py-2
-          font-semibold
-          cursor-pointer
-          text-white
-          transition-all
-          hover:bg-green-600
-          hover:scale-[1.02]
-          active:scale-[0.98]
-        "
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-600 active:scale-[0.98]"
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <Share2 size={18} className="hidden md:block" />
-                        Share Profile
-                      </div>
+                      <Share2 size={18} />
+                      Share Profile
                     </button>
                   ) : (
                     <>
                       <button
                         onClick={handleMessage}
-                        className="
-            flex-1
-            rounded-[10px]
-            bg-green-500
-            px-4
-            py-2
-            font-semibold
-            cursor-pointer
-            text-white
-            transition-all
-            hover:bg-green-600
-            hover:scale-[1.02]
-            active:scale-[0.98]
-          "
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-600 active:scale-[0.98]"
                       >
-                        <div className="flex items-center justify-center gap-2">
-                          <MessageCircle
-                            size={18}
-                            className="hidden md:block"
-                          />
-                          Message
-                        </div>
+                        <MessageCircle size={18} />
+                        Message
                       </button>
 
                       <button
                         onClick={navigateToProfile}
-                        className="
-            flex-1
-            rounded-[10px]
-            border
-            border-slate-200
-            bg-slate-50
-            px-4
-            py-2
-            font-semibold
-            cursor-pointer
-            text-slate-700
-            transition-all
-            hover:bg-slate-100
-          "
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
                       >
-                        View Profile
+                        <UserIcon size={18} />
+                        Profile
                       </button>
                     </>
                   )}

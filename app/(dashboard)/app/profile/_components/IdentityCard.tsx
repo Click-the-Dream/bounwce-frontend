@@ -12,7 +12,6 @@ import {
   X,
 } from "lucide-react";
 import React, { useState } from "react";
-import SwitchAccountCard from "./SwitchAccountCard";
 import IdentityCardSkeleton from "./IdentityCardSkeleton";
 import useMatch from "@/app/hooks/use-match";
 import { onFailure, onSuccess } from "@/app/_utils/notification";
@@ -213,7 +212,9 @@ const IdentityCard: React.FC<Props> = ({
             {data.name}
           </h2>
 
-          <p className="text-[#888888] text-[13px] break-all line-clamp-1">@{data.handle}</p>
+          <p className="text-[#888888] text-[13px] break-all line-clamp-1">
+            @{data.handle}
+          </p>
         </div>
 
         {isOwnProfile && (
