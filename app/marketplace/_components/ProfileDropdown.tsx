@@ -6,6 +6,7 @@ import { FaPowerOff } from "react-icons/fa";
 import { useAuth } from "@/app/context/AuthContext";
 import Link from "next/link";
 import useAuthServices from "@/app/hooks/use-authservices";
+import UserImage from "@/app/(dashboard)/app/_components/UserImage";
 
 const ProfileDropdown = ({ fullMode = false }) => {
   const { authDetails } = useAuth();
@@ -38,9 +39,16 @@ const ProfileDropdown = ({ fullMode = false }) => {
               className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover"
             />
           ) : (
-            <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-300 flex items-center justify-center">
-              <FaPowerOff size={16} className="text-red-500" />
-            </span>
+            <UserImage
+              user={{
+                id: user?.id,
+                full_name: user?.full_name,
+                profile_pic: user?.profile_pic,
+              }}
+              size={26}
+              rounded="rounded-full bg-gray-100"
+              clickable={false}
+            />
           )}
 
           <span className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center">
