@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   const ORIGIN = process.env.NEXT_PUBLIC_APP_URL;
 
   return {
-    id: "/bouwnce",
+    id: "1",
     name: "Bouwnce",
     short_name: "Bouwnce",
     description: "Bouwnce — Find your people. Get what you need.",
