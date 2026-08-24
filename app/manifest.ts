@@ -4,7 +4,6 @@ export default function manifest(): MetadataRoute.Manifest {
   const ORIGIN = process.env.NEXT_PUBLIC_APP_URL;
 
   return {
-    id: "1",
     name: "Bouwnce",
     short_name: "Bouwnce",
     description: "Bouwnce — Find your people. Get what you need.",
@@ -17,7 +16,6 @@ export default function manifest(): MetadataRoute.Manifest {
     related_applications: [
       {
         platform: "webapp",
-        id: "/",
         url: `${ORIGIN}/manifest.webmanifest`,
       },
     ],
@@ -28,6 +26,9 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/?action=%s",
       },
     ],
+    launch_handler: {
+      client_mode: "focus-existing",
+    },
 
     icons: [
       {
