@@ -1,11 +1,14 @@
 "use client";
 
-import { X, Share, PlusSquare, ExternalLink } from "lucide-react";
+import { X, Share, PlusSquare } from "lucide-react";
+
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
+
   userChoice: Promise<{
     outcome: "accepted" | "dismissed";
     platform: string;
@@ -16,39 +19,33 @@ interface NavigatorPWA extends Navigator {
   standalone?: boolean;
 }
 
-interface NavigatorInstalledApps extends Navigator {
-  getInstalledRelatedApps?: () => Promise<
-    Array<{
-      platform: string;
-      id?: string;
-      url?: string;
-    }>
-  >;
-}
-
-type InstallState =
-  | "hidden"
-  | "installable"
-  | "ios-installable"
-  | "installing"
-  | "open-app";
+type InstallState = "hidden" | "installable" | "ios-installable" | "installing";
 
 const DISMISS_KEY = "bouwnce_install_popup_dismissed";
-const INSTALLED_KEY = "bouwnce_pwa_installed";
-const INITIAL_DELAY_MS = 3000; // Gives users a moment before interrupting
+
+const INITIAL_DELAY_MS = 3000;
 
 export default function InstallApp() {
   const [state, setState] = useState<InstallState>("hidden");
+
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
   const [standalone, setStandalone] = useState(false);
+
   const [isIOSDevice, setIsIOSDevice] = useState(false);
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
+
+  const [isIOSSafariDevice, setIsIOSSafariDevice] = useState(false);
 
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
+
   const mounted = useRef(false);
 
-  const isStandalone = useCallback((): boolean => {
-    if (typeof window === "undefined") return false;
+  const justInstalled = useRef(false);
+
+  const isStandalone = (): boolean => {
+    if (typeof window === "undefined") {
+      return false;
+    }
 
     const nav = navigator as NavigatorPWA;
 
@@ -58,45 +55,60 @@ export default function InstallApp() {
       window.matchMedia("(display-mode: minimal-ui)").matches ||
       nav.standalone === true
     );
-  }, []);
+  };
 
-  const detectIOS = useCallback((): boolean => {
-    if (typeof window === "undefined") return false;
+  const detectIOS = (): boolean => {
+    if (typeof window === "undefined") {
+      return false;
+    }
 
     return (
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
     );
-  }, []);
+  };
 
-  const detectIOSSafari = useCallback((): boolean => {
-    if (typeof window === "undefined") return false;
+  const detectIOSSafari = (): boolean => {
+    if (typeof window === "undefined") {
+      return false;
+    }
 
     const ua = navigator.userAgent;
+
     const ios =
       /iPad|iPhone|iPod/.test(ua) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
     const safari =
       /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(ua);
 
     return ios && safari;
-  }, []);
+  };
 
-  const hasInstalledMarker = useCallback((): boolean => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(INSTALLED_KEY) === "true";
-  }, []);
-
-  const hideForStandalone = useCallback(() => {
+  /**
+   * Hide everything while running inside the
+   * actual installed PWA.
+   */
+  const hideForStandalone = () => {
     setStandalone(true);
     setState("hidden");
+
     promptRef.current = null;
     setPrompt(null);
-    sessionStorage.removeItem(DISMISS_KEY);
-  }, []);
 
-  const syncBrowserState = useCallback(() => {
-    if (!mounted.current || typeof window === "undefined") return;
+    sessionStorage.removeItem(DISMISS_KEY);
+  };
+
+  /**
+   * Decide which installation UI should be shown.
+   *
+   * There is intentionally NO "installed" or
+   * "open-app" state anymore.
+   */
+  const syncBrowserState = () => {
+    if (!mounted.current || typeof window === "undefined") {
+      return;
+    }
 
     if (isStandalone()) {
       hideForStandalone();
@@ -104,48 +116,46 @@ export default function InstallApp() {
     }
 
     setStandalone(false);
+
+    /**
+     * Don't let focus / visibility events
+     * immediately bring the banner back after
+     * an accepted installation.
+     */
+    if (justInstalled.current) {
+      setState("hidden");
+      return;
+    }
+
     const dismissed = sessionStorage.getItem(DISMISS_KEY) === "true";
 
-    if (hasInstalledMarker()) {
-      setState(dismissed ? "hidden" : "open-app");
+    if (dismissed) {
+      setState("hidden");
       return;
     }
 
+    /**
+     * iOS Safari uses manual installation
+     * instructions.
+     */
+    if (isIOSSafariDevice) {
+      setState("ios-installable");
+      return;
+    }
+
+    /**
+     * Chromium native installation prompt.
+     */
     if (promptRef.current) {
-      setState(dismissed ? "hidden" : "installable");
+      setState("installable");
       return;
     }
 
-    if (isIOSSafari) {
-      setState(dismissed ? "hidden" : "ios-installable");
-      return;
-    }
-
+    /**
+     * Nothing to show.
+     */
     setState("hidden");
-  }, [hasInstalledMarker, hideForStandalone, isIOSSafari, isStandalone]);
-
-  const checkInstalledRelatedApps = useCallback(async () => {
-    if (typeof window === "undefined") return false;
-
-    try {
-      const nav = navigator as NavigatorInstalledApps;
-
-      if (typeof nav.getInstalledRelatedApps !== "function") {
-        return false;
-      }
-
-      const apps = await nav.getInstalledRelatedApps();
-
-      if (apps.length > 0) {
-        localStorage.setItem(INSTALLED_KEY, "true");
-        return true;
-      }
-    } catch (error) {
-      console.log("[PWA] Could not check installed related apps:", error);
-    }
-
-    return false;
-  }, []);
+  };
 
   useEffect(() => {
     mounted.current = true;
@@ -154,28 +164,40 @@ export default function InstallApp() {
     const safari = detectIOSSafari();
 
     setIsIOSDevice(ios);
-    setIsIOSSafari(safari);
+    setIsIOSSafariDevice(safari);
 
-    let delayTimer: NodeJS.Timeout;
+    let delayTimer: ReturnType<typeof setTimeout>;
 
-    // Delay evaluation slightly to improve initial UX
+    /**
+     * Delay initial UI.
+     */
     delayTimer = setTimeout(() => {
       syncBrowserState();
     }, INITIAL_DELAY_MS);
 
+    /**
+     * Browser says the site can be installed.
+     */
     const handleBeforeInstallPrompt = (event: Event) => {
-      if (!mounted.current) return;
+      if (!mounted.current) {
+        return;
+      }
 
       event.preventDefault();
+
       const installEvent = event as BeforeInstallPromptEvent;
 
       promptRef.current = installEvent;
+
       setPrompt(installEvent);
 
-      if (!isStandalone()) {
-        localStorage.removeItem(INSTALLED_KEY);
-      }
+      justInstalled.current = false;
 
+      /**
+       * A fresh installation prompt means
+       * the browser currently considers the
+       * website installable.
+       */
       sessionStorage.removeItem(DISMISS_KEY);
 
       if (isStandalone()) {
@@ -187,127 +209,168 @@ export default function InstallApp() {
       setState("installable");
     };
 
+    /**
+     * Browser confirms that installation
+     * completed.
+     */
     const handleInstalled = () => {
-      if (!mounted.current) return;
+      if (!mounted.current) {
+        return;
+      }
 
-      localStorage.setItem(INSTALLED_KEY, "true");
+      console.log("[PWA] Installation completed");
+
       promptRef.current = null;
       setPrompt(null);
+
+      /**
+       * Hide immediately.
+       */
       setState("hidden");
-      sessionStorage.removeItem(DISMISS_KEY);
+
+      /**
+       * Prevent the focus/visibility events
+       * generated during installation from
+       * immediately showing the banner again.
+       */
+      justInstalled.current = true;
+
+      window.setTimeout(() => {
+        justInstalled.current = false;
+      }, 2000);
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") return;
-      window.setTimeout(() => syncBrowserState(), 200);
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      window.setTimeout(() => {
+        syncBrowserState();
+      }, 200);
     };
 
     const mediaQuery = window.matchMedia("(display-mode: standalone)");
 
     const handleDisplayModeChange = (event: MediaQueryListEvent) => {
-      if (!mounted.current) return;
+      if (!mounted.current) {
+        return;
+      }
 
       if (event.matches) {
-        localStorage.setItem(INSTALLED_KEY, "true");
         hideForStandalone();
         return;
       }
 
       setStandalone(false);
-      window.setTimeout(() => syncBrowserState(), 200);
+
+      window.setTimeout(() => {
+        syncBrowserState();
+      }, 200);
     };
 
     const handleFocus = () => {
-      window.setTimeout(() => syncBrowserState(), 200);
+      window.setTimeout(() => {
+        syncBrowserState();
+      }, 200);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleInstalled);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
-    mediaQuery.addEventListener("change", handleDisplayModeChange);
 
-    void checkInstalledRelatedApps().then((installed) => {
-      if (!mounted.current) return;
-      if (installed && !isStandalone()) {
-        syncBrowserState();
-      }
-    });
+    window.addEventListener("appinstalled", handleInstalled);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    window.addEventListener("focus", handleFocus);
+
+    mediaQuery.addEventListener("change", handleDisplayModeChange);
 
     return () => {
       mounted.current = false;
+
       clearTimeout(delayTimer);
+
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
       );
+
       window.removeEventListener("appinstalled", handleInstalled);
+
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+
       window.removeEventListener("focus", handleFocus);
+
       mediaQuery.removeEventListener("change", handleDisplayModeChange);
     };
-  }, [
-    checkInstalledRelatedApps,
-    detectIOS,
-    detectIOSSafari,
-    hideForStandalone,
-    isStandalone,
-    syncBrowserState,
-  ]);
+  }, [isIOSSafariDevice]);
 
+  /**
+   * Trigger native installation.
+   */
   const handleInstall = async () => {
     const installPrompt = promptRef.current;
-    if (!installPrompt) return;
+
+    if (!installPrompt) {
+      console.log("[PWA] Native install prompt unavailable");
+      return;
+    }
 
     setState("installing");
 
     try {
       await installPrompt.prompt();
+
       const choice = await installPrompt.userChoice;
+
+      console.log("[PWA] Install result:", choice.outcome);
 
       promptRef.current = null;
       setPrompt(null);
 
       if (choice.outcome === "accepted") {
-        localStorage.setItem(INSTALLED_KEY, "true");
-        sessionStorage.removeItem(DISMISS_KEY);
+        /**
+         * appinstalled will normally fire.
+         */
+        setState("hidden");
+      } else {
+        setState("hidden");
       }
-      setState("hidden");
     } catch (error) {
       console.error("[PWA] Install prompt failed:", error);
+
       promptRef.current = null;
       setPrompt(null);
+
       setState("hidden");
     }
   };
 
+  /**
+   * iOS installation confirmation.
+   *
+   * This doesn't pretend to know whether the
+   * user really installed it. It simply hides
+   * the instructions for this session.
+   */
   const handleIOSInstalled = () => {
-    localStorage.setItem(INSTALLED_KEY, "true");
-    sessionStorage.removeItem(DISMISS_KEY);
+    sessionStorage.setItem(DISMISS_KEY, "true");
+
     setState("hidden");
   };
 
-  const handleOpenApp = () => {
-    // Gracefully handle app scheme fallback if protocol isn't bound on device
-    const fallbackTimer = setTimeout(() => {
-      window.location.reload();
-    }, 1500);
-
-    try {
-      window.location.href = "web+bouwnce://open";
-      window.addEventListener("blur", () => clearTimeout(fallbackTimer), {
-        once: true,
-      });
-    } catch (error) {
-      console.error("[PWA] Could not open Bouwnce app:", error);
-    }
-  };
-
+  /**
+   * Close the banner for this session.
+   */
   const handleClose = () => {
     sessionStorage.setItem(DISMISS_KEY, "true");
+
     setState("hidden");
   };
 
+  /**
+   * Never render inside the standalone PWA.
+   */
   if (standalone || isStandalone() || state === "hidden") {
     return null;
   }
@@ -317,14 +380,14 @@ export default function InstallApp() {
       role="region"
       aria-label="App Installation Prompt"
       aria-live="polite"
-      className="fixed bottom-4 left-3 right-3 sm:left-4 sm:right-4 md:left-auto md:right-6 z-1000 md:max-w-lg pointer-events-none"
+      className="fixed bottom-4 left-3 right-3 z-[1000] pointer-events-none sm:left-4 sm:right-4 md:left-auto md:right-6 md:max-w-lg"
     >
       <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash pointer-events-auto">
         <button
           type="button"
           onClick={handleClose}
           aria-label="Close"
-          className="absolute top-1.5 right-2 rounded-lg p-1 text-ash hover:bg-lighter-ash hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-black/10"
+          className="absolute top-1.5 right-2 rounded-lg p-1 text-ash transition-colors hover:bg-lighter-ash hover:text-foreground focus:outline-none focus:ring-2 focus:ring-black/10"
         >
           <X size={16} />
         </button>
@@ -332,16 +395,20 @@ export default function InstallApp() {
         {state === "installing" && (
           <div className="flex items-center gap-3 pr-7">
             <AppIcon />
+
             <div className="min-w-0 flex-1 font-SFPro">
               <p className="text-sm font-semibold text-foreground">
                 Installing Bouwnce...
               </p>
+
               <p className="mt-1 text-xs leading-4 text-ash">
                 Please wait while the app is being installed.
               </p>
             </div>
+
             <span className="shrink-0 flex h-9 items-center gap-2 rounded-xl bg-gray-100 px-3 text-xs font-semibold text-gray-600">
               <span className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 border-t-brand-orange animate-spin" />
+
               <span className="hidden sm:inline">Installing...</span>
             </span>
           </div>
@@ -350,10 +417,12 @@ export default function InstallApp() {
         {state === "ios-installable" && (
           <div className="flex items-start gap-3 pr-7">
             <AppIcon />
+
             <div className="min-w-0 flex-1 font-SFPro">
               <p className="text-sm font-semibold text-foreground">
                 Get Bouwnce App
               </p>
+
               <p className="mt-1 text-xs leading-4 text-ash">
                 Install Bouwnce on your iPhone for faster access and push
                 notifications.
@@ -363,11 +432,13 @@ export default function InstallApp() {
                 <StepInstruction icon={<Share size={14} />}>
                   Tap the <strong>Share</strong> button in Safari.
                 </StepInstruction>
+
                 <StepInstruction icon={<PlusSquare size={14} />}>
                   Tap <strong>Add to Home Screen</strong>.
                 </StepInstruction>
+
                 <StepInstruction
-                  icon={<span className="text-green-600 font-bold">✓</span>}
+                  icon={<span className="font-bold text-green-600">✓</span>}
                 >
                   Tap <strong>Add</strong> to finish.
                 </StepInstruction>
@@ -377,10 +448,11 @@ export default function InstallApp() {
                 <button
                   type="button"
                   onClick={handleIOSInstalled}
-                  className="flex-1 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm"
+                  className="flex-1 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95"
                 >
                   I've Added Bouwnce
                 </button>
+
                 <button
                   type="button"
                   onClick={handleClose}
@@ -396,54 +468,24 @@ export default function InstallApp() {
         {state === "installable" && prompt && (
           <div className="flex items-center gap-3 pr-7">
             <AppIcon />
+
             <div className="min-w-0 flex-1 font-SFPro">
               <p className="text-sm font-semibold text-foreground">
                 Get Bouwnce App
               </p>
+
               <p className="mt-1 text-xs leading-4 text-ash">
                 Faster access and push notifications.
               </p>
             </div>
+
             <button
               type="button"
               onClick={handleInstall}
-              className="shrink-0 rounded-xl bg-brand-orange px-5 py-2.5 sm:py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
+              className="shrink-0 rounded-xl bg-brand-orange px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 whitespace-nowrap sm:py-2"
             >
               Install
             </button>
-          </div>
-        )}
-
-        {state === "open-app" && (
-          <div className="flex items-center flex-wrap gap-3 pr-7">
-            <AppIcon />
-            <div className="min-w-0 flex-1 font-SFPro">
-              <p className="text-sm font-semibold text-foreground line-clamp-1">
-                Open Bouwnce App
-              </p>
-              <p className="mt-1 text-xs leading-4 text-ash line-clamp-2">
-                Bouwnce is already installed on this device.
-              </p>
-            </div>
-
-            {isIOSDevice ? (
-              <button
-                type="button"
-                onClick={handleClose}
-                className="shrink-0 rounded-xl w-full sm:w-auto text-center bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
-              >
-                Open from Home Screen
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleOpenApp}
-                className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-95 shadow-sm whitespace-nowrap"
-              >
-                <ExternalLink size={14} />
-                Open App
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -453,7 +495,7 @@ export default function InstallApp() {
 
 function AppIcon() {
   return (
-    <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-lighter-ash/60 sm:h-12 sm:w-12">
       <Image
         src="/icon.png"
         alt="Bouwnce Logo"
@@ -478,6 +520,7 @@ function StepInstruction({
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-lighter-ash/70">
         {icon}
       </span>
+
       <span>{children}</span>
     </div>
   );
