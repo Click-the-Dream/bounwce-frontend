@@ -97,28 +97,29 @@ const useEvents = () => {
 
   // MY CREATED EVENTS
 
-  const useMyEvents = (filters?: { name?: string; status?: string }) =>
+  const useMyEvents = (filters?: {
+    name?: string;
+    status?: string;
+    date?: string;
+    page_size?: number;
+  }) =>
     useInfiniteQuery({
       queryKey: ["events", "my-events", filters],
-
       queryFn: async ({ pageParam = 1 }) => {
         const response = await api.get("/outgoing/events/events/my-events", {
           params: {
             page: pageParam,
-            page_size: 10,
+            page_size: filters?.page_size ?? 10,
             ...(filters?.name && { name: filters.name }),
             ...(filters?.status && { status: filters.status }),
+            ...(filters?.date && { date: filters.date }),
           },
         });
-
         return response.data.data;
       },
-
       initialPageParam: 1,
-
       getNextPageParam: (lastPage) =>
         lastPage.pagination?.next_page ?? undefined,
-
       enabled: !!authDetails?.access_token,
     });
 

@@ -5,6 +5,7 @@ import {
   Home,
   X,
   Briefcase,
+  ChevronDown,
   LogOut,
   UserPlus,
   LucideProps,
@@ -16,7 +17,7 @@ import logo from "../../../assets/bouwnce-main.png";
 import logoIcon from "../../../assets/bouwnce-icon.png";
 import { LuSquareUserRound } from "react-icons/lu";
 import { PiDotsNineBold } from "react-icons/pi";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/context/AuthContext";
 import useAuthServices from "@/app/hooks/use-authservices";
@@ -84,10 +85,19 @@ const Sidebar = ({
   const { logout } = useAuthServices();
   const [collapsed, setCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [eventsOpen, setEventsOpen] = useState(pathname.startsWith("/app/events"));
+
+  useEffect(() => {
+    if (pathname.startsWith("/app/events")) {
+      setEventsOpen(true);
+    }
+  }, [pathname]);
+
   const { useGetMatchRequests } = useMatch();
   const { data } = useGetMatchRequests();
 
   const isActive = (path: string) => pathname === path;
+  const eventsActive = pathname.startsWith("/app/events");
   const onToggleCollapse = () => setCollapsed(!collapsed);
 
   const handleLogoutConfirm = () => {
@@ -203,41 +213,118 @@ const Sidebar = ({
                   <hr className="border-t-[0.53px] border-[#00000033] my-2" />
                 )}
 
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={onClose}
-                  data-tour={`${isMobile ? "mobile-" : ""}${item.name.toLowerCase().replace(/\s+/g, "-")}`}
-                  className={`
+                {item.name === "Events" ? (
+                  <div key={item.name} className="w-full">
+                    <div
+                      className={`w-full flex items-center rounded-[7px] transition-colors ${
+                        collapsed ? "justify-center" : "justify-start"
+                      } ${
+                        eventsActive
+                          ? "bg-[#EFEFEF] text-black font-medium"
+                          : "text-[#333D42] hover:bg-[#F5F5F5] font-medium"
+                      }`}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={onClose}
+                        data-tour={`${isMobile ? "mobile-" : ""}events`}
+                        className={`flex min-w-0 flex-1 items-center p-3 ${collapsed ? "justify-center" : "justify-start"}`}
+                      >
+                        <item.icon
+                          strokeWidth={eventsActive ? 2 : 1}
+                          className={`size-5 shrink-0 ${collapsed ? "" : "mr-3.25"}`}
+                        />
+
+                        <AnimatePresence>
+                          {!collapsed && (
+                            <motion.span
+                              initial={{ opacity: 0, width: 0 }}
+                              animate={{ opacity: 1, width: "auto" }}
+                              exit={{ opacity: 0, width: 0 }}
+                              className="ml-3 overflow-hidden whitespace-nowrap"
+                            >
+                              {item.name}
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </Link>
+
+                      {!collapsed && (
+                        <button
+                          type="button"
+                          aria-label={eventsOpen ? "Collapse Events" : "Expand Events"}
+                          aria-expanded={eventsOpen}
+                          onClick={() => setEventsOpen((open) => !open)}
+                          className="mr-2 rounded-md p-2 text-gray-500 transition hover:bg-white/70 hover:text-gray-900"
+                        >
+                          <ChevronDown
+                            size={15}
+                            className={`transition-transform ${eventsOpen ? "rotate-180" : ""}`}
+                          />
+                        </button>
+                      )}
+                    </div>
+
+                    <AnimatePresence initial={false}>
+                      {!collapsed && eventsOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <Link
+                            href="/app/events/ticket"
+                            onClick={onClose}
+                            className={`ml-8 mt-1 flex items-center rounded-[7px] px-3 py-2.5 text-[12px] font-medium transition-colors ${
+                              isActive("/app/events/ticket")
+                                ? "bg-[#EFEFEF] text-black"
+                                : "text-[#5B6469] hover:bg-[#F5F5F5] hover:text-black"
+                            }`}
+                          >
+                            Verify Ticket
+                          </Link>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={onClose}
+                    data-tour={`${isMobile ? "mobile-" : ""}${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                    className={`
                   w-full flex items-center p-3 rounded-[7px] transition-colors
                   ${collapsed ? "justify-center" : "justify-start"}
                   ${active ? "bg-[#EFEFEF] text-black font-medium" : "text-[#333D42] hover:bg-[#F5F5F5] font-medium"}
                 `}
-                >
-                  <item.icon
-                    strokeWidth={active ? 2 : 1}
-                    className={`size-5 shrink-0 ${collapsed ? "" : "mr-3.25"}`}
-                  />
+                  >
+                    <item.icon
+                      strokeWidth={active ? 2 : 1}
+                      className={`size-5 shrink-0 ${collapsed ? "" : "mr-3.25"}`}
+                    />
 
-                  <AnimatePresence>
-                    {!collapsed && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        className="overflow-hidden whitespace-nowrap ml-3"
-                      >
-                        {item.name}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                    <AnimatePresence>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          className="ml-3 overflow-hidden whitespace-nowrap"
+                        >
+                          {item.name}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
 
-                  {typeof item.badge === "number" && item.badge > 0 ? (
-                    <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </Link>
+                    {typeof item.badge === "number" && item.badge > 0 ? (
+                      <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-[10px] text-violet-700">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                )}
               </React.Fragment>
             );
           })}
