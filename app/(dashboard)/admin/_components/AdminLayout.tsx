@@ -7,7 +7,7 @@ import AdminSidebar from "./Sidebar";
 import { PAGE_TITLES, STORES, VENDORS } from "@/app/_utils/mock";
 import { Page } from "@/app/_utils/types/admin";
 import { Bell, Menu, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 export const metadata = generatePageMetadata({
@@ -16,10 +16,10 @@ export const metadata = generatePageMetadata({
 });
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
-  const router = useRouter();
-  const [page, setPage] = useState<Page>("overview");
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const page = (pathname?.split("/")[2] || "overview") as Page;
   const pendingCount =
     VENDORS.filter((v) => v.status === "pending").length +
     STORES.filter((s) => s.status === "pending").length;
@@ -28,13 +28,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     <SecureRoute>
       <NotificationProvider>
         <ChatProvider>
-          <div className="flex h-screen bg-slate-50 overflow-hidden">
+          <div className="flex h-[100dvh] min-h-0 w-full bg-slate-50 overflow-hidden">
             {/* ── Sidebar ── */}
             <AdminSidebar onClose={() => setSidebarOpen(false)} />
 
             {/* Mobile Sidebar */}
             <div
-              className={`fixed inset-0 z-40 lg:hidden transition ${
+              className={`fixed inset-0 z-40 md:hidden transition ${
                 sidebarOpen ? "visible" : "invisible"
               }`}
             >
@@ -48,7 +48,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
               {/* Drawer */}
               <div
-                className={`absolute left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform ${
+                className={`absolute left-0 top-0 h-full w-[min(85vw,256px)] bg-white shadow-lg transform transition-transform ${
                   sidebarOpen ? "translate-x-0" : "-translate-x-full"
                 }`}
               >
@@ -56,9 +56,9 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
               {/* Topbar */}
-              <header className="h-13.75 bg-white border-b border-[#00000033] px-6 py-3 flex items-center justify-between shrink-0">
+              <header className="min-h-13.75 bg-white border-b border-[#00000033] px-3 sm:px-4 lg:px-6 py-2.5 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setSidebarOpen((o) => !o)}
@@ -66,7 +66,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                   >
                     <Menu size={20} />
                   </button>
-                  <h1 className="text-base font-semibold text-slate-900">
+                  <h1 className="text-sm sm:text-base font-semibold text-slate-900 truncate">
                     {PAGE_TITLES[page]}
                   </h1>
                 </div>
@@ -95,7 +95,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               </header>
 
               {/* Content */}
-              <main className="flex-1 overflow-y-auto p-2">{children}</main>
+              <main className="flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto p-2 sm:p-3 lg:p-4">{children}</main>
             </div>
           </div>
         </ChatProvider>

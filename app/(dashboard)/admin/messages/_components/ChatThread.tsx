@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Info, Send, User, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Check, Info, Send, User, MoreHorizontal } from "lucide-react";
 import { AdminMessage, Conversation } from "@/app/_utils/types/admin";
 
 function formatMessageTime(iso: string) {
@@ -14,9 +14,11 @@ function formatMessageTime(iso: string) {
 export default function ChatThread({
   convo,
   onSend,
+  onBack,
 }: {
   convo: Conversation;
   onSend?: (conversationId: string, message: string) => void;
+  onBack?: () => void;
 }) {
   const [messages, setMessages] = useState<AdminMessage[]>(convo.messages);
   const [draft, setDraft] = useState("");
@@ -59,23 +61,32 @@ export default function ChatThread({
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="h-16 border-b border-stone-100 flex items-center justify-between px-5">
-        <div className="flex items-center gap-3">
+      <div className="min-h-16 border-b border-stone-100 flex items-center justify-between gap-2 px-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden shrink-0 rounded-full p-2 hover:bg-stone-100"
+              aria-label="Back to messages"
+            >
+              <ArrowLeft size={17} />
+            </button>
+          )}
           <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold ${convo.user.avatarColor}`}
+            className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold ${convo.user.avatarColor}`}
           >
             {convo.user.initials}
           </div>
 
           <div>
-            <p className="text-sm font-bold">{convo.user.name}</p>
-            <p className="text-[10px] text-stone-400">
+            <p className="truncate text-sm font-bold">{convo.user.name}</p>
+            <p className="max-w-[48vw] truncate text-[10px] text-stone-400">
               {convo.user.email} · joined {convo.user.joinedAt}
             </p>
           </div>
         </div>
 
-        <div className="flex gap-1">
+        <div className="hidden sm:flex gap-1">
           <button className="p-2 hover:bg-stone-100 rounded-full">
             <User size={15} />
           </button>
@@ -86,7 +97,7 @@ export default function ChatThread({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-6 flex flex-col gap-4">
         {messages.map((msg) => (
           <div key={msg.id} className="flex flex-col">
             {msg.type === "admin" ? (
@@ -123,7 +134,7 @@ export default function ChatThread({
       </div>
 
       {/* Notice */}
-      <div className="mx-5 mb-3 flex items-center gap-2 bg-stone-50 border rounded-xl px-3 py-2">
+      <div className="mx-3 mb-3 flex items-center gap-2 bg-stone-50 border rounded-xl px-3 py-2 sm:mx-5">
         <Info size={13} className="text-stone-400" />
         <p className="text-[11px] text-stone-400">
           Users cannot reply yet — one-way admin channel.
@@ -131,7 +142,7 @@ export default function ChatThread({
       </div>
 
       {/* Composer */}
-      <div className="px-5 pb-5">
+      <div className="px-3 pb-3 sm:px-5 sm:pb-5">
         <div className="flex items-end gap-3 border rounded-2xl px-4 py-3">
           <textarea
             className="flex-1 text-sm outline-none resize-none bg-transparent"

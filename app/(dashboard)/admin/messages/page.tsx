@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import useChat from "@/app/hooks/use-chat";
 import { Radio } from "lucide-react";
 import ConversationSidebar from "./_components/ConversationSidebar";
 import BroadcastModal from "./_components/BroadcastModal";
@@ -84,25 +85,113 @@ export default function AdminMessagesPage() {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
 
+  const {
+    useGetConversations,
+    useGetMessages,
+    transmitMessage,
+  } = useChat();
+
+  const conversationsQuery = useGetConversations({ page_size: 30 });
+  const rawConversations =
+    conversationsQuery.data?.pages.flatMap((page: any) => page.items ?? []) ?? [];
+
+  const conversations = useMemo<Conversation[]>(
+    () =>
+      rawConversations.map((conversation: any) => ({
+        id: conversation.peer_id ?? conversation.id,
+        user: {
+          id: conversation.peer_id ?? conversation.user?.id,
+          name: conversation.user?.full_name ?? "Unknown user",
+          email: conversation.user?.email ?? "",
+          joinedAt: conversation.user?.created_at
+            ? new Date(conversation.user.created_at).toLocaleDateString()
+            : "",
+          initials: (conversation.user?.full_name ?? "U")
+            .split(" ")
+            .map((part: string) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase(),
+          avatarColor: "bg-orange-50 text-orange-700",
+        },
+        messages: [],
+        lastMessageAt:
+          conversation.last_message?.created_at ?? conversation.updated_at,
+        unread: Boolean(conversation.unread_count),
+      })),
+    [rawConversations],
+  );
+
+  const selectedConversation = conversations.find((c) => c.id === activeId);
+  const messagesQuery = useGetMessages({
+    userId: selectedConversation?.user.id,
+    params: { page_size: 50 },
+  });
+
+  const selectedWithMessages = selectedConversation
+    ? {
+        ...selectedConversation,
+        messages:
+          messagesQuery.data?.pages
+            ?.flatMap((page: any) => page.messages?.items ?? [])
+            ?.map((message: any) => ({
+              id: message.id ?? message.client_id,
+              content: message.body ?? message.content ?? "",
+              sentAt: message.created_at ?? new Date().toISOString(),
+              type:
+                message.sender_id === selectedConversation.user.id
+                  ? "system"
+                  : "admin",
+            })) ?? [],
+      }
+    : null;
+
+  const handleSend = async (conversationId: string, message: string) => {
+    const conversation = conversations.find((item) => item.id === conversationId);
+    if (!conversation) return;
+
+    await transmitMessage({
+      recipient: {
+        id: conversation.user.id,
+        full_name: conversation.user.name,
+        email: conversation.user.email,
+      } as any,
+      body: message,
+    });
+
+    await messagesQuery.refetch();
+  };
+
   return (
     <>
-      <div className="flex h-full overflow-hidden">
-        {/* Sidebar */}
+      <div className="flex min-h-0 h-[calc(100dvh-8rem)] sm:h-[calc(100dvh-7rem)] overflow-hidden rounded-xl border border-slate-200 bg-white">
         <ConversationSidebar
-          conversations={[]}
+          conversations={conversations}
           activeId={activeId ?? ""}
           onSelect={setActiveId}
           search={search}
           setSearch={setSearch}
           onNew={() => setShowModal(true)}
+          isLoading={conversationsQuery.isLoading}
+          hasNextPage={Boolean(conversationsQuery.hasNextPage)}
+          isFetchingNextPage={conversationsQuery.isFetchingNextPage}
+          fetchNextPage={() => conversationsQuery.fetchNextPage()}
+          mobileHidden={Boolean(activeId)}
         />
 
-        {/* Main panel */}
-
-        <BroadcastEmptyState onNew={() => setShowModal(true)} />
+        {selectedWithMessages ? (
+          <div className="min-w-0 flex-1">
+            <ChatThread
+              convo={selectedWithMessages}
+              onSend={handleSend}
+              onBack={() => setActiveId(null)}
+            />
+          </div>
+        ) : (
+          <BroadcastEmptyState onNew={() => setShowModal(true)} />
+        )}
       </div>
 
-      {/* Broadcast modal */}
       {showModal && <BroadcastModal onClose={() => setShowModal(false)} />}
     </>
   );

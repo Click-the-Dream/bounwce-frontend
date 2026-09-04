@@ -83,7 +83,7 @@ export default function UsersPage() {
   }
 
   return (
-    <Card className="max-h-[calc(100vh-120px)] overflow-hidden flex flex-col">
+    <Card className="min-w-0 max-h-[calc(100dvh-120px)] overflow-hidden flex flex-col">
       <CardHeader>
         <div>
           <h3 className="font-semibold text-slate-800">Users</h3>

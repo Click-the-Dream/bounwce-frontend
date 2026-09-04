@@ -10,7 +10,7 @@ export default function AdminMessagingLayout({
   chat: ReactNode;
 }) {
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-[#f9f9f8] overflow-hidden">
+    <div className="flex h-[calc(100dvh-8rem)] sm:h-[calc(100dvh-7rem)] min-h-0 bg-[#f9f9f8] overflow-hidden">
       {sidebar}
       {chat}
     </div>

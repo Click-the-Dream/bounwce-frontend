@@ -47,7 +47,7 @@ export default function VendorsPage() {
   ];
 
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader>
         <div>
           <h3 className="font-semibold text-slate-800">Vendors</h3>

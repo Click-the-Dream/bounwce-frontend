@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { Search, PlusCircle } from "lucide-react";
-import { useParams } from "next/navigation";
 import { Conversation } from "@/app/_utils/types/admin";
 import ConversationItem from "./ConversationItem";
 
@@ -17,6 +16,7 @@ interface ConversationSidebarProps {
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   fetchNextPage?: () => void;
+  mobileHidden?: boolean;
 }
 
 export default function ConversationSidebar({
@@ -30,8 +30,8 @@ export default function ConversationSidebar({
   hasNextPage = false,
   isFetchingNextPage = false,
   fetchNextPage,
+  mobileHidden = false,
 }: ConversationSidebarProps) {
-  const { chatId } = useParams();
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const filtered = conversations.filter(
@@ -58,8 +58,8 @@ export default function ConversationSidebar({
 
   return (
     <div
-      className={`w-80 min-w-80 h-full min-h-0 flex flex-col bg-white border-r-[0.53px] border-[#00000033] overflow-hidden
-        ${chatId ? "hidden md:flex" : "flex-1 md:flex md:flex-none"}`}
+      className={`w-full md:w-80 md:min-w-80 h-full min-h-0 flex flex-col bg-white border-r-[0.53px] border-[#00000033] overflow-hidden
+        ${mobileHidden ? "hidden md:flex" : "flex"}`}
     >
       {/* HEADER */}
       <div className="p-4 flex items-center justify-between h-15.5 border-b-[0.53px] border-[#00000033]">

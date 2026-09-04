@@ -371,6 +371,10 @@ export const PAGE_TITLES: Record<Page, string> = {
   stores: "Stores",
   orders: "Orders",
   settings: "Settings",
+  waitlist: "Waitlist",
+  newsletter: "Newsletter",
+  messages: "Messaging",
+  admin: "Admin",
 };
 
 export const MOCK_CONVERSATIONS: Conversation[] = [

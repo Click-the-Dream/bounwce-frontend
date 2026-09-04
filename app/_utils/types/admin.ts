@@ -4,7 +4,11 @@ export type Page =
   | "vendors"
   | "stores"
   | "orders"
-  | "settings";
+  | "settings"
+  | "waitlist"
+  | "newsletter"
+  | "messages"
+  | "admin";
 export type UserStatus = "active" | "pending" | "suspended" | "banned";
 export type VendorStatus = "verified" | "pending" | "suspended" | "rejected";
 export type StoreStatus = "active" | "pending" | "inactive";

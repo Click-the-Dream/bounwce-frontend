@@ -30,6 +30,8 @@ const useWaitlist = () => {
 
   const waitlistUserQuery = useQuery({
     queryKey: ["waitlistUsers"],
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data } = await client.get("/waitlist/waitlist");
 

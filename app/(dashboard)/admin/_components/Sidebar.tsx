@@ -9,6 +9,7 @@ import {
   X,
   LogOut,
   Newspaper,
+  UserRoundSearch,
 } from "lucide-react";
 
 import Image from "next/image";
@@ -79,6 +80,11 @@ const AdminSidebar = ({
       name: "Messaging",
       href: "/admin/messages",
       icon: TbMessageBolt,
+    },
+    {
+      name: "Waitlist",
+      href: "/admin/waitlist",
+      icon: UserRoundSearch,
     },
     {
       name: "Settings",
