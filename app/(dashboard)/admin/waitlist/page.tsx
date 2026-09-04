@@ -33,11 +33,7 @@ type WaitlistEntry = {
 
 const getEntries = (data: any): WaitlistEntry[] => {
   const raw =
-    data?.items ??
-    data?.users ??
-    data?.waitlist ??
-    data?.entries ??
-    (Array.isArray(data) ? data : []);
+    data?.waitlists ?? data?.entries ?? (Array.isArray(data) ? data : []);
 
   if (!Array.isArray(raw)) return [];
 
@@ -98,7 +94,7 @@ export default function AdminWaitlistPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const entries = useMemo(
-    () => getEntries(waitlistUser.data?.waitlists),
+    () => getEntries(waitlistUser.data),
     [waitlistUser.data],
   );
 
