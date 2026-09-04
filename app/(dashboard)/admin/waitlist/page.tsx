@@ -75,7 +75,9 @@ function downloadCsv(entries: WaitlistEntry[]) {
       entry.location,
       entry.referral_source,
       entry.created_at,
-    ].map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","),
+    ]
+      .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+      .join(","),
   );
 
   const blob = new Blob([[headers.join(","), ...rows].join("\n")], {
@@ -96,7 +98,7 @@ export default function AdminWaitlistPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const entries = useMemo(
-    () => getEntries(waitlistUser.data),
+    () => getEntries(waitlistUser.data?.waitlists),
     [waitlistUser.data],
   );
 
@@ -140,7 +142,9 @@ export default function AdminWaitlistPage() {
   }, [entries, waitlistUser.data]);
 
   if (waitlistUser.isLoading) {
-    return <div className="p-8 text-center text-slate-400">Loading waitlist…</div>;
+    return (
+      <div className="p-8 text-center text-slate-400">Loading waitlist…</div>
+    );
   }
 
   if (waitlistUser.isError) {
@@ -253,19 +257,24 @@ export default function AdminWaitlistPage() {
         </CardHeader>
 
         <div className="overflow-x-auto">
-          <table className="min-w-[760px] w-full text-sm">
+          <table className="min-w-190 w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100">
-                {["Person", "Location", "Source", "Joined", "Status", "Action"].map(
-                  (heading) => (
-                    <th
-                      key={heading}
-                      className="whitespace-nowrap px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400 first:pl-5"
-                    >
-                      {heading}
-                    </th>
-                  ),
-                )}
+                {[
+                  "Person",
+                  "Location",
+                  "Source",
+                  "Joined",
+                  "Status",
+                  "Action",
+                ].map((heading) => (
+                  <th
+                    key={heading}
+                    className="whitespace-nowrap px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400 first:pl-5"
+                  >
+                    {heading}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -277,8 +286,12 @@ export default function AdminWaitlistPage() {
                 >
                   <td className="px-4 py-3.5 first:pl-5">
                     <div className="min-w-52">
-                      <p className="font-medium text-slate-800">{entry.full_name}</p>
-                      <p className="mt-0.5 text-xs text-slate-400">{entry.email}</p>
+                      <p className="font-medium text-slate-800">
+                        {entry.full_name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        {entry.email}
+                      </p>
                     </div>
                   </td>
                   <td className="px-4 py-3.5 text-xs text-slate-500">
@@ -312,7 +325,9 @@ export default function AdminWaitlistPage() {
           {filtered.length === 0 && (
             <div className="px-6 py-16 text-center">
               <Users className="mx-auto text-slate-300" size={28} />
-              <p className="mt-3 text-sm text-slate-500">No waitlist entries found.</p>
+              <p className="mt-3 text-sm text-slate-500">
+                No waitlist entries found.
+              </p>
             </div>
           )}
         </div>
