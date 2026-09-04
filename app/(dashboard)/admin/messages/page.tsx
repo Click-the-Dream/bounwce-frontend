@@ -6,6 +6,7 @@ import { Radio } from "lucide-react";
 import ConversationSidebar from "./_components/ConversationSidebar";
 import BroadcastModal from "./_components/BroadcastModal";
 import { Conversation } from "@/app/_utils/types/admin";
+import ChatThread from "./_components/ChatThread";
 
 function BroadcastEmptyState({ onNew }: { onNew: () => void }) {
   return (
@@ -85,15 +86,12 @@ export default function AdminMessagesPage() {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
 
-  const {
-    useGetConversations,
-    useGetMessages,
-    transmitMessage,
-  } = useChat();
+  const { useGetConversations, useGetMessages, transmitMessage } = useChat();
 
   const conversationsQuery = useGetConversations({ page_size: 30 });
   const rawConversations =
-    conversationsQuery.data?.pages.flatMap((page: any) => page.items ?? []) ?? [];
+    conversationsQuery.data?.pages.flatMap((page: any) => page.items ?? []) ??
+    [];
 
   const conversations = useMemo<Conversation[]>(
     () =>
@@ -147,7 +145,9 @@ export default function AdminMessagesPage() {
     : null;
 
   const handleSend = async (conversationId: string, message: string) => {
-    const conversation = conversations.find((item) => item.id === conversationId);
+    const conversation = conversations.find(
+      (item) => item.id === conversationId,
+    );
     if (!conversation) return;
 
     await transmitMessage({
@@ -182,7 +182,7 @@ export default function AdminMessagesPage() {
         {selectedWithMessages ? (
           <div className="min-w-0 flex-1">
             <ChatThread
-              convo={selectedWithMessages}
+              convo={selectedWithMessages as Conversation}
               onSend={handleSend}
               onBack={() => setActiveId(null)}
             />
