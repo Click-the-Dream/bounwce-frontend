@@ -26,9 +26,6 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
   const { authDetails } = useAuth();
   const isSender = msg.sender_id === authDetails?.user?.id;
   const styles = getMessageLayout(isSender);
-
-  // ─── STATE─
-
   const [expanded, setExpanded] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
   const [isHighlighted, setIsHighlighted] = useState(false);
@@ -85,8 +82,6 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
       window.removeEventListener("highlight-message", handler as EventListener);
   }, [msg.id]);
 
-  // ─── RENDER
-
   return (
     <SwipeableMessage
       isSender={isSender}
@@ -124,7 +119,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
         {/* Message body */}
         <div
           ref={textRef}
-          className={`pr-10 ${!expanded ? "line-clamp-4" : ""}`}
+          className={`pr-5 ${!expanded ? "line-clamp-4" : ""}`}
         >
           {msg?.body}
         </div>
