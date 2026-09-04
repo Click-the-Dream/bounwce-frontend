@@ -119,7 +119,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
         {/* Message body */}
         <div
           ref={textRef}
-          className={`pr-5 ${!expanded ? "line-clamp-4" : ""}`}
+          className={`pr-2 ${!expanded ? "line-clamp-4" : ""}`}
         >
           {msg?.body}
         </div>
