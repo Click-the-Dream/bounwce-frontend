@@ -189,7 +189,7 @@ export default function EventEditor({
 
       const payload = {
   ...data,
-  price: data.price ?? 0,
+  price:  0,
   banner_url: bannerUrl,
   location: data.location_type === "physical" ? data.location : data.link || "",
 };
