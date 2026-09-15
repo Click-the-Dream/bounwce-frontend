@@ -188,11 +188,14 @@ export default function EventEditor({
       }
 
       const payload = {
-  ...data,
-  price:  0,
-  banner_url: bannerUrl,
-  location: data.location_type === "PHYSICAL" ? data.location : data.link || "",
-};
+        ...data,
+        price: 0,
+        banner_url: bannerUrl,
+        location:
+          data.location_type.toLocaleUpperCase() === "PHYSICAL"
+            ? data.location
+            : data.link || "",
+      };
 
       if (mode === "create") {
         createEvent.mutate(payload, {
