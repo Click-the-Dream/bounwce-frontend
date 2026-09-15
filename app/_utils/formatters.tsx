@@ -253,7 +253,7 @@ export const handleShare = async (event: { name: string; id: string }) => {
   const shareData = {
     title: event.name,
     text: `Check out this event: ${event.name}`,
-    url: `${window.location.origin}/events/${event.id}`,
+    url: `${window.location.origin}/app/events/${event.id}`,
   };
 
   try {
