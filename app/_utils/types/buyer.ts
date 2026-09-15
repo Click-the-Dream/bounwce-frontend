@@ -26,9 +26,9 @@ export interface Message {
 export interface User {
   full_name: string;
   id: string;
-  email: string;
-  is_active: boolean;
-  role: string;
+  email?: string;
+  is_active?: boolean;
+  role?: string;
   username: string;
   profile_pic?: { url: string };
   created_at?: string;

@@ -7,7 +7,8 @@ import UserImage from "../../_components/UserImage";
 import { useAuth } from "@/app/context/AuthContext";
 import { ChatUser } from "@/app/_utils/types/chat";
 import { useNotifications } from "@/app/context/NotificationContext";
-import useChat from "@/app/hooks/use-chat";
+import { useQueryClient } from "@tanstack/react-query";
+import api from "@/app/services/api";
 
 const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const { chatId } = useParams();
@@ -15,7 +16,7 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const { authDetails } = useAuth();
   const { resetUnread } = useNotifications();
   const { typingUsers } = useChatUtils();
-  const { prefetchMessages } = useChat();
+  const queryClient = useQueryClient();
   const chatUser = chat?.user;
   const currentUserId = authDetails?.user?.id;
 
@@ -23,12 +24,24 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const lastMessageTime = chat?.last_message?.created_at;
   const lastMessage = chat?.last_message;
   const isMine = lastMessage?.sender_id === currentUserId;
-  const handlePrefetch = () => {
-    if (chatUser?.id) {
-      prefetchMessages(chatUser.id);
-    }
-  };
 
+  const handlePrefetch = () => {
+    if (!chatUser?.id) return;
+
+    void queryClient.prefetchInfiniteQuery({
+      queryKey: ["messages", chatUser.id],
+      initialPageParam: 1,
+      queryFn: async ({ pageParam = 1 }) => {
+        const response = await api.get(
+          `/chats/conversations/with/${chatUser.id}`,
+          { params: { page: Number(pageParam), page_size: 20 } },
+        );
+
+        return response.data?.data;
+      },
+      staleTime: 30_000,
+    });
+  };
   const renderLastMessage = () => {
     if (!lastMessage) {
       return `@${chatUser.username}`;
@@ -80,7 +93,6 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
 
   const goToChat = async () => {
     resetUnread(chatUser.id);
-    // await prewarmMessages(chatUser.id);
 
     router.push(`/app/chat/${chatUser.id}`);
   };

@@ -7,12 +7,38 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { websocket } from "../services/websocket";
-import { CachedConversation } from "../store/chat-store";
 import { buildOptimisticMessage, formatBytes } from "../_utils/utility";
 import { ReplyTarget, User } from "../_utils/types/buyer";
 
 // HELPERS
-const mergeIntoQuery = (old: any, message: any): any => {
+const MESSAGE_PAGE_SIZE = 20;
+const MESSAGE_STALE_TIME = 30_000;
+
+type CachedConversation = {
+  id: string;
+  peer_id: string;
+  user: User;
+  last_message: any;
+  updated_at: string;
+};
+
+const normalizeMessages = (data: any) => {
+  if (!data?.messages?.items) return data;
+
+  return {
+    ...data,
+    messages: {
+      ...data.messages,
+      items: data.messages.items.map((msg: any) => ({
+        ...msg,
+        delivery_status: msg.delivery_status ?? "delivered",
+        read_at: msg.read_at || null,
+      })),
+    },
+  };
+};
+
+export const mergeIntoQuery = (old: any, message: any): any => {
   const emptyState = {
     pages: [
       {
@@ -20,45 +46,64 @@ const mergeIntoQuery = (old: any, message: any): any => {
           items: [message],
           page: 1,
           total: 1,
-          page_size: 20,
+          page_size: MESSAGE_PAGE_SIZE,
         },
       },
     ],
     pageParams: [1],
   };
 
-  if (!old) return emptyState;
+  if (!old?.pages?.length) return emptyState;
 
-  const pages = [...old.pages];
-  if (!pages[0]?.messages?.items) return emptyState;
+  const pages = old.pages.map((page: any) => ({
+    ...page,
+    messages: {
+      ...page.messages,
+      items: [...(page.messages?.items ?? [])],
+    },
+  }));
 
-  const items: any[] = pages[0].messages.items;
+  let found = false;
 
-  const index = items.findIndex(
-    (m) =>
-      m.client_id === message.client_id ||
-      m.id === message.id ||
-      (message.client_id && m.id === message.client_id),
-  );
+  for (const page of pages) {
+    const items = page.messages.items;
+    const index = items.findIndex(
+      (item: any) =>
+        (message.id && item.id === message.id) ||
+        (message.client_id && item.client_id === message.client_id) ||
+        (message.client_id && item.id === message.client_id),
+    );
 
-  if (index !== -1) {
-    items[index] = {
-      ...items[index],
-      ...message,
-    };
-  } else {
-    items.push(message);
+    if (index !== -1) {
+      items[index] = { ...items[index], ...message };
+      found = true;
+      break;
+    }
   }
 
-  pages[0] = {
-    ...pages[0],
-    messages: {
-      ...pages[0].messages,
-      items: [...items, message],
-    },
-  };
+  if (!found) {
+    pages[0].messages.items = [...pages[0].messages.items, message];
+  }
 
-  return { ...old, pages };
+  const seen = new Set<string>();
+  const dedupedPages = pages.map((page: any) => ({
+    ...page,
+    messages: {
+      ...page.messages,
+      items: page.messages.items.filter((item: any) => {
+        const key =
+          item.id ||
+          item.client_id ||
+          `${item.sender_id}:${item.created_at}:${item.body ?? ""}`;
+
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }),
+    },
+  }));
+
+  return { ...old, pages: dedupedPages };
 };
 
 export const replaceOptimisticMessage = (
@@ -66,14 +111,15 @@ export const replaceOptimisticMessage = (
   clientId: string,
   serverMessage: any,
 ): any => {
-  if (!old) return old;
+  if (!old?.pages) return old;
+
   return {
     ...old,
     pages: old.pages.map((page: any) => ({
       ...page,
       messages: {
         ...page.messages,
-        items: page.messages.items.map((m: any) =>
+        items: (page.messages?.items ?? []).map((m: any) =>
           m.id === clientId || m.client_id === clientId
             ? { ...m, ...serverMessage }
             : m,
@@ -107,83 +153,60 @@ const useChat = () => {
       },
 
       getNextPageParam: (lastPage: any) => {
-        const { page, total, page_size } = lastPage;
+        const page = Number(lastPage?.page ?? 1);
+        const total = Number(lastPage?.total ?? 0);
+        const pageSize = Number(lastPage?.page_size ?? params.page_size ?? 10);
 
-        const hasMore = page * page_size < total;
-
-        return hasMore ? page + 1 : undefined;
+        return page * pageSize < total ? page + 1 : undefined;
       },
 
       initialPageParam: 1,
+      staleTime: MESSAGE_STALE_TIME,
     });
+
   // MESSAGES
 
-  const prefetchMessages = (userId: string) => {
-    queryClient.prefetchInfiniteQuery({
-      queryKey: ["messages", userId],
-      queryFn: async ({ pageParam = 1 }) => {
-        const res = await api.get(`/chats/conversations/with/${userId}`, {
-          params: { page: pageParam, page_size: 20 },
-        });
-        const data = res.data?.data;
-
-        // Keep the transformation logic consistent
-        if (data?.messages?.items) {
-          data.messages.items = data.messages.items.map((msg: any) => ({
-            ...msg,
-            delivery_status: "delivered",
-            read_at: msg.read_at || null,
-          }));
-        }
-        return data;
-      },
-      initialPageParam: 1,
+  const fetchMessagesPage = async (
+    userId: string,
+    page: number,
+    pageSize = MESSAGE_PAGE_SIZE,
+  ) => {
+    const res = await api.get(`/chats/conversations/with/${userId}`, {
+      params: { page, page_size: pageSize },
     });
+
+    return normalizeMessages(res.data?.data);
   };
 
   const useGetMessages = (
     options: {
       userId?: string;
       params?: { page?: number; page_size?: number };
-    } = { params: { page_size: 10 } },
+    } = {},
   ) =>
     useInfiniteQuery({
       queryKey: ["messages", options.userId],
-
-      queryFn: async ({ pageParam = 1 }) => {
-        const res = await api.get(
-          `/chats/conversations/with/${options.userId}`,
-          {
-            params: {
-              page: pageParam,
-              page_size: options.params?.page_size || 20,
-            },
-          },
-        );
-
-        const data = res.data?.data;
-
-        // Transform the messages before returning them to the cache
-        if (data?.messages?.items) {
-          data.messages.items = data.messages.items.map((msg: any) => ({
-            ...msg,
-            delivery_status: "delivered",
-            read_at: msg.read_at || null,
-          }));
-        }
-
-        return data;
-      },
-
+      queryFn: async ({ pageParam = 1 }) =>
+        fetchMessagesPage(
+          options.userId!,
+          Number(pageParam),
+          options.params?.page_size || MESSAGE_PAGE_SIZE,
+        ),
       getNextPageParam: (lastPage: any) => {
-        const { page, total, page_size } = lastPage?.messages || {};
-
-        const hasMore = page * page_size < total;
-        return hasMore ? page + 1 : undefined;
+        const page = Number(lastPage?.messages?.page ?? 1);
+        const total = Number(lastPage?.messages?.total ?? 0);
+        const pageSize = Number(
+          lastPage?.messages?.page_size ??
+            options.params?.page_size ??
+            MESSAGE_PAGE_SIZE,
+        );
+        return page * pageSize < total ? page + 1 : undefined;
       },
-
       initialPageParam: 1,
-      enabled: !!options.userId,
+      enabled: Boolean(options.userId),
+      staleTime: MESSAGE_STALE_TIME,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
     });
 
   // CONVERSATION HELPERS
@@ -215,28 +238,48 @@ const useChat = () => {
       updated_at: new Date().toISOString(),
     };
 
-    // FIX: use ["conversations", {}] to match the actual registered query key
-    queryClient.setQueryData(["conversations", {}], (old: any) => {
-      if (old) {
-        const existsInCache = old.pages.some((page: any) =>
-          page.items?.some(
-            (c: CachedConversation) => c.peer_id === recipient.id,
-          ),
-        );
-        if (existsInCache) return old;
-
-        const pages = [...old.pages];
-        pages[0] = {
-          ...pages[0],
-          items: [conversation, ...(pages[0].items ?? [])],
+    queryClient.setQueriesData({ queryKey: ["conversations"] }, (old: any) => {
+      if (!old?.pages?.length) {
+        return {
+          pages: [
+            {
+              items: [conversation],
+              page: 1,
+              total: 1,
+              page_size: 10,
+            },
+          ],
+          pageParams: [1],
         };
-        return { ...old, pages };
       }
 
-      return {
-        pages: [{ items: [conversation], page: 1, total: 1, page_size: 10 }],
-        pageParams: [1],
+      let found = false;
+      const pages = old.pages.map((page: any) => {
+        const items = [...(page.items ?? [])];
+        const index = items.findIndex(
+          (c: CachedConversation) =>
+            c.peer_id === recipient.id || c.user?.id === recipient.id,
+        );
+
+        if (index !== -1) {
+          found = true;
+          items[index] = {
+            ...items[index],
+            ...conversation,
+          };
+        }
+
+        return { ...page, items };
+      });
+
+      if (found) return { ...old, pages };
+
+      pages[0] = {
+        ...pages[0],
+        items: [conversation, ...(pages[0].items ?? [])],
       };
+
+      return { ...old, pages };
     });
   };
   // SEND TEXT MESSAGE
@@ -264,6 +307,10 @@ const useChat = () => {
       client_id: message.id,
       pending: true,
     };
+    await queryClient.cancelQueries({
+      queryKey: ["messages", recipient.id],
+    });
+
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
       mergeIntoQuery(old, messageWithClientId),
     );
@@ -364,6 +411,10 @@ const useChat = () => {
     });
 
     const messageWithClientId = { ...optimistic, client_id: optimistic.id };
+
+    await queryClient.cancelQueries({
+      queryKey: ["messages", recipient.id],
+    });
 
     queryClient.setQueryData(["messages", recipient.id], (old: any) =>
       mergeIntoQuery(old, messageWithClientId),
@@ -492,7 +543,6 @@ const useChat = () => {
   return {
     useGetConversations,
     useGetMessages,
-    prefetchMessages,
     transmitMessage,
     confirmMessage,
     prepareOptimisticMedia,

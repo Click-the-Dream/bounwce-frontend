@@ -6,8 +6,6 @@ import { useParams } from "next/navigation";
 import { User } from "@/app/_utils/types/buyer";
 import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
-import { useAuth } from "@/app/context/AuthContext";
-import { usePendingMessageRecovery } from "@/app/hooks/usePendingMesssageRecovery";
 import { ShieldAlert } from "lucide-react";
 
 interface ChatWindowProps {
@@ -21,7 +19,6 @@ const ChatWindow = ({
   isConversationLoading,
   role = "buyer",
 }: ChatWindowProps) => {
-  const { authDetails } = useAuth();
   const { chatId } = useParams<{ chatId: string }>();
   const { resetUnread } = useNotifications();
   const scrollListRef = useRef<{
@@ -33,8 +30,6 @@ const ChatWindow = ({
   const isRestrictedUser =
     selectedUser?.full_name === "Bouwnce" ||
     selectedUser?.email === "justclick610@gmail.com";
-
-  usePendingMessageRecovery(authDetails?.user?.id);
 
   useEffect(() => {
     if (!chatId) return;

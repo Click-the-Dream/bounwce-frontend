@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { websocket } from "../services/websocket";
 import { useAuth } from "../context/AuthContext";
+import { usePathname } from "next/navigation";
 
 export const ConnectionStatusToast = () => {
   const { authDetails } = useAuth();
+  const pathname = usePathname();
   const [state, setState] = useState<
     "connecting" | "connected" | "reconnecting" | "disconnected"
   >("disconnected");
@@ -37,10 +39,11 @@ export const ConnectionStatusToast = () => {
   };
 
   const s = map[state];
+  const isChat = pathname.startsWith("/app/chat");
 
   return (
     <AnimatePresence>
-      {authDetails?.user && state !== "connected" && (
+      {authDetails?.user && state !== "connected" && isChat && (
         <motion.div
           initial={{ y: 20, opacity: 0, scale: 0.98 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}

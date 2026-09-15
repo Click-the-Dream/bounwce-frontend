@@ -61,14 +61,15 @@ const AppProvider = ({ children }: { children: React.ReactNode }) => {
                 newestOnTop
                 limit={5}
                 toastStyle={{
-                  marginTop: "8px",
+                  marginTop: "6px",
                 }}
                 toastClassName={() =>
                   "!bg-transparent !shadow-none !p-0 !min-h-0 !rounded-none overflow-visible pointer-events-auto"
                 }
                 style={{
-                  top: "3rem",
-                  right: "0",
+                  top: "calc(1rem + env(safe-area-inset-top))",
+                  right: "max(12px, env(safe-area-inset-right))",
+                  width: "min(100vw - 24px, 360px)",
                   pointerEvents: "none",
                 }}
               />

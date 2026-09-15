@@ -136,7 +136,7 @@ const Waitlist = () => {
             alt="bouwnce"
             width={100}
             height={24}
-            className="h-4 w-auto mb-4 hidden md:block invert brightness-0"
+            className="h-4 w-auto mb-4 hidden md:block invert brightness-0" style={{ width: "auto" }}
           />
         </motion.div>
 
@@ -172,7 +172,7 @@ const Waitlist = () => {
               <Image
                 src={navLogo}
                 alt="bouwnce"
-                className="h-6 w-auto mb-4 block md:hidden"
+                className="h-6 w-auto mb-4 block md:hidden" style={{ width: "auto" }}
                 width={100}
                 height={20}
               />

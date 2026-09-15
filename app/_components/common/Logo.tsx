@@ -24,7 +24,7 @@ const Logo = ({
         width={dimension}
         height={dimension}
         priority
-        className="object-contain"
+        className="object-contain" style={{ width: "auto", height: "auto" }}
       />
     </Link>
   );

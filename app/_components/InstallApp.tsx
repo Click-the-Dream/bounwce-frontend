@@ -5,6 +5,7 @@ import { X, Share, PlusSquare } from "lucide-react";
 import Image from "next/image";
 
 import { useEffect, useRef, useState } from "react";
+import { Portal } from "../protocols/Portal";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -187,18 +188,23 @@ export default function InstallApp() {
 
       const installEvent = event as BeforeInstallPromptEvent;
 
+      const dismissedThisSession =
+        sessionStorage.getItem(DISMISS_KEY) === "true";
+
+      // Once the user closes the prompt, respect that decision for the rest
+      // of this browser session. Chromium can emit beforeinstallprompt again
+      // after focus/visibility changes, so we must guard here as well as in
+      // syncBrowserState().
+      if (dismissedThisSession) {
+        promptRef.current = null;
+        setPrompt(null);
+        setState("hidden");
+        return;
+      }
+
       promptRef.current = installEvent;
-
       setPrompt(installEvent);
-
       justInstalled.current = false;
-
-      /**
-       * A fresh installation prompt means
-       * the browser currently considers the
-       * website installable.
-       */
-      sessionStorage.removeItem(DISMISS_KEY);
 
       if (isStandalone()) {
         hideForStandalone();
@@ -376,120 +382,122 @@ export default function InstallApp() {
   }
 
   return (
-    <div
-      role="region"
-      aria-label="App Installation Prompt"
-      aria-live="polite"
-      className="fixed bottom-4 left-3 right-3 z-1000 pointer-events-none sm:left-4 sm:right-4 md:left-auto md:right-6 md:max-w-lg"
-    >
-      <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash pointer-events-auto">
-        <button
-          type="button"
-          onClick={handleClose}
-          aria-label="Close"
-          className="absolute top-1.5 right-2 rounded-lg p-1 text-ash transition-colors hover:bg-lighter-ash hover:text-foreground focus:outline-none focus:ring-2 focus:ring-black/10"
-        >
-          <X size={16} />
-        </button>
+    <Portal>
+      <div
+        role="region"
+        aria-label="App Installation Prompt"
+        aria-live="polite"
+        className="fixed top-4 left-3 right-3 z-1000 pointer-events-none sm:left-4 sm:right-4 md:left-auto md:right-6 md:max-w-lg"
+      >
+        <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-black/10 border border-lighter-ash pointer-events-auto">
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Close"
+            className="absolute top-1.5 right-2 rounded-lg p-1 text-ash transition-colors hover:bg-lighter-ash hover:text-foreground focus:outline-none focus:ring-2 focus:ring-black/10"
+          >
+            <X size={16} />
+          </button>
 
-        {state === "installing" && (
-          <div className="flex items-center gap-3 pr-7">
-            <AppIcon />
+          {state === "installing" && (
+            <div className="flex items-center gap-3 pr-7">
+              <AppIcon />
 
-            <div className="min-w-0 flex-1 font-SFPro">
-              <p className="text-sm font-semibold text-foreground">
-                Installing Bouwnce...
-              </p>
+              <div className="min-w-0 flex-1 font-SFPro">
+                <p className="text-sm font-semibold text-foreground">
+                  Installing Bouwnce...
+                </p>
 
-              <p className="mt-1 text-xs leading-4 text-ash">
-                Please wait while the app is being installed.
-              </p>
-            </div>
-
-            <span className="shrink-0 flex h-9 items-center gap-2 rounded-xl bg-gray-100 px-3 text-xs font-semibold text-gray-600">
-              <span className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 border-t-brand-orange animate-spin" />
-
-              <span className="hidden sm:inline">Installing...</span>
-            </span>
-          </div>
-        )}
-
-        {state === "ios-installable" && (
-          <div className="flex items-start gap-3 pr-7">
-            <AppIcon />
-
-            <div className="min-w-0 flex-1 font-SFPro">
-              <p className="text-sm font-semibold text-foreground">
-                Get Bouwnce App
-              </p>
-
-              <p className="mt-1 text-xs leading-4 text-ash">
-                Install Bouwnce on your iPhone for faster access and push
-                notifications.
-              </p>
-
-              <div className="mt-3 space-y-2.5">
-                <StepInstruction icon={<Share size={14} />}>
-                  Tap the <strong>Share</strong> button in Safari.
-                </StepInstruction>
-
-                <StepInstruction icon={<PlusSquare size={14} />}>
-                  Tap <strong>Add to Home Screen</strong>.
-                </StepInstruction>
-
-                <StepInstruction
-                  icon={<span className="font-bold text-green-600">✓</span>}
-                >
-                  Tap <strong>Add</strong> to finish.
-                </StepInstruction>
+                <p className="mt-1 text-xs leading-4 text-ash">
+                  Please wait while the app is being installed.
+                </p>
               </div>
 
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleIOSInstalled}
-                  className="flex-1 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95"
-                >
-                  I've Added Bouwnce
-                </button>
+              <span className="shrink-0 flex h-9 items-center gap-2 rounded-xl bg-gray-100 px-3 text-xs font-semibold text-gray-600">
+                <span className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 border-t-brand-orange animate-spin" />
 
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="rounded-xl bg-lighter-ash px-4 py-2.5 text-xs font-semibold text-foreground transition-all hover:opacity-90 active:scale-95"
-                >
-                  Not Now
-                </button>
+                <span className="hidden sm:inline">Installing...</span>
+              </span>
+            </div>
+          )}
+
+          {state === "ios-installable" && (
+            <div className="flex items-start gap-3 pr-7">
+              <AppIcon />
+
+              <div className="min-w-0 flex-1 font-SFPro">
+                <p className="text-sm font-semibold text-foreground">
+                  Get Bouwnce App
+                </p>
+
+                <p className="mt-1 text-xs leading-4 text-ash">
+                  Install Bouwnce on your iPhone for faster access and push
+                  notifications.
+                </p>
+
+                <div className="mt-3 space-y-2.5">
+                  <StepInstruction icon={<Share size={14} />}>
+                    Tap the <strong>Share</strong> button in Safari.
+                  </StepInstruction>
+
+                  <StepInstruction icon={<PlusSquare size={14} />}>
+                    Tap <strong>Add to Home Screen</strong>.
+                  </StepInstruction>
+
+                  <StepInstruction
+                    icon={<span className="font-bold text-green-600">✓</span>}
+                  >
+                    Tap <strong>Add</strong> to finish.
+                  </StepInstruction>
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleIOSInstalled}
+                    className="flex-1 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95"
+                  >
+                    I've Added Bouwnce
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="rounded-xl bg-lighter-ash px-4 py-2.5 text-xs font-semibold text-foreground transition-all hover:opacity-90 active:scale-95"
+                  >
+                    Not Now
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {state === "installable" && prompt && (
-          <div className="flex flex-wrap items-center gap-3 pr-7">
-            <AppIcon />
+          {state === "installable" && prompt && (
+            <div className="flex flex-wrap items-center gap-3 pr-7">
+              <AppIcon />
 
-            <div className="min-w-0 flex-1 font-SFPro">
-              <p className="text-sm font-semibold text-foreground line-clamp-2">
-                Get Bouwnce App
-              </p>
+              <div className="min-w-0 flex-1 font-SFPro">
+                <p className="text-sm font-semibold text-foreground line-clamp-2">
+                  Get Bouwnce App
+                </p>
 
-              <p className="mt-1 text-xs leading-4 text-ash line-clamp-2">
-                Faster access and push notifications.
-              </p>
+                <p className="mt-1 text-xs leading-4 text-ash line-clamp-2">
+                  Faster access and push notifications.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="w-full md:w-auto rounded-xl bg-brand-orange px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 whitespace-nowrap sm:py-2"
+              >
+                Install
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleInstall}
-              className="w-full md:w-auto rounded-xl bg-brand-orange px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 whitespace-nowrap sm:py-2"
-            >
-              Install
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </Portal>
   );
 }
 

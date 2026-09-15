@@ -128,7 +128,22 @@ export const NotificationProvider = ({
   const pushNotification = useCallback(
     (n: Notification) => {
       queryClient.setQueryData(["notifications"], (oldData: any) => {
-        if (!oldData) return oldData;
+        if (!oldData?.pages?.length) {
+          return {
+            pages: [
+              {
+                data: {
+                  items: [n],
+                  page: 1,
+                  total: 1,
+                  page_size: 20,
+                },
+              },
+            ],
+            pageParams: [1],
+          };
+        }
+
         return {
           ...oldData,
           pages: oldData.pages.map((page: any, i: number) =>

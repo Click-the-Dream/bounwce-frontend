@@ -6,7 +6,6 @@ import api from "../services/api";
 import { useRouter } from "next/navigation";
 import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage, storedUserEmail } from "../_utils/formatters";
-import { deleteChatDB } from "../store/chat-store";
 import { useChatUtils } from "../context/ChatContext";
 import { disablePushForCurrentDevice } from "../services/push";
 
@@ -142,7 +141,6 @@ const useAuthServices = () => {
 
       resetChatState();
       try {
-        if (userId) await deleteChatDB(userId);
         await disablePushForCurrentDevice();
       } catch {}
 

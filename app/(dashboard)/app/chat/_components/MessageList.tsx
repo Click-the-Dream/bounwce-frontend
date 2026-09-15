@@ -21,8 +21,8 @@ import ChatMessage from "./ChatMessage";
 import ChatMediaMessage from "./ChatMediaMessage";
 import ImageViewer from "./ImageViewer";
 import TypingDots from "./TypingDots";
-import { syncMessageRead } from "@/app/helpers/db-sync";
 import { useQueryClient } from "@tanstack/react-query";
+import { syncMessageRead } from "@/app/helpers/db-sync";
 
 // TYPES
 interface Props {
@@ -60,7 +60,7 @@ const MessageList = forwardRef(
   ({ onScrollNearBottomChange, onUnreadChange }: Props, ref) => {
     const queryClient = useQueryClient();
     const { authDetails } = useAuth();
-    const { setReplyTo, typingUsers, activeUploadsRef, chatDBRef } =
+    const { setReplyTo, typingUsers, activeUploadsRef } =
       useChatUtils();
     const { chatId } = useParams<{ chatId: string }>();
     const {
@@ -367,7 +367,6 @@ const MessageList = forwardRef(
         if (msg.read_at) return;
 
         await syncMessageRead({
-          db: chatDBRef.current,
           queryClient,
           chatId,
           messageId: msg.id,
@@ -402,7 +401,6 @@ const MessageList = forwardRef(
               ) {
                 readSet.current.add(msg.id);
                 syncMessageRead({
-                  db: chatDBRef.current,
                   queryClient,
                   chatId,
                   messageId: msg.id,

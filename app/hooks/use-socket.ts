@@ -7,7 +7,7 @@ import { useNotifications } from "../context/NotificationContext";
 import { onMessageToast } from "../_utils/message-toast";
 import { useChatUtils } from "../context/ChatContext";
 import { useAuth } from "../context/AuthContext";
-import { replaceOptimisticMessage } from "./use-chat";
+import { mergeIntoQuery, replaceOptimisticMessage } from "./use-chat";
 
 export const useSocketConnection = ({
   authUserId,
@@ -74,7 +74,7 @@ export const useSocketConnection = ({
   }, []);
 
   useEffect(() => {
-    const handleMessage = (raw: any) => {
+    const handleMessage = async (raw: any) => {
       const payload = raw.data ?? raw.payload ?? raw;
       const incoming = payload.message ?? payload;
       const message = {
@@ -95,23 +95,16 @@ export const useSocketConnection = ({
         !!activeChatRef.current && otherUserId === activeChatRef.current;
 
       // Update Messages Cache
-      queryClient.setQueryData(["messages", otherUserId], (old: any) => {
-        if (!old?.pages) return old;
-        const pages = old.pages.map((page: any) => {
-          const items = page.messages?.items ?? [];
-          const exists = items.some((i: any) => i.id === message.id);
-          return {
-            ...page,
-            messages: {
-              ...page.messages,
-              items: exists
-                ? items.map((i: any) => (i.id === message.id ? message : i))
-                : [...items, message],
-            },
-          };
-        });
-        return { ...old, pages };
+      // Cancel any in-flight fetch/prefetch first so an older server snapshot
+      // cannot overwrite the newer real-time message.
+      await queryClient.cancelQueries({
+        queryKey: ["messages", otherUserId],
       });
+
+      queryClient.setQueryData(
+        ["messages", otherUserId],
+        (old: any) => mergeIntoQuery(old, message),
+      );
 
       // Update Conversations Cache
       queryClient.setQueriesData(

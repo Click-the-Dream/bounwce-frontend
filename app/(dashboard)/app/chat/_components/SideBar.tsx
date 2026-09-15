@@ -31,8 +31,11 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useGetConversations(params);
 
-  const conversations =
-    data?.pages?.flatMap((page: any) => page?.items || []) || [];
+  const conversations = useMemo(
+    () =>
+      data?.pages?.flatMap((page: any) => page?.items || []) || [],
+    [data?.pages],
+  );
 
   const activeConversation = useMemo(() => {
     if (!selectedUser) return null;

@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import useMatch from "@/app/hooks/use-match";
 import ExploreCard from "./_components/ExploreCard";
@@ -13,10 +12,8 @@ const ExplorePage = () => {
   const queryClient = useQueryClient();
   const { useGetSuggestedCandidates, createMatchRequest, useGetMatchRequests } =
     useMatch();
-  const { setConnectionModal, connectionModal } = useNotifications();
-
+  const { setConnectionModal } = useNotifications();
   const { data: requestData } = useGetMatchRequests();
-
   const [connectState, setConnectState] = useState<
     Record<string, ConnectStatus>
   >({});
@@ -37,58 +34,149 @@ const ExplorePage = () => {
 
   const requestMap = useMemo(() => {
     const map: Record<string, any> = {};
+
     if (!requestData?.items) return map;
+
     for (const req of requestData.items) {
       map[req.target_user_id] = req;
     }
+
     return map;
   }, [requestData]);
 
   const getStatus = (userId: string): ConnectStatus => {
     const req = requestMap[userId];
+
     if (!req) return "idle";
+
     switch (req.status) {
       case "pending":
         return "pending";
+
       case "accepted":
         return "connected";
+
       default:
         return "idle";
     }
   };
+
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const isPrefetchingRef = useRef(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-    });
+    const sentinel = sentinelRef.current;
 
-    if (sentinelRef.current) observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (!sentinel) return;
+    const findScrollParent = (
+      element: HTMLElement | null,
+    ): HTMLElement | Window => {
+      let parent = element?.parentElement;
+
+      while (parent) {
+        const styles = window.getComputedStyle(parent);
+        const overflowY = styles.overflowY;
+
+        const canScroll =
+          (overflowY === "auto" || overflowY === "scroll") &&
+          parent.scrollHeight > parent.clientHeight;
+
+        if (canScroll) {
+          return parent;
+        }
+
+        parent = parent.parentElement;
+      }
+
+      return window;
+    };
+
+    const scrollParent = findScrollParent(sentinel);
+
+    const maybeFetchNextPage = () => {
+      if (!hasNextPage) return;
+      if (isFetchingNextPage) return;
+      if (isPrefetchingRef.current) return;
+
+      let distanceFromBottom = Infinity;
+
+      if (scrollParent === window) {
+        const documentHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+        );
+
+        const viewportBottom = window.scrollY + window.innerHeight;
+
+        distanceFromBottom = documentHeight - viewportBottom;
+      } else {
+        const container = scrollParent as HTMLElement;
+
+        distanceFromBottom =
+          container.scrollHeight - container.scrollTop - container.clientHeight;
+      }
+
+      if (distanceFromBottom <= 1800) {
+        isPrefetchingRef.current = true;
+
+        fetchNextPage().finally(() => {
+          isPrefetchingRef.current = false;
+        });
+      }
+    };
+
+    const target =
+      scrollParent === window ? window : (scrollParent as HTMLElement);
+
+    target.addEventListener("scroll", maybeFetchNextPage, { passive: true });
+
+    maybeFetchNextPage();
+    const initialCheck = window.setTimeout(() => {
+      maybeFetchNextPage();
+    }, 100);
+
+    return () => {
+      target.removeEventListener("scroll", maybeFetchNextPage);
+
+      window.clearTimeout(initialCheck);
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleConnect = (userId: string, user: SuggestedCandidate) => {
-    setConnectState((prev) => ({ ...prev, [userId]: "loading" }));
+    setConnectState((prev) => ({
+      ...prev,
+      [userId]: "loading",
+    }));
 
     createMatchRequest.mutate(
-      { target_user_id: userId },
+      {
+        target_user_id: userId,
+      },
       {
         onSuccess: () => {
-          setConnectState((prev) => ({ ...prev, [userId]: "pending" }));
+          setConnectState((prev) => ({
+            ...prev,
+            [userId]: "pending",
+          }));
+
           queryClient.invalidateQueries();
 
-          // Open the modal — it handles auto-redirect internally
           setConnectionModal({
             isOpen: true,
             userId,
-            full_name: user.full_name ?? "USer",
-            profile_pic: { url: user.profile_pic },
+            full_name: user.full_name ?? "User",
+            profile_pic: {
+              url: user.profile_pic,
+            },
           });
         },
+
         onError: () => {
-          setConnectState((prev) => ({ ...prev, [userId]: "idle" }));
+          setConnectState((prev) => ({
+            ...prev,
+            [userId]: "idle",
+          }));
+
           onFailure({
             title: "Connection Request Failed",
             message: "Failed to send connection request. Please try again.",
@@ -118,6 +206,7 @@ const ExplorePage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-gray-600 gap-3">
         <p>Failed to load suggestions.</p>
+
         <button
           onClick={() => refetch()}
           className="px-4 py-2 bg-black text-white rounded-lg"
@@ -132,7 +221,6 @@ const ExplorePage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
-          {/* Icon */}
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
             <svg
               className="h-6 w-6 text-gray-400"
@@ -149,12 +237,10 @@ const ExplorePage = () => {
             </svg>
           </div>
 
-          {/* Title */}
           <h2 className="text-[16px] font-semibold text-gray-900">
             No suggestions yet
           </h2>
 
-          {/* Description */}
           <p className="mt-2 text-sm text-gray-500 leading-relaxed">
             We couldn’t find any recommendations right now. Try again later or
             update your preferences.
@@ -193,8 +279,14 @@ const ExplorePage = () => {
               )}
             </div>
 
-            {/* 3. Sentinel and Loading Indicator */}
-            <div ref={sentinelRef} className="h-10" />
+            {/* 
+              Invisible prefetch trigger.
+
+              Because the observer has a 1200px bottom rootMargin,
+              this element does NOT need to physically enter the
+              viewport before pagination begins.
+            */}
+            <div ref={sentinelRef} className="h-px w-full" aria-hidden="true" />
           </div>
         </main>
       </div>

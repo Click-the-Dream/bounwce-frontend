@@ -9,13 +9,9 @@ import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage } from "../_utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { User } from "../_utils/types/buyer";
-import { useChatUtils } from "../context/ChatContext";
 
 const useUser = () => {
   const { updateUser, authDetails } = useAuth();
-  const { chatDBRef } = useChatUtils();
-  const db = chatDBRef.current;
-
   const client = api;
   const queryClient = useQueryClient();
 
@@ -26,16 +22,9 @@ const useUser = () => {
       queryKey: ["currentUser"],
       queryFn: async () => {
         const userId = authDetails?.user?.id;
-        if (db && userId) {
-          const cachedUser = await db.users.get(userId);
-          if (cachedUser) return cachedUser;
-        }
 
         const res = await client.get(`/users/me`);
         const user = res.data?.data || res.data;
-        if (db && user) {
-          await db.users.put(user);
-        }
 
         if (!user) throw new Error("User not found");
         return user;
@@ -47,17 +36,9 @@ const useUser = () => {
     useQuery<User>({
       queryKey: ["user", userId],
       queryFn: async () => {
-        if (db) {
-          const cachedUser = await db.users.get(userId);
-          if (cachedUser) return cachedUser;
-        }
 
         const res = await client.get(`/users/${userId}`);
         const user = res.data?.data;
-
-        if (db && user) {
-          await db.users.put(user);
-        }
 
         if (!user) throw new Error("User not found");
         return user;
@@ -76,11 +57,6 @@ const useUser = () => {
 
         const data = res.data?.data;
         const items = data?.items;
-
-        // Populate DB whenever we fetch a list
-        if (db && items && Array.isArray(items)) {
-          await db.users.bulkPut(items);
-        }
 
         return data;
       },
@@ -108,9 +84,6 @@ const useUser = () => {
 
     onSuccess: async (updatedUser) => {
       const userId = authDetails?.user?.id;
-      if (db) {
-        await db.users.update(userId, updatedUser);
-      }
       onSuccess({
         title: "Profile Updated",
         message: "Your profile has been updated successfully.",
@@ -159,9 +132,6 @@ const useUser = () => {
       return res.data;
     },
     onSuccess: async (data, { userId }) => {
-      if (db) {
-        await db.users.update(userId, data);
-      }
       onSuccess({
         title: "User Updated",
         message: "User information has been updated successfully.",
@@ -311,9 +281,6 @@ const useUser = () => {
 
     onSuccess: async (updatedUser) => {
       const userId = authDetails?.user?.id;
-      if (db) {
-        await db.users.update(userId, updatedUser);
-      }
 
       updateUser(updatedUser);
       queryClient.setQueryData(["currentUser"], (old: any) => {

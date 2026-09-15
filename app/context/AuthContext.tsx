@@ -57,14 +57,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     logoutLockRef.current = true;
 
     chatResetRef.current?.();
-    try {
-      const userId = authDetailsRef.current?.user?.id;
-      if (userId) {
-        const { deleteChatDB } = await import("../store/chat-store");
-        await deleteChatDB(userId);
-      }
-    } catch {}
-
     queryClient.clear();
 
     setAuthDetails(null);
