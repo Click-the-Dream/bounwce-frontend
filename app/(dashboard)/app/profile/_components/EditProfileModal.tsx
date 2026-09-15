@@ -32,7 +32,6 @@ export default function EditProfileModal({
   user,
   isOwnProfile,
 }: Props) {
-  const queryClient = useQueryClient();
   const { updateCurrentUser } = useUser();
   const backdropRef = useRef<HTMLDivElement>(null);
   const [interestOpen, setInterestOpen] = useState(false);
@@ -140,7 +139,7 @@ export default function EditProfileModal({
               size={52}
             />
             <div className="min-w-0">
-              <p className="text-[13px] font-medium text-[#111] truncate">
+              <p className="text-[13px] font-medium text-[#111] line-clamp-2">
                 {form.full_name || user?.name || "—"}
               </p>
               <p className="text-[11px] text-[#888] mt-0.5 truncate">
