@@ -1,64 +1,62 @@
+self.addEventListener("install", () => self.skipWaiting());
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("push", (event) => {
   console.log("[PUSH SW] Push event received");
-  if (!event.data) {
-    return;
-  }
+  if (!event.data) return;
 
   let data;
-
   try {
     data = event.data.json();
   } catch {
-    data = {
-      title: "Bouwnce",
-      body: event.data.text(),
-    };
+    data = { title: "Bouwnce", body: event.data.text() };
   }
 
-  console.log("[PUSH SW] Payload:", data);
+  const isChatNotification =
+    data.event_type === "chat_message" ||
+    data.type === "chat_message" ||
+    data.category === "chat";
 
-  const title = data.title || "Bouwnce";
+  const targetUrl = data.url || (isChatNotification ? "/app/chat" : "/");
 
   const options = {
     body: data.body || data.message || "New notification",
     icon: data.icon || "/icons/icon-192.png",
     badge: data.badge || "/icons/icon-192.png",
-
     data: {
-      url: data.url || "/",
+      url: targetUrl,
       notificationId: data.notification_id || data.id,
     },
-
     tag: data.tag || "bouwnce-notification",
-
     renotify: true,
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(self.registration.showNotification(data.title || "Bouwnce", options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const url = event.notification?.data?.url || "/";
+  const rawUrl = event.notification?.data?.url || "/";
+  const normalizedPath =
+    rawUrl === "/chat" || rawUrl.startsWith("/chat?")
+      ? "/app/chat" + (rawUrl.includes("?") ? rawUrl.slice(rawUrl.indexOf("?")) : "")
+      : rawUrl;
+  const url = new URL(normalizedPath, self.location.origin).href;
 
   event.waitUntil(
-    clients
-      .matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      })
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
-          if ("focus" in client) {
-            client.navigate(url);
-            return client.focus();
+          if ("focus" in client && client.url.startsWith(self.location.origin)) {
+            return client.focus().then(() => client.navigate(url));
           }
         }
-
-        if (clients.openWindow) {
-          return clients.openWindow(url);
-        }
+        return self.clients.openWindow(url);
       }),
   );
 });

@@ -2,16 +2,18 @@
 import { useEffect, useState } from "react";
 import { Users, Video } from "lucide-react";
 import { CustomCalendarIcon, CustomMapPinIcon } from "@/app/_utils/CustomIcons";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { TicketInfo } from "@/app/_utils/types/event";
 import { formatEventTime } from "@/app/_utils/date";
 import Link from "next/link";
 import useEvent from "@/app/hooks/use-events";
 import TicketCard from "./TicketCard";
+import { onSuccess } from "@/app/_utils/notification";
 
 export default function PrePayment() {
+  const router = useRouter();
   const { eventId } = useParams<{ eventId: string }>();
-  const { useGetEvent } = useEvent();
+  const { useGetEvent, attendEvent } = useEvent();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const {
@@ -65,6 +67,24 @@ export default function PrePayment() {
         (prev[ticketName] || 0) + amount,
       ),
     }));
+  };
+  const handleSubmit = () => {
+    const activeCategory = ticketCategories.find(
+      (ticket) => ticket.ticket_name === selectedCategoryId,
+    );
+    if (!activeCategory) return;
+
+    if (activeCategory.price === 0) {
+      attendEvent.mutate({
+        eventId,
+        payload: {
+          ticket_name: activeCategory.ticket_name,
+          quantity: quantities[selectedCategoryId] || 0,
+        },
+      });
+    } else {
+      return null;
+    }
   };
 
   const activeCategory = ticketCategories.find(
@@ -248,8 +268,17 @@ export default function PrePayment() {
             </div>
 
             {/* Action Button */}
-            <button className="text-[13px] w-full bg-black hover:bg-neutral-800 text-white font-semibold py-2.5 rounded-[10px] tracking-wide transition shadow-md active:scale-[0.98]">
-              Pay {formatCurrency(total)}
+            <button
+              onClick={handleSubmit}
+              disabled={attendEvent.isPending || activeQty === 0}
+              className="cursor-pointer text-[13px] w-full bg-black hover:bg-neutral-800 text-white font-semibold py-2.5 rounded-[10px] tracking-wide transition shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {attendEvent.isPending
+                ? "Processing..."
+                : selectedCategoryId.toLocaleLowerCase() == "free" &&
+                    total === 0
+                  ? "Get Free Ticket"
+                  : `Pay ${formatCurrency(total)}`}
             </button>
           </div>
         </div>

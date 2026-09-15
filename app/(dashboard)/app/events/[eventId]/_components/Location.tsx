@@ -57,26 +57,8 @@ const Location = ({ eventData }: { eventData: Event }) => {
               </h3>
 
               <p className="text-[13px] text-gray-500 line-clamp-2">
-                {eventData.link && eventData.link !== "string"
-                  ? eventData.link
-                  : "Meeting link will be shared before the event starts."}
+                Meeting link will be shared before the event starts.
               </p>
-
-              {eventData.link && eventData.link !== "string" && (
-                <a
-                  href={
-                    eventData.link.startsWith("http")
-                      ? eventData.link
-                      : `https://${eventData.link}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-orange hover:underline mt-1"
-                >
-                  Join Meeting
-                  <ExternalLink size={13} />
-                </a>
-              )}
             </>
           )}
         </div>

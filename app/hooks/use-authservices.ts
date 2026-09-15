@@ -8,6 +8,7 @@ import { onFailure, onSuccess } from "../_utils/notification";
 import { extractErrorMessage, storedUserEmail } from "../_utils/formatters";
 import { deleteChatDB } from "../store/chat-store";
 import { useChatUtils } from "../context/ChatContext";
+import { disablePushForCurrentDevice } from "../services/push";
 
 const useAuthServices = () => {
   const router = useRouter();
@@ -103,7 +104,7 @@ const useAuthServices = () => {
     onSuccess: ({ data }) => {
       onSuccess({
         title: "OTP Requested!",
-        message:"check your mail for the otp"// `Here is your otp ${data?.otp}`,
+        message: "check your mail for the otp", // `Here is your otp ${data?.otp}`,
       });
     },
     onError: (err: any) => {
@@ -135,30 +136,18 @@ const useAuthServices = () => {
     },
   });
 
-  // FIX (Bug 6 + Bug 7): Full logout teardown in the correct order:
-  // 1. Reset in-memory chat state (prewarmedCacheRef, selectedChat, etc.)
-  // 2. Wipe IndexedDB — wrapped in try/catch so a DB error never blocks logout
-  // 3. Clear React Query cache via the hook instance (fixes Bug 5)
-  // 4. Clear auth state
-  // onError still redirects — logout must always complete
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const userId = authDetails?.user?.id;
 
-      // Step 1: wipe in-memory chat state
       resetChatState();
-
-      // Step 2: wipe IndexedDB — never block logout on DB failure
       try {
         if (userId) await deleteChatDB(userId);
+        await disablePushForCurrentDevice();
       } catch {}
 
-      // Step 3: clear React Query cache (hook instance — fixes Bug 5)
       queryClient.clear();
-
-      // Step 4: clear auth (triggers safeLogout inside updateAuth)
       updateAuth(null);
-
       return null;
     },
     onSuccess: () => {

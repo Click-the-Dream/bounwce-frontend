@@ -35,7 +35,9 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
     close: () => void;
   } | null>(null);
 
-  const mustUpdateProfile = Boolean(user && !user.profile_pic);
+  const mustUpdateProfile = Boolean(
+    user && (!user.profile_pic || !String(user.bio ?? "").trim()),
+  );
 
   const onboardingStorageKey = user?.id
     ? `bouwnce:onboarding:${user.id}:${TOUR_VERSION}`

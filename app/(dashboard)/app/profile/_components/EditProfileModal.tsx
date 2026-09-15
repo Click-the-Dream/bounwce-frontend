@@ -202,6 +202,7 @@ export default function EditProfileModal({
                 name="bio"
                 value={form.bio}
                 onChange={handleChange}
+                required
                 rows={3}
                 placeholder="Tell people a little about yourself…"
                 className="w-full rounded-[10px] border border-black/10 p-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none resize-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all leading-relaxed bg-white"

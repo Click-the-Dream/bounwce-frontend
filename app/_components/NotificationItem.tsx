@@ -26,11 +26,11 @@ export const NotificationItem = ({
 
   const handleItemClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const target = isChat && sender?.id ? `/app/chat/${sender?.id}` : "#";
+    const target = isChat ? "/app/chat" : "#";
     if (isUnread) {
       markAsRead.mutate(notification.id);
     }
-    resetUnread(sender.id);
+    if (sender?.id) resetUnread(sender.id);
     router.push(target);
     onClose();
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Camera,
   CheckCircle2,
@@ -23,15 +23,25 @@ import { useOnboarding } from "@/app/context/OnboardingProvider";
 
 const MandatoryProfileGuard = () => {
   const { user, mustUpdateProfile, refreshUser } = useOnboarding();
-  const { uploadProfilePicture } = useUser();
+  const { uploadProfilePicture, updateCurrentUser } = useUser();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bio, setBio] = useState(() => String(user?.bio ?? ""));
+  const BIO_LIMIT = 160;
+
+  useEffect(() => {
+    setBio(String(user?.bio ?? ""));
+  }, [user?.id, user?.bio]);
 
   if (!mustUpdateProfile || !user) return null;
+
+  const hasPhoto = Boolean(user.profile_pic);
+  const hasBio = bio.trim().length > 0;
+  const profileComplete = hasPhoto && hasBio;
 
   const pickImage = () => fileRef.current?.click();
 
@@ -136,6 +146,35 @@ const MandatoryProfileGuard = () => {
     }
   };
 
+  const finishProfile = () => {
+    const normalizedBio = bio.trim();
+    if (!hasPhoto) {
+      setError("Please add a profile photo first.");
+      return;
+    }
+    if (!normalizedBio) {
+      setError("Please add a short bio before continuing.");
+      return;
+    }
+
+    setError(null);
+    updateCurrentUser.mutate(
+      { bio: normalizedBio },
+      {
+        onSuccess: async () => {
+          await refreshUser();
+          onSuccess({
+            title: "Profile completed",
+            message: "Your photo and bio are ready. Welcome to Bouwnce.",
+          });
+        },
+        onError: (err: any) => {
+          setError(err?.response?.data?.message || "We couldn't save your bio. Please try again.");
+        },
+      },
+    );
+  };
+
   return (
     <>
       <input
@@ -173,8 +212,8 @@ const MandatoryProfileGuard = () => {
                   Put a face to your Bouwnce
                 </h2>
                 <p className="mx-auto mt-2 max-w-110 text-[13px] leading-6 text-[#716a66] sm:text-[14px]">
-                  Add a profile photo so people can recognize you when they
-                  discover and connect with you.
+                  Add a profile photo and a short bio so people can recognize you
+                  and understand a little about you when they discover and connect.
                 </p>
               </div>
 
@@ -204,6 +243,26 @@ const MandatoryProfileGuard = () => {
                   JPG, PNG or WEBP · up to 10 MB
                 </p>
               </button>
+
+              <div className="mx-auto mt-4 max-w-82.5 rounded-2xl border border-black/8 bg-white p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <label htmlFor="mandatory-profile-bio" className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f6762]">
+                    Your bio
+                  </label>
+                  <span className={`text-[10px] font-semibold ${bio.length >= BIO_LIMIT - 20 ? "text-red-500" : "text-[#aaa09a]"}`}>
+                    {bio.length}/{BIO_LIMIT}
+                  </span>
+                </div>
+                <textarea
+                  id="mandatory-profile-bio"
+                  value={bio}
+                  maxLength={BIO_LIMIT}
+                  onChange={(event) => setBio(event.target.value)}
+                  rows={4}
+                  placeholder="Tell people a little about yourself, your interests, or what you do…"
+                  className="w-full resize-none rounded-xl border border-black/10 bg-[#fffdfb] px-3 py-3 text-[13px] leading-5 text-[#241e1b] outline-none transition focus:border-orange/40 focus:ring-2 focus:ring-orange/10"
+                />
+              </div>
 
               {error && (
                 <div className="mx-auto mt-3 max-w-82.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[12px] font-medium text-red-600">
@@ -237,6 +296,24 @@ const MandatoryProfileGuard = () => {
               <p className="text-center text-[11px] leading-5 text-[#8d8580]">
                 This is the only thing you need to finish before exploring
                 Bouwnce.
+              </p>
+              <button
+                type="button"
+                onClick={finishProfile}
+                disabled={!profileComplete || updateCurrentUser.isPending}
+                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-orange px-6 text-[13px] font-bold text-white shadow-[0_14px_30px_rgba(255,75,43,0.2)] transition hover:bg-[#ef4d2e] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {updateCurrentUser.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Check className="size-4" />
+                )}
+                {updateCurrentUser.isPending ? "Saving profile…" : "Continue to Bouwnce"}
+              </button>
+
+              <p className="mt-3 pb-6 text-center text-[10px] leading-5 text-[#aaa09a] sm:pb-8">
+                Your photo and bio are required once after signing in. You can update
+                them anytime from your profile settings.
               </p>
             </div>
           </section>

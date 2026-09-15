@@ -207,9 +207,18 @@ const useEvents = () => {
   // ATTEND EVENT
 
   const attendEvent = useMutation({
-    mutationFn: async (eventId: string | number) => {
+    mutationFn: async ({
+      eventId,
+      payload,
+    }: {
+      eventId: string | number;
+      payload: { ticket_name: string; quantity: number };
+    }) => {
       const response = await api.post(
         `/outgoing/events/events/${eventId}/attend`,
+        {
+          ticket_info: [payload],
+        },
       );
 
       return response.data.data;

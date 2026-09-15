@@ -36,7 +36,7 @@ export const NotificationPanel = ({ onClose }: { onClose: () => void }) => {
           onClick={onClose}
           className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
         >
-          <X className="size-4" />
+          <X className="size-5 text-red-500" />
         </button>
       </div>
 

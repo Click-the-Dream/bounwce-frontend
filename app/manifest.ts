@@ -7,6 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Bouwnce",
     short_name: "Bouwnce",
     description: "Bouwnce — Find your people. Get what you need.",
+    id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",

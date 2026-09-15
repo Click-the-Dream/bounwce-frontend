@@ -7,7 +7,10 @@ interface Attendee {
   id: string;
   avatar?: string | null;
   profile_image?: string | null;
-  name?: string;
+  user: {
+    id: string;
+    username?: string;
+  };
 }
 
 interface AttendeeAvatarsProps {
@@ -88,23 +91,28 @@ const AttendeeAvatars = ({ className, eventId }: AttendeeAvatarsProps) => {
     <div className={`flex items-center ${className ?? ""}`}>
       <div className="flex w-max -space-x-2">
         {visibleAttendees.map((attendee, index) => {
-          const image =
-            attendee.avatar ||
-            attendee.profile_image ||
-            FALLBACK_AVATARS[index % FALLBACK_AVATARS.length];
+          const image = attendee.avatar || attendee.profile_image;
 
           return (
             <div
               key={attendee.id}
               className="relative h-6 w-6 overflow-hidden rounded-full border-2 border-white bg-gray-200"
             >
-              <Image
-                src={image}
-                alt={attendee.name || `Attendee ${index + 1}`}
-                fill
-                sizes="24px"
-                className="object-cover"
-              />
+              {image ? (
+                <Image
+                  src={image}
+                  alt={attendee.user.username || `Attendee ${index + 1}`}
+                  fill
+                  sizes="24px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gray-300 flex items-center justify-center text-[10px] text-gray-800">
+                  {attendee.user.username
+                    ? attendee.user.username.slice(0, 2).toUpperCase()
+                    : "?"}
+                </div>
+              )}
             </div>
           );
         })}

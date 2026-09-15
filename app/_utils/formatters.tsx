@@ -1,6 +1,7 @@
 import { Variants } from "framer-motion";
 import { onboardingTree } from "./fields";
 import { Check, CheckCheck } from "lucide-react";
+import { onPrompt } from "./notification";
 
 export const extractErrorMessage = (
   error:
@@ -260,7 +261,7 @@ export const handleShare = async (event: { name: string; id: string }) => {
       await navigator.share(shareData);
     } else {
       await navigator.clipboard.writeText(shareData.url);
-      alert("Event link copied to clipboard.");
+      onPrompt({ title: "Event", message: "Event link copied to clipboard." });
     }
   } catch (err) {
     console.error(err);

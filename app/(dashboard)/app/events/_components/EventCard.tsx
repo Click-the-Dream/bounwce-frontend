@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { MoreHorizontal, Share2, Video } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { CustomCalendarIcon, CustomMapPinIcon } from "@/app/_utils/CustomIcons";
@@ -118,23 +117,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
           ) : (
             <div className="flex items-center text-xs text-blue-600 font-medium gap-1">
               <Video size={16} className="shrink-0 text-blue-500" />
-              {event.link && event.link !== "string" ? (
-                <Link
-                  href={
-                    event.link.startsWith("http")
-                      ? event.link
-                      : `https://${event.link}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline line-clamp-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Virtual Event
-                </Link>
-              ) : (
-                <span className="capitalize">Virtual Event</span>
-              )}
+              <span className="capitalize">Virtual Event</span>
             </div>
           )}
         </div>
@@ -144,7 +127,10 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
           <div className="flex items-center">
             {/* Overlapping Avatar Stack */}
 
-            <AttendeeAvatars eventId={event.id} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+            <AttendeeAvatars
+              eventId={event.id}
+              className="transition-transform duration-300 group-hover:translate-x-0.5"
+            />
           </div>
 
           <Link
