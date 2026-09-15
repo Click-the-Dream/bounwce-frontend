@@ -41,7 +41,7 @@ const EventCard = ({ event }: { event: Event }) => {
             }}
           />
 
-          <div className="absolute inset-0 bg-linear-to-r from-blue-700/30 to-indigo-900/30 flex items-center justify-center">
+          <div className="absolute inset-0 bg-linear-to-r from-blue-700/50 to-indigo-900/50 flex items-center justify-center">
             <span className="text-center text-white text-3xl font-extrabold tracking-widest opacity-25 uppercase select-none line-clamp-1">
               {event.name}
             </span>
