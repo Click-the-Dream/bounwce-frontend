@@ -111,13 +111,13 @@ const ExploreCard = ({
             />
           </div>
 
-          <h3 className="font-medium text-black text-[13px] leading-tight">
+          <h3 className="font-medium text-black text-[13px] leading-tight line-clamp-2">
             {full_name}
           </h3>
           <p className="text-[#888888] text-[13px]"> @{user_id?.slice(0, 8)}</p>
 
-          <p className="text-[#888888] text-xs leading-relaxed mb-[8.73px]">
-            {bio || "."}
+          <p className="text-[#888888] text-xs mb-[8.73px] line-clamp-2">
+            {bio || ""}
           </p>
         </div>
       </div>
@@ -131,12 +131,12 @@ const ExploreCard = ({
           )}
         </span>
       </div> */}
-      <div className="flex flex-wrap items-start justify-start gap-2 pt-3.5 mb-5.75 px-4  border-t-[0.53px] border-[#00000033]">
+      <div className="flex flex-wrap items-start justify-start gap-2 pt-3.5 mt-auto mb-5.75 px-4  border-t-[0.53px] border-[#00000033]">
         {shared_interests?.length > 0 ? (
           shared_interests.slice(0, 3)?.map((interest, index) => (
             <span
               key={index}
-              className="flex items-center justify-center h-max px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
+              className="shrink-0 flex items-center justify-center h-max px-2.5 py-0.5 border-[0.53px] border-[#8D8D8D] rounded-full text-xs text-[#747474]"
             >
               {interest}
             </span>
