@@ -80,7 +80,7 @@ const useEvents = () => {
         const response = await api.get(`/outgoing/events/events/${eventId}`);
         return response.data.data;
       },
-      enabled: !!eventId && !!authDetails?.access_token,
+      enabled: !!eventId,
     });
 
   // USER ATTENDANCE

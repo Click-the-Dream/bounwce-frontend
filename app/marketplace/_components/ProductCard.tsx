@@ -1,6 +1,4 @@
 "use client";
-import { FaStar } from "react-icons/fa6";
-import { useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import useCart from "@/app/hooks/use-cart";
 import { useRouter } from "next/navigation";

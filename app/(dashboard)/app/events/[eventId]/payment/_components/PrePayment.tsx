@@ -8,10 +8,12 @@ import { formatEventTime } from "@/app/_utils/date";
 import Link from "next/link";
 import useEvent from "@/app/hooks/use-events";
 import TicketCard from "./TicketCard";
-import { onSuccess } from "@/app/_utils/notification";
+import AuthModal from "@/app/_components/AuthModal";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function PrePayment() {
   const router = useRouter();
+  const { authDetails, showAuthModal, setShowAuthModal } = useAuth();
   const { eventId } = useParams<{ eventId: string }>();
   const { useGetEvent, attendEvent } = useEvent();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
@@ -69,19 +71,30 @@ export default function PrePayment() {
     }));
   };
   const handleSubmit = () => {
+    if (!authDetails?.access_token) {
+      setShowAuthModal(true);
+      return;
+    }
     const activeCategory = ticketCategories.find(
       (ticket) => ticket.ticket_name === selectedCategoryId,
     );
     if (!activeCategory) return;
 
     if (activeCategory.price === 0) {
-      attendEvent.mutate({
-        eventId,
-        payload: {
-          ticket_name: activeCategory.ticket_name,
-          quantity: quantities[selectedCategoryId] || 0,
+      attendEvent.mutate(
+        {
+          eventId,
+          payload: {
+            ticket_name: activeCategory.ticket_name,
+            quantity: quantities[selectedCategoryId] || 0,
+          },
         },
-      });
+        {
+          onSuccess: () => {
+            router.push(`/app/events`);
+          },
+        },
+      );
     } else {
       return null;
     }
@@ -283,6 +296,10 @@ export default function PrePayment() {
           </div>
         </div>
       </div>
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </div>
   );
 }
