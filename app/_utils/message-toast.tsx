@@ -13,9 +13,7 @@ const MessageToast = ({ senderName, message, profile_pic }: any) => {
   }, []);
 
   return (
-    <div className="group relative flex w-[340px] max-w-[calc(100vw-24px)] items-center gap-3 overflow-hidden rounded-2xl border border-black/[0.06] bg-white/95 px-3.5 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl">
-      <div className="absolute inset-y-0 left-0 w-1 bg-orange" />
-
+    <div className="group relative flex w-85 max-w-[calc(100vw-24px)] items-center gap-3 overflow-hidden rounded-2xl border border-black/6 bg-white/95 px-3.5 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl">
       <UserImage
         user={{ full_name: senderName, profile_pic }}
         size={40}
@@ -41,7 +39,13 @@ const MessageToast = ({ senderName, message, profile_pic }: any) => {
   );
 };
 
-const ToastContent = ({ senderName, message, userId, profile_pic, toastId }: any) => {
+const ToastContent = ({
+  senderName,
+  message,
+  userId,
+  profile_pic,
+  toastId,
+}: any) => {
   const router = useRouter();
   const { resetUnread } = useNotifications();
 
