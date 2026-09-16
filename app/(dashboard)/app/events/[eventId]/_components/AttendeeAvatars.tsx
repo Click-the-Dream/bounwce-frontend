@@ -6,10 +6,10 @@ import SafeImage from "@/app/_components/SafeImage";
 interface Attendee {
   id: string;
   avatar?: string | null;
-  profile_image?: {url: string};
   user: {
     id: string;
     username?: string;
+profile_image?: {url: string};
   };
 }
 
@@ -91,7 +91,7 @@ const AttendeeAvatars = ({ className, eventId }: AttendeeAvatarsProps) => {
     <div className={`flex items-center ${className ?? ""}`}>
       <div className="flex w-max -space-x-2">
         {visibleAttendees.map((attendee, index) => {
-          const image = attendee.profile_image?.url;
+          const image = attendee.user.profile_image?.url;
 
           return (
             <div
