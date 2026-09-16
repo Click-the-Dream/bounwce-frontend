@@ -6,19 +6,70 @@ import { useAuth } from "@/app/context/AuthContext";
 import { LuClock } from "react-icons/lu";
 import SwipeableMessage from "./SwipeableMessage";
 import ReplyPreview from "./ReplyPreview";
-import { AlertCircle, CheckCheck } from "lucide-react";
-
-// TYPES
+import { AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ChatMessageProps {
   msg: any;
   onReply?: (msg: any) => void;
-  /**
-   * Passed down from MessageList so clicking a reply preview
-   * scrolls the container to the original message.
-   */
   onScrollToMessage?: (messageId: string) => void;
 }
+
+const isSingleEmoji = (text: string) => {
+  const value = text?.trim();
+
+  if (!value) return false;
+
+  if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    const segmenter = new Intl.Segmenter(undefined, {
+      granularity: "grapheme",
+    });
+
+    const segments = [...segmenter.segment(value)];
+
+    if (segments.length !== 1) return false;
+
+    return /\p{Extended_Pictographic}/u.test(segments[0].segment);
+  }
+
+  return /^\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier}|\u200D\p{Extended_Pictographic})*$/u.test(
+    value,
+  );
+};
+
+// ─── URL RENDERING
+const urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+
+const renderMessageBody = (text: string, isSender: boolean) => {
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+
+    const isUrl = /^(https?:\/\/|www\.)/i.test(part);
+
+    if (!isUrl) {
+      return <span key={index}>{part}</span>;
+    }
+
+    const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
+
+    return (
+      <a
+        key={index}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className={`underline underline-offset-2 hover:opacity-70 transition-opacity ${
+          isSender ? "text-black" : "text-green-800"
+        }`}
+      >
+        {part}
+      </a>
+    );
+  });
+};
 
 // COMPONENT
 
@@ -29,40 +80,45 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
   const [isHighlighted, setIsHighlighted] = useState(false);
-
   const textRef = useRef<HTMLDivElement>(null);
+
+  const isEmojiOnly = isSingleEmoji(msg?.body);
 
   // Detect overflow to decide whether to show "Read more"
   useEffect(() => {
     const el = textRef.current;
-    if (el) {
+
+    if (el && !isEmojiOnly) {
       setShowReadMore(el.scrollHeight > el.clientHeight + 5);
+    } else {
+      setShowReadMore(false);
     }
-  }, [msg?.body]);
+  }, [msg?.body, isEmojiOnly]);
 
   const isUploading = msg.delivery_status === "uploading";
+
   const isSending = msg.delivery_status === "sending" || msg.pending;
+
   const isFailed = msg.delivery_status === "failed";
+
   const isSent = msg.delivery_status === "sent" || !msg.read_at;
+
   const isDelivered = msg.delivery_status === "delivered";
+
   const isRead = !!msg.read_at;
 
   // ─── STATUS
 
   const renderStatus = () => {
     if (!isSender) return null;
-
     if (isUploading) return <LuClock size={10} className="animate-pulse" />;
-
     if (isFailed) return <AlertCircle size={12} className="text-red-500" />;
-
     if (isSending) return <LuClock size={10} />;
     if (isDelivered) return renderCheck("delivered");
-
     if (isRead) return renderCheck("read", styles.time);
-
     if (isSent) return renderCheck("sent");
-    return <LuClock size={10} className="" />;
+
+    return <LuClock size={10} />;
   };
 
   // Called when this message is scrolled to as a reply target
@@ -77,6 +133,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
         highlight();
       }
     };
+
     window.addEventListener("highlight-message", handler as EventListener);
     return () =>
       window.removeEventListener("highlight-message", handler as EventListener);
@@ -119,9 +176,33 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
         {/* Message body */}
         <div
           ref={textRef}
-          className={`pr-2 ${!expanded ? "line-clamp-4" : ""}`}
+          className={`pr-2 ${!expanded && !isEmojiOnly ? "line-clamp-4" : ""}`}
         >
-          {msg?.body}
+          {isEmojiOnly ? (
+            <motion.span
+              className="inline-block text-[50px] leading-none origin-center"
+              initial={{
+                opacity: 0,
+                scale: 0.5,
+              }}
+              whileInView={{
+                opacity: 1,
+                scale: 1,
+              }}
+              viewport={{
+                once: false,
+                amount: 0.8,
+              }}
+              transition={{
+                duration: 0.45,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
+            >
+              {msg.body.trim()}
+            </motion.span>
+          ) : (
+            renderMessageBody(msg?.body ?? "", isSender)
+          )}
         </div>
 
         {/* Read more / less toggle */}
@@ -146,6 +227,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
+
             {isSender && <span className="text-[10px]">{renderStatus()}</span>}
           </div>
         </div>
