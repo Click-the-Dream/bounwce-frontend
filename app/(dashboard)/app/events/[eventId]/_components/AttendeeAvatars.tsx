@@ -6,7 +6,7 @@ import Image from "next/image";
 interface Attendee {
   id: string;
   avatar?: string | null;
-  profile_image?: string | null;
+  profile_image?: {url: string};
   user: {
     id: string;
     username?: string;
@@ -91,7 +91,7 @@ const AttendeeAvatars = ({ className, eventId }: AttendeeAvatarsProps) => {
     <div className={`flex items-center ${className ?? ""}`}>
       <div className="flex w-max -space-x-2">
         {visibleAttendees.map((attendee, index) => {
-          const image = attendee.avatar || attendee.profile_image;
+          const image = attendee.profile_image?.url;
 
           return (
             <div
