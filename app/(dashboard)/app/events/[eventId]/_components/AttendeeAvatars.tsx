@@ -1,15 +1,15 @@
 "use client";
 
 import useEvents from "@/app/hooks/use-events";
-import Image from "next/image";
+import SafeImage from "@/app/_components/SafeImage";
 
 interface Attendee {
   id: string;
   avatar?: string | null;
-  profile_image?: string | null;
   user: {
     id: string;
     username?: string;
+profile_image?: {url: string};
   };
 }
 
@@ -91,7 +91,7 @@ const AttendeeAvatars = ({ className, eventId }: AttendeeAvatarsProps) => {
     <div className={`flex items-center ${className ?? ""}`}>
       <div className="flex w-max -space-x-2">
         {visibleAttendees.map((attendee, index) => {
-          const image = attendee.avatar || attendee.profile_image;
+          const image = attendee.user.profile_image?.url;
 
           return (
             <div
@@ -99,12 +99,12 @@ const AttendeeAvatars = ({ className, eventId }: AttendeeAvatarsProps) => {
               className="relative h-6 w-6 overflow-hidden rounded-full border-2 border-white bg-gray-200"
             >
               {image ? (
-                <Image
+                <SafeImage
                   src={image}
                   alt={attendee.user.username || `Attendee ${index + 1}`}
-                  fill
-                  sizes="24px"
-                  className="object-cover"
+width={40}
+height={40}
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="h-full w-full bg-gray-300 flex items-center justify-center text-[10px] text-gray-800">
