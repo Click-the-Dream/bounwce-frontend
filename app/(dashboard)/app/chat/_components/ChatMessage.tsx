@@ -38,7 +38,7 @@ const isSingleEmoji = (text: string) => {
 };
 
 // ─── URL RENDERING
-const urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+const urlRegex = /((?:https?:\/\/|www\.)[^\s<]+)/gi;
 
 const renderMessageBody = (text: string, isSender: boolean) => {
   const parts = text.split(urlRegex);
@@ -46,7 +46,7 @@ const renderMessageBody = (text: string, isSender: boolean) => {
   return parts.map((part, index) => {
     if (!part) return null;
 
-    const isUrl = /^(https?:\/\/|www\.)/i.test(part);
+    const isUrl = /^(?:https?:\/\/|www\.)/i.test(part);
 
     if (!isUrl) {
       return <span key={index}>{part}</span>;
@@ -61,8 +61,8 @@ const renderMessageBody = (text: string, isSender: boolean) => {
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className={`underline underline-offset-2 hover:opacity-70 transition-opacity ${
-          isSender ? "text-black" : "text-green-800"
+        className={`underline underline-offset-2 transition-opacity hover:opacity-70 ${
+          isSender ? "text-slate-900" : "text-green-800"
         }`}
       >
         {part}
@@ -70,7 +70,6 @@ const renderMessageBody = (text: string, isSender: boolean) => {
     );
   });
 };
-
 // COMPONENT
 
 const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
