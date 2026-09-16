@@ -25,7 +25,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || data.message || "New notification",
     icon: data.icon || "/icons/icon-192.png",
-    badge: data.badge || "/icons/icon-192.png",
+    badge: data?.profile_image?.url || data.badge || "/icons/icon-192.png",
     data: {
       url: targetUrl,
       notificationId: data.notification_id || data.id,
@@ -34,7 +34,9 @@ self.addEventListener("push", (event) => {
     renotify: true,
   };
 
-  event.waitUntil(self.registration.showNotification(data.title || "Bouwnce", options));
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Bouwnce", options),
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
@@ -43,7 +45,8 @@ self.addEventListener("notificationclick", (event) => {
   const rawUrl = event.notification?.data?.url || "/";
   const normalizedPath =
     rawUrl === "/chat" || rawUrl.startsWith("/chat?")
-      ? "/app/chat" + (rawUrl.includes("?") ? rawUrl.slice(rawUrl.indexOf("?")) : "")
+      ? "/app/chat" +
+        (rawUrl.includes("?") ? rawUrl.slice(rawUrl.indexOf("?")) : "")
       : rawUrl;
   const url = new URL(normalizedPath, self.location.origin).href;
 
@@ -52,7 +55,10 @@ self.addEventListener("notificationclick", (event) => {
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
-          if ("focus" in client && client.url.startsWith(self.location.origin)) {
+          if (
+            "focus" in client &&
+            client.url.startsWith(self.location.origin)
+          ) {
             return client.focus().then(() => client.navigate(url));
           }
         }

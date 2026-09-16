@@ -70,6 +70,34 @@ const useNotificationServices = () => {
       });
     },
   });
+  const markAllAsRead = useMutation({
+    mutationFn: async () => {
+      const { data } = await client.patch("/notifications/read-all");
+      return data;
+    },
+
+    onSuccess: () => {
+      queryClient.setQueryData(["notifications"], (old: any) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: {
+              ...page.data,
+              items: [],
+            },
+          })),
+        };
+      });
+
+      // Refresh unread count/summary
+      queryClient.invalidateQueries({
+        queryKey: ["unread-summary"],
+      });
+    },
+  });
 
   // UNREAD SUMMARY
   const unreadSummary = () =>
@@ -130,6 +158,7 @@ const useNotificationServices = () => {
     // Notifications
     getNotifications,
     markAsRead,
+    markAllAsRead,
     unreadSummary,
 
     // Push notifications
