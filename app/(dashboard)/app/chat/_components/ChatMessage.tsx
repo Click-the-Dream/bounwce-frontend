@@ -62,7 +62,7 @@ const renderMessageBody = (text: string, isSender: boolean) => {
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
         className={`underline underline-offset-2 transition-opacity hover:opacity-70 ${
-          isSender ? "text-slate-900" : "text-green-800"
+          isSender ? "text-slate-900" : "text-green-700"
         }`}
       >
         {part}
