@@ -37,21 +37,34 @@ const useGeneratedHtml = (formData: any) => {
     .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 14px 0; }
     
     /* Strict word-wrap rules requested by backend */
-   .content { 
+  .content { 
       font-size: 15px; 
       color: #374151; 
       line-height: 1.8; 
       word-break: normal !important; 
       overflow-wrap: break-word !important; 
-      white-space: pre-wrap !important; 
+      hyphens: none !important; 
+      white-space: normal !important; 
     }
-    .content p { 
+
+    /* Target paragraphs rendered by Quill */
+    .content p, 
+    .content .ql-editor p { 
       margin: 0 0 16px 0 !important; 
+      line-height: 1.8 !important;
     }
+
+    /* Fix blank lines created by pressing 'Enter' in React Quill */
+    .content p:empty::before,
+    .content p > br {
+      content: "";
+      display: block;
+    }
+
     .content img { 
       max-width: 100% !important; 
       height: auto !important; 
-    } 
+    }
     .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: ceter; padding: 28px 20px; }
     .cta-button { display: inline-block; background-color: #ff3b0a; color: #ffffff !important; text-decoration: none !important; border-radius: 8px; font-weight: 600; font-size: 13px; padding: 12px 15px; margin-bottom: 20px;}
     
