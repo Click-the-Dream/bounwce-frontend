@@ -6,7 +6,7 @@ interface FormData {
 }
 
 const useGeneratedHtml = (formData: FormData) => {
-  const [debouncedData, setDebouncedData] = useState(formData);
+  const [debouncedData, setDebouncedData] = useState<FormData>(formData);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -17,6 +17,10 @@ const useGeneratedHtml = (formData: FormData) => {
   }, [formData]);
 
   return useMemo(() => {
+    const subject = debouncedData.subject || "Bouwnce Newsletter";
+    const content =
+      debouncedData.content || "Start typing your content...";
+
     return `<!doctype html>
 <html
   xmlns="http://www.w3.org/1999/xhtml"
@@ -25,9 +29,10 @@ const useGeneratedHtml = (formData: FormData) => {
 >
 <head>
 
-  <title>${debouncedData.subject || "Bouwnce Newsletter"}</title>
+  <title>${subject}</title>
 
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
   <meta
     http-equiv="Content-Type"
     content="text/html; charset=UTF-8"
@@ -35,13 +40,13 @@ const useGeneratedHtml = (formData: FormData) => {
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    content="width=device-width, initial-scale=1.0"
   >
 
   <style type="text/css">
 
     /* =====================================================
-       GLOBAL RESET
+       RESET
     ===================================================== */
 
     *,
@@ -65,10 +70,6 @@ const useGeneratedHtml = (formData: FormData) => {
       width: 100% !important;
       max-width: 100% !important;
 
-      /*
-       * IMPORTANT:
-       * Do not use min-width: 100%.
-       */
       min-width: 0 !important;
 
       margin: 0 !important;
@@ -80,30 +81,13 @@ const useGeneratedHtml = (formData: FormData) => {
       -ms-text-size-adjust: 100% !important;
     }
 
-
-    /* =====================================================
-       TABLES
-    ===================================================== */
-
-    table {
-      border-collapse: collapse;
-      border-spacing: 0;
-
-      mso-table-lspace: 0pt;
-      mso-table-rspace: 0pt;
-    }
-
+    table,
     td {
       border-collapse: collapse;
 
       mso-table-lspace: 0pt;
       mso-table-rspace: 0pt;
     }
-
-
-    /* =====================================================
-       IMAGES
-    ===================================================== */
 
     img {
       border: 0;
@@ -119,11 +103,6 @@ const useGeneratedHtml = (formData: FormData) => {
       -ms-interpolation-mode: bicubic;
     }
 
-
-    /* =====================================================
-       LINKS
-    ===================================================== */
-
     a {
       text-decoration: none;
     }
@@ -137,11 +116,10 @@ const useGeneratedHtml = (formData: FormData) => {
       width: 100% !important;
       max-width: 100% !important;
 
+      min-width: 0 !important;
+
       margin: 0 auto !important;
 
-      /*
-       * Small horizontal padding.
-       */
       padding: 12px 8px !important;
 
       font-family:
@@ -175,10 +153,6 @@ const useGeneratedHtml = (formData: FormData) => {
 
       border-radius: 10px;
 
-      /*
-       * Card itself can hide its rounded corners.
-       * Text inside is still allowed to wrap correctly.
-       */
       overflow: hidden;
 
       box-sizing: border-box !important;
@@ -271,29 +245,28 @@ const useGeneratedHtml = (formData: FormData) => {
 
       white-space: normal !important;
 
-      overflow-wrap: anywhere !important;
-
+      /*
+       * IMPORTANT:
+       * Normal words are NOT broken.
+       */
       word-break: normal !important;
+
+      /*
+       * Only allows emergency wrapping when a word
+       * is genuinely too long.
+       */
+      overflow-wrap: break-word !important;
 
       box-sizing: border-box !important;
     }
 
 
     /* =====================================================
-       QUILL CONTENT
-       
-       IMPORTANT:
-       
-       Do NOT use:
-       
-       width: 100%
-       word-break: break-word
-       
-       on every nested element.
+       MAIN QUILL CONTENT
     ===================================================== */
 
     .content {
-      width: auto !important;
+      width: 100% !important;
       max-width: 100% !important;
 
       min-width: 0 !important;
@@ -312,13 +285,12 @@ const useGeneratedHtml = (formData: FormData) => {
       white-space: normal !important;
 
       /*
-       * Allows long strings to wrap.
+       * NORMAL WORD WRAPPING
+       *
+       * This is deliberately NOT "anywhere".
        */
-      overflow-wrap: anywhere !important;
+      overflow-wrap: break-word !important;
 
-      /*
-       * Keep normal words intact.
-       */
       word-break: normal !important;
 
       box-sizing: border-box !important;
@@ -326,16 +298,13 @@ const useGeneratedHtml = (formData: FormData) => {
 
 
     /* =====================================================
-       QUILL PARAGRAPHS / DIVS
+       QUILL PARAGRAPHS
     ===================================================== */
 
-    .content p,
-    .content div {
+    .content p {
       /*
-       * IMPORTANT:
-       * Do NOT force width: 100%.
-       *
-       * Let the browser calculate the available width.
+       * Don't force nested paragraphs to have a
+       * separate 100% width calculation.
        */
       width: auto !important;
 
@@ -354,22 +323,46 @@ const useGeneratedHtml = (formData: FormData) => {
 
       white-space: normal !important;
 
-      /*
-       * Long words/URLs can break if necessary.
-       */
-      overflow-wrap: anywhere !important;
-
-      /*
-       * Normal words should NOT be split arbitrarily.
-       */
       word-break: normal !important;
+
+      overflow-wrap: break-word !important;
 
       box-sizing: border-box !important;
     }
 
 
     /* =====================================================
-       INLINE ELEMENTS
+       QUILL DIVS
+    ===================================================== */
+
+    .content div {
+      width: auto !important;
+
+      max-width: 100% !important;
+
+      min-width: 0 !important;
+
+      margin: 0 0 16px 0 !important;
+      padding: 0 !important;
+
+      color: inherit;
+
+      font-size: inherit;
+
+      line-height: 1.8 !important;
+
+      white-space: normal !important;
+
+      word-break: normal !important;
+
+      overflow-wrap: break-word !important;
+
+      box-sizing: border-box !important;
+    }
+
+
+    /* =====================================================
+       INLINE TEXT ELEMENTS
     ===================================================== */
 
     .content span,
@@ -377,13 +370,15 @@ const useGeneratedHtml = (formData: FormData) => {
     .content b,
     .content em,
     .content i {
-      max-width: 100% !important;
+      /*
+       * Don't give inline elements a fixed width.
+       */
 
       white-space: normal !important;
 
-      overflow-wrap: anywhere !important;
-
       word-break: normal !important;
+
+      overflow-wrap: break-word !important;
     }
 
 
@@ -397,7 +392,9 @@ const useGeneratedHtml = (formData: FormData) => {
       white-space: normal !important;
 
       /*
-       * Useful for very long URLs.
+       * URLs can contain extremely long strings
+       * without spaces, so links get more aggressive
+       * wrapping.
        */
       overflow-wrap: anywhere !important;
 
@@ -421,9 +418,9 @@ const useGeneratedHtml = (formData: FormData) => {
 
       white-space: normal !important;
 
-      overflow-wrap: anywhere !important;
-
       word-break: normal !important;
+
+      overflow-wrap: break-word !important;
     }
 
 
@@ -435,26 +432,30 @@ const useGeneratedHtml = (formData: FormData) => {
     .content ol {
       max-width: 100% !important;
 
-      padding-left: 24px;
-
       margin-top: 0;
 
-      overflow-wrap: anywhere !important;
+      padding-left: 24px;
+
+      white-space: normal !important;
 
       word-break: normal !important;
+
+      overflow-wrap: break-word !important;
     }
 
     .content li {
       max-width: 100% !important;
 
-      overflow-wrap: anywhere !important;
+      white-space: normal !important;
 
       word-break: normal !important;
+
+      overflow-wrap: break-word !important;
     }
 
 
     /* =====================================================
-       BLOCKQUOTES
+       BLOCKQUOTE
     ===================================================== */
 
     .content blockquote {
@@ -463,14 +464,16 @@ const useGeneratedHtml = (formData: FormData) => {
       margin-left: 0;
       margin-right: 0;
 
-      overflow-wrap: anywhere !important;
+      white-space: normal !important;
 
       word-break: normal !important;
+
+      overflow-wrap: break-word !important;
     }
 
 
     /* =====================================================
-       IMAGES INSIDE CONTENT
+       IMAGES
     ===================================================== */
 
     .content img {
@@ -487,11 +490,13 @@ const useGeneratedHtml = (formData: FormData) => {
 
 
     /* =====================================================
-       VIDEOS / IFRAMES
+       IFRAME / VIDEO
     ===================================================== */
 
     .content iframe,
     .content video {
+      display: block;
+
       max-width: 100% !important;
 
       width: 100% !important;
@@ -550,6 +555,8 @@ const useGeneratedHtml = (formData: FormData) => {
 
       margin: 0 !important;
 
+      padding: 24px 16px !important;
+
       background-color: #fafafa;
 
       border-top: 1px solid #eeeeee;
@@ -561,8 +568,6 @@ const useGeneratedHtml = (formData: FormData) => {
       line-height: 1.5;
 
       text-align: center;
-
-      padding: 24px 16px;
 
       box-sizing: border-box !important;
     }
@@ -576,6 +581,10 @@ const useGeneratedHtml = (formData: FormData) => {
       display: inline-block;
 
       max-width: 100%;
+
+      margin-bottom: 20px;
+
+      padding: 12px 15px;
 
       background-color: #ff3b0a;
 
@@ -591,16 +600,12 @@ const useGeneratedHtml = (formData: FormData) => {
 
       line-height: 1.2;
 
-      padding: 12px 15px;
-
-      margin-bottom: 20px;
-
       box-sizing: border-box !important;
     }
 
 
     /* =====================================================
-       SOCIAL TABLE
+       SOCIALS
     ===================================================== */
 
     .socials-table {
@@ -628,11 +633,11 @@ const useGeneratedHtml = (formData: FormData) => {
     .socials-table img {
       display: inline-block;
 
-      width: 20px;
+      width: 20px !important;
 
       max-width: 20px !important;
 
-      height: auto;
+      height: auto !important;
     }
 
 
@@ -671,7 +676,7 @@ const useGeneratedHtml = (formData: FormData) => {
       }
 
       .content {
-        width: auto !important;
+        width: 100% !important;
 
         max-width: 100% !important;
 
@@ -708,9 +713,9 @@ const useGeneratedHtml = (formData: FormData) => {
     <div class="email-card">
 
 
-      <!-- =================================================
+      <!-- ================================
            HEADER
-      ================================================== -->
+      ================================= -->
 
       <div class="header">
 
@@ -721,9 +726,9 @@ const useGeneratedHtml = (formData: FormData) => {
       </div>
 
 
-      <!-- =================================================
+      <!-- ================================
            BODY
-      ================================================== -->
+      ================================= -->
 
       <div class="body-section">
 
@@ -732,18 +737,15 @@ const useGeneratedHtml = (formData: FormData) => {
         </p>
 
         <div class="content">
-          ${
-            debouncedData.content ||
-            "Start typing your content..."
-          }
+          ${content}
         </div>
 
       </div>
 
 
-      <!-- =================================================
+      <!-- ================================
            FOOTER
-      ================================================== -->
+      ================================= -->
 
       <div class="footer">
 
@@ -779,8 +781,6 @@ const useGeneratedHtml = (formData: FormData) => {
 
           <tr>
 
-            <!-- INSTAGRAM -->
-
             <td width="33%">
 
               <a
@@ -791,14 +791,12 @@ const useGeneratedHtml = (formData: FormData) => {
                   src="https://img.icons8.com/ios-filled/50/ff3b0a/instagram-new.png"
                   width="20"
                   alt="Instagram"
-                >
+                />
 
               </a>
 
             </td>
 
-
-            <!-- TIKTOK -->
 
             <td width="33%">
 
@@ -810,14 +808,12 @@ const useGeneratedHtml = (formData: FormData) => {
                   src="https://img.icons8.com/ios-filled/50/ff3b0a/tiktok.png"
                   width="20"
                   alt="TikTok"
-                >
+                />
 
               </a>
 
             </td>
 
-
-            <!-- LINKEDIN -->
 
             <td width="33%">
 
@@ -829,7 +825,7 @@ const useGeneratedHtml = (formData: FormData) => {
                   src="https://img.icons8.com/ios-filled/50/ff3b0a/linkedin.png"
                   width="20"
                   alt="LinkedIn"
-                >
+                />
 
               </a>
 
