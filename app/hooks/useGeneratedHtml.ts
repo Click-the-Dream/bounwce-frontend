@@ -37,7 +37,6 @@ const useGeneratedHtml = (formData: any) => {
       padding: 12px 8px; 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       width: 100% !important;
-      max-width: 100% !important;
     }
 
     .email-card { 
@@ -62,21 +61,21 @@ const useGeneratedHtml = (formData: any) => {
 
     .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0; }
     
-    /* Clean, Whole-Word Wrapping Setup */
-    .content { 
+    /* Strict Whole-Word Flow */
+    .content, 
+    .content * { 
       font-size: 15px; 
       color: #374151; 
       line-height: 1.8; 
-      width: 100% !important;
       
-      /* Standard email wrapping rules */
-      overflow-wrap: break-word !important;
+      /* Completely turn off character-level breaking */
+      overflow-wrap: normal !important;
       word-break: normal !important;
-      word-wrap: break-word !important;
+      word-wrap: normal !important;
       white-space: normal !important;
       
-      hyphens: none !important;
-      -webkit-hyphens: none !important;
+      hyphens: manual !important;
+      -webkit-hyphens: manual !important;
     }
 
     /* Paragraph & Block Elements */
@@ -85,6 +84,15 @@ const useGeneratedHtml = (formData: any) => {
       margin: 0 0 16px 0 !important; 
       line-height: 1.8 !important;
       width: 100% !important;
+      display: block !important;
+    }
+
+    /* Quill nested inline elements */
+    .content span,
+    .content strong,
+    .content em,
+    .content a {
+      display: inline !important;
     }
 
     /* Preserve height on Quill empty lines */
@@ -94,15 +102,7 @@ const useGeneratedHtml = (formData: any) => {
       display: block;
     }
 
-    /* Inline elements inherit safe boundaries */
-    .content span,
-    .content strong,
-    .content em {
-      overflow-wrap: break-word !important;
-      word-break: normal !important;
-    }
-
-    /* Alignment Classes */
+    /* Alignment Support */
     .content .ql-align-center { text-align: center !important; }
     .content .ql-align-right { text-align: right !important; }
     .content .ql-align-justify { text-align: justify !important; }
