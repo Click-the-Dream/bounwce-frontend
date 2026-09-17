@@ -38,6 +38,7 @@ const useGeneratedHtml = (formData: any) => {
     
     /* Strict word-wrap rules requested by backend */
   .content { 
+      .content { 
       font-size: 15px; 
       color: #374151; 
       line-height: 1.8; 
@@ -47,19 +48,22 @@ const useGeneratedHtml = (formData: any) => {
       white-space: normal !important; 
     }
 
-    /* Target paragraphs rendered by Quill */
-    .content p, 
-    .content .ql-editor p { 
+    /* Paragraph margins and blank line heights */
+    .content p { 
       margin: 0 0 16px 0 !important; 
-      line-height: 1.8 !important;
+      min-height: 1.8em;
     }
 
-    /* Fix blank lines created by pressing 'Enter' in React Quill */
-    .content p:empty::before,
-    .content p > br {
+    /* Fix empty paragraph line breaks */
+    .content p:empty::before {
       content: "";
-      display: block;
+      display: inline-block;
     }
+
+    /* Quill Alignment Classes inside Preview */
+    .content .ql-align-center { text-align: center !important; }
+    .content .ql-align-right { text-align: right !important; }
+    .content .ql-align-justify { text-align: justify !important; }
 
     .content img { 
       max-width: 100% !important; 
