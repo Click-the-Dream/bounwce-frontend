@@ -1,16 +1,16 @@
 const EditorPreview = ({ previewMode, generatedHtml }: any) => {
   return (
     <main
-      className={`flex-1 p-2 md:p-10 flex justify-center items-center overflow-hidden ${
+      className={`w-full flex-1 p-2 md:p-6 flex justify-center items-start overflow-y-auto ${
         previewMode === "desktop" ? "hidden md:flex" : "flex"
       }`}
     >
-      <div className="w-full h-full max-w-[650px] mx-auto overflow-hidden rounded-lg shadow-sm">
+      <div className="w-full max-w-[650px] mx-auto bg-white rounded-lg shadow-sm min-h-[500px]">
         <iframe
           title="Preview"
           srcDoc={generatedHtml}
-          className="w-full h-full border-none block"
-          style={{ width: "100%", height: "100%" }}
+          className="w-full h-full border-none block min-w-full"
+          style={{ width: "100%", minWidth: "100%", minHeight: "100vh" }}
         />
       </div>
     </main>
