@@ -41,7 +41,7 @@ const useGeneratedHtml = (formData: any) => {
   font-size: 15px; 
   color: #374151; 
   line-height: 1.8; 
-  word-break: keep-all !important; 
+  word-break: normal !important; 
   overflow-wrap: break-word !important; 
   word-wrap: break-word !important; 
   hyphens: none !important; 
