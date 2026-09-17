@@ -20,7 +20,9 @@ const useGeneratedHtml = (formData: any) => {
     body { margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; background-color:#f3f4f6; }
     table, td { border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; }
     img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
-    p { display:block; margin:0; }
+    
+    /* Global element resets */
+    p { display: block; margin: 0 0 16px 0; }
     
     /* Email constraints defined by the backend's MJML */
     .email-wrapper { padding: 40px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;}
@@ -32,43 +34,38 @@ const useGeneratedHtml = (formData: any) => {
     .body-section { padding: 38px 30px; background-color: #ffffff; }
     .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 14px 0; }
     
-    /* Strict word-wrap rules requested by backend */
-        .content { 
-  font-size: 15px; 
-  color: #374151; 
-  line-height: 1.8; 
-  
-  /* Disable arbitrary character breaks entirely */
-  overflow-wrap: normal !important; 
-  word-wrap: normal !important;
-  word-break: normal !important; 
-  hyphens: none !important; 
-  -webkit-hyphens: none !important;
-  white-space: normal !important; 
-}
-
-/* Ensure child elements like paragraphs don't inherit word breaking */
-.content * {
-  overflow-wrap: normal !important;
-  word-break: normal !important;
-}
-
-.content p { 
-  margin: 0 0 16px 0 !important; 
-  min-height: 1.8em;
-}
-
-    /* Fix empty paragraph line breaks */
-    .content p:empty::before {
-      content: "";
-      display: inline-block;
+    /* Clean text layout & wrapping */
+    .content { 
+      font-size: 15px; 
+      color: #374151; 
+      line-height: 1.8; 
+      overflow-wrap: anywhere !important; 
+      word-break: normal !important; 
+      white-space: normal !important; 
+      hyphens: none !important;
+      -webkit-hyphens: none !important;
     }
 
-    /* Quill Alignment Classes inside Preview */
+    /* Target standard paragraphs & React Quill elements */
+    .content p,
+    .content div { 
+      margin: 0 0 16px 0 !important; 
+      line-height: 1.8 !important;
+      display: block !important;
+    }
+
+    /* Force line breaks on blank/empty lines in Quill output */
+    .content p:empty,
+    .content p:has(> br:only-child) {
+      min-height: 1.8em;
+    }
+
+    /* Quill Alignment Classes */
     .content .ql-align-center { text-align: center !important; }
     .content .ql-align-right { text-align: right !important; }
     .content .ql-align-justify { text-align: justify !important; }
-   .content img { max-width: 100% !important; height: auto !important; }
+    
+    .content img { max-width: 100% !important; height: auto !important; }
     
     .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: center; padding: 28px 20px; }
     .cta-button { display: inline-block; background-color: #ff3b0a; color: #ffffff !important; text-decoration: none !important; border-radius: 8px; font-weight: 600; font-size: 13px; padding: 12px 15px; margin-bottom: 20px;}
@@ -88,7 +85,6 @@ const useGeneratedHtml = (formData: any) => {
 
       <!-- BODY -->
       <div class="body-section">
-        <!-- Replaced MJML {{ user_name }} with a generic "there" for the live preview -->
         <p class="greeting">Hi there,</p>
         
         <div class="content">
@@ -103,7 +99,7 @@ const useGeneratedHtml = (formData: any) => {
           You’re receiving this because you subscribed to our updates.
         </p>
         
-        <!-- SOCIALS (Converted MJML Columns to HTML Table for perfect horizontal alignment) -->
+        <!-- SOCIALS -->
         <table class="socials-table" border="0" cellpadding="0" cellspacing="0">
           <tr>
             <td width="33%">
