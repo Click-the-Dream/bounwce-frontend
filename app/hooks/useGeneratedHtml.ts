@@ -37,10 +37,9 @@ const useGeneratedHtml = (formData: any) => {
       font-size: 15px; 
       color: #374151; 
       line-height: 1.8; 
-      word-break: normal !important; 
-      overflow-wrap: break-word !important; 
-      hyphens: none !important; 
-      white-space: normal !important; 
+      
+       
+      
     }
 
     /* Paragraph margins and blank line heights */
