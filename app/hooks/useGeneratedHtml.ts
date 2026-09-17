@@ -34,19 +34,30 @@ const useGeneratedHtml = (formData: any) => {
     
     /* Strict word-wrap rules requested by backend */
         .content { 
-      font-size: 15px; 
-      color: #374151; 
-      line-height: 1.8; 
-      overflow-wrap: break-word !important;
-       
-      
-    }
+      fo.content { 
+  font-size: 15px; 
+  color: #374151; 
+  line-height: 1.8; 
+  
+  /* Disable arbitrary character breaks entirely */
+  overflow-wrap: normal !important; 
+  word-wrap: normal !important;
+  word-break: normal !important; 
+  hyphens: none !important; 
+  -webkit-hyphens: none !important;
+  white-space: normal !important; 
+}
 
-    /* Paragraph margins and blank line heights */
-    .content p { 
-      margin: 0 0 16px 0 !important; 
-      min-height: 1.8em;
-    }
+/* Ensure child elements like paragraphs don't inherit word breaking */
+.content * {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.content p { 
+  margin: 0 0 16px 0 !important; 
+  min-height: 1.8em;
+}
 
     /* Fix empty paragraph line breaks */
     .content p:empty::before {
