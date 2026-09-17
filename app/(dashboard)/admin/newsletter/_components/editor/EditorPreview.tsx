@@ -7,11 +7,17 @@ const EditorPreview = ({ previewMode, generatedHtml }: any) => {
     >
       <div className="w-full max-w-[650px] mx-auto bg-white rounded-lg shadow-sm min-h-[500px]">
         <iframe
-          title="Preview"
-          srcDoc={generatedHtml}
-          className="w-full h-full border-none block min-w-full"
-          style={{ width: "100%", minWidth: "100%", minHeight: "100vh" }}
-        />
+  title="Preview"
+  srcDoc={generatedHtml}
+  className="w-full border-none block"
+  style={{
+    width: "100%",
+    minWidth: 0,
+    height: "100vh",
+    border: "none",
+    display: "block",
+  }}
+/>
       </div>
     </main>
   );
