@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
-const useGeneratedHtml = (formData: any) => {
+interface FormData {
+  subject?: string;
+  content?: string;
+}
+
+const useGeneratedHtml = (formData: FormData) => {
   const [debouncedData, setDebouncedData] = useState(formData);
 
   useEffect(() => {
@@ -16,75 +21,6 @@ const useGeneratedHtml = (formData: any) => {
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <style type="text/css">
-    *, *:before, *:after {
-      box-sizing: border-box !important;
-    }
-
-    html, body { 
-      margin: 0 !important; 
-      padding: 0 !important; 
-      width: 100% !important; 
-      min-width: 100% !important; 
-      background-color: #f3f4f6; 
-      -webkit-text-size-adjust: 100%;
-    }
-
-    table, td { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
-    
-    .email-wrapper { 
-      padding: 12px 8px; 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      width: 100% !important;
-    }
-
-    .email-card { 
-      border: 1px solid #e5e7eb; 
-      border-radius: 10px; 
-      overflow: hidden; 
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06); 
-      background-color: #ffffff; 
-      width: 100% !important;
-      max-width: 600px; 
-      margin: 0 auto;
-    }
-    
-    .header { background: #ff6b35; background-image: linear-gradient(135deg, #ff3b0a, #ff6a3d); padding: 20px 16px; text-align: center; }
-    .header-text { font-weight: 800; letter-spacing: 3px; font-size: 18px; color: #ffffff; margin: 0; }
-    
-    .body-section { 
-      padding: 24px 16px; 
-      background-color: #ffffff; 
-      width: 100% !important;
-    }
-
-    .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0; }
-    
-    /* Strict Whole-Word Flow */
-    .content, 
-    .content * { 
-      font-size: 15px; 
-      color: #374151; 
-      line-height: 1.8; 
-      
-      /* Completely turn off character-level breaking */
-      overflow-wrap: normal !important;
-      word-break: normal !important;
-      word-wrap: normal !important;
-      white-space: normal !important;
-      
-      hyphens: manual !important;
-      -webkit-hyphens: manual !important;
-    }
-
-    /* Paragraph & Block Elements */
-    .content p, 
-    .content div { 
-      margin: 0 0 16px 0 !important; 
-      line-height: 1.8 !important;
-      width: 100% !important;
-      display: block !important;
   <style type="text/css">
     *, *:before, *:after {
       box-sizing: border-box !important;
@@ -107,7 +43,7 @@ const useGeneratedHtml = (formData: any) => {
     }
 
     table, td { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
     
     .email-wrapper { 
       padding: 12px 8px; 
@@ -140,7 +76,7 @@ const useGeneratedHtml = (formData: any) => {
 
     .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0; }
     
-    /* Content container forcing tight bounds */
+    /* Strict Content Bounds & Word Wrapping */
     .content { 
       font-size: 15px; 
       color: #374151; 
@@ -163,12 +99,23 @@ const useGeneratedHtml = (formData: any) => {
       box-sizing: border-box !important;
     }
 
+    .content span,
+    .content strong,
+    .content em,
+    .content a {
+      max-width: 100% !important;
+      overflow-wrap: break-word !important;
+      word-break: break-word !important;
+    }
+
+    /* Preserve empty line heights in Quill output */
     .content p:empty,
     .content p > br:only-child {
       min-height: 1.8em;
       display: block;
     }
 
+    /* Alignment Support */
     .content .ql-align-center { text-align: center !important; }
     .content .ql-align-right { text-align: right !important; }
     .content .ql-align-justify { text-align: justify !important; }
@@ -176,12 +123,11 @@ const useGeneratedHtml = (formData: any) => {
     .content img { max-width: 100% !important; height: auto !important; }
     
     .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: center; padding: 24px 16px; }
-    .cta-button { display: inline-block; background-color: #ff3b0a; color: #ffffff !important; text-decoration: none !important; border-radius: 8px; font-weight: 600; font-size: 13px; padding: 12px 15px; margin-bottom: 20px;}
+    .cta-button { display: inline-block; background-color: #ff3b0a; color: #ffffff !important; text-decoration: none !important; border-radius: 8px; font-weight: 600; font-size: 13px; padding: 12px 15px; margin-bottom: 20px; }
     
-    .socials-table { margin: 0 auto; width: 100%; max-width: 200px;}
+    .socials-table { margin: 0 auto; width: 100%; max-width: 200px; }
     .socials-table td { padding: 16px 10px 0 10px; text-align: center; }
   </style>
-  
 </head>
 <body>
   <div class="email-wrapper">
