@@ -66,34 +66,47 @@ const useGeneratedHtml = (formData: any) => {
     
     .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0; }
     
-    /* Responsive Text and Safe Word Wrapping */
-    .content { 
+    /* Clean, Whole-Word Wrapping Setup */
+    .content,
+    .content *,
+    .content p,
+    .content div,
+    .content span,
+    .content strong,
+    .content em { 
       font-size: 15px; 
       color: #374151; 
       line-height: 1.8; 
-      width: 100% !important;
-      overflow-wrap: break-word !important;
-      word-break: break-word !important;
+      
+      /* Force intact word flow—NO mid-word character breaks */
+      word-break: normal !important;
+      overflow-wrap: normal !important;
+      word-wrap: normal !important;
       white-space: normal !important;
+      
       hyphens: none !important;
       -webkit-hyphens: none !important;
+      
+      max-width: 100% !important;
+      box-sizing: border-box !important;
     }
 
-    /* Paragraph & Rich Text Spacing */
+    /* Paragraph and Block Spacing */
     .content p, 
     .content div { 
       margin: 0 0 16px 0 !important; 
       line-height: 1.8 !important;
-      width: 100% !important;
+      display: block !important;
     }
 
+    /* Preserve height on Quill empty lines */
     .content p:empty,
     .content p > br:only-child {
       min-height: 1.8em;
       display: block;
     }
 
-    /* Alignment Support */
+    /* Alignment Classes */
     .content .ql-align-center { text-align: center !important; }
     .content .ql-align-right { text-align: right !important; }
     .content .ql-align-justify { text-align: justify !important; }
