@@ -251,7 +251,7 @@ const useGeneratedHtml = (formData: FormData) => {
   max-width: 100% !important;
   min-width: 0 !important;  /* Critical — prevents overflow in flex/grid */
   
-  word-break: normal !important;
+ /* word-break: normal !important;*/
   overflow-wrap: break-word !important;
   hyphens: auto !important;  /* Allow hyphenation instead of raw breaking */
   
@@ -263,7 +263,7 @@ const useGeneratedHtml = (formData: FormData) => {
   min-width: 0 !important;
   max-width: 100% !important;
   
-  word-break: normal !important;
+ /* word-break: normal !important;*/
   overflow-wrap: break-word !important;
   hyphens: auto !important;
   
@@ -298,7 +298,7 @@ const useGeneratedHtml = (formData: FormData) => {
 
       white-space: normal !important;
 
-      word-break: normal !important;
+      /*word-break: normal !important;*/
 
       overflow-wrap: break-word !important;
 
