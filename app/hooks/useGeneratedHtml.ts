@@ -69,14 +69,10 @@ const useGeneratedHtml = (formData: FormData) => {
     body {
       width: 100% !important;
       max-width: 100% !important;
-
       min-width: 0 !important;
-
       margin: 0 !important;
       padding: 0 !important;
-
       background-color: #f3f4f6;
-
       -webkit-text-size-adjust: 100% !important;
       -ms-text-size-adjust: 100% !important;
     }
@@ -84,7 +80,6 @@ const useGeneratedHtml = (formData: FormData) => {
     table,
     td {
       border-collapse: collapse;
-
       mso-table-lspace: 0pt;
       mso-table-rspace: 0pt;
     }
@@ -107,21 +102,12 @@ const useGeneratedHtml = (formData: FormData) => {
       text-decoration: none;
     }
 
-
-    /* =====================================================
-       EMAIL WRAPPER
-    ===================================================== */
-
     .email-wrapper {
       width: 100% !important;
       max-width: 100% !important;
-
       min-width: 0 !important;
-
       margin: 0 auto !important;
-
       padding: 12px 8px !important;
-
       font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -133,11 +119,6 @@ const useGeneratedHtml = (formData: FormData) => {
 
       box-sizing: border-box !important;
     }
-
-
-    /* =====================================================
-       EMAIL CARD
-    ===================================================== */
 
     .email-card {
       width: 100% !important;
@@ -266,74 +247,31 @@ const useGeneratedHtml = (formData: FormData) => {
     ===================================================== */
 
     .content {
-      width: 100% !important;
-      max-width: 100% !important;
-
-      min-width: 0 !important;
-
-      margin: 0 !important;
-      padding: 0 !important;
-
-      color: #374151;
-
-      font-size: 15px;
-
-      line-height: 1.8;
-
-      text-align: left;
-
-      white-space: normal !important;
-
-      /*
-       * NORMAL WORD WRAPPING
-       *
-       * This is deliberately NOT "anywhere".
-       */
-      overflow-wrap: break-word !important;
-
-      word-break: normal !important;
-
-      box-sizing: border-box !important;
-    }
-
-
-    /* =====================================================
-       QUILL PARAGRAPHS
-    ===================================================== */
-
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;  /* Critical — prevents overflow in flex/grid */
+  
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;  /* Allow hyphenation instead of raw breaking */
+  
+  box-sizing: border-box !important;
+}
+    
     .content p {
-      /*
-       * Don't force nested paragraphs to have a
-       * separate 100% width calculation.
-       */
       width: auto !important;
-
       max-width: 100% !important;
-
       min-width: 0 !important;
-
       margin: 0 0 16px 0 !important;
       padding: 0 !important;
-
       color: inherit;
-
       font-size: inherit;
-
       line-height: 1.8 !important;
-
       white-space: normal !important;
-
       word-break: normal !important;
-
       overflow-wrap: break-word !important;
-
       box-sizing: border-box !important;
     }
-
-
-    /* =====================================================
-       QUILL DIVS
-    ===================================================== */
 
     .content div {
       width: auto !important;
