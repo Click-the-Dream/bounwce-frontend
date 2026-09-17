@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+4import { useEffect, useMemo, useState } from "react";
 
 interface FormData {
   subject?: string;
@@ -259,19 +259,26 @@ const useGeneratedHtml = (formData: FormData) => {
 }
     
     .content p {
-      width: auto !important;
-      max-width: 100% !important;
-      min-width: 0 !important;
-      margin: 0 0 16px 0 !important;
-      padding: 0 !important;
-      color: inherit;
-      font-size: inherit;
-      line-height: 1.8 !important;
-      white-space: normal !important;
-      word-break: normal !important;
-      overflow-wrap: break-word !important;
-      box-sizing: border-box !important;
-    }
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;
+  
+  display: block !important;  /* Force block layout */
+  white-space: normal !important;
+}
+
+/* Kill any inline width constraints Quill might add */
+.content p[style*="width"] {
+  width: 100% !important;
+}
+
+.content div[style*="width"] {
+  width: 100% !important;
+}
 
     .content div {
       width: auto !important;
