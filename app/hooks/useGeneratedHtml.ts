@@ -24,10 +24,15 @@ const useGeneratedHtml = (formData: FormData) => {
   xmlns:o="urn:schemas-microsoft-com:office:office"
 >
 <head>
+
   <title>${debouncedData.subject || "Bouwnce Newsletter"}</title>
 
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta
+    http-equiv="Content-Type"
+    content="text/html; charset=UTF-8"
+  >
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
@@ -40,16 +45,18 @@ const useGeneratedHtml = (formData: FormData) => {
     ===================================================== */
 
     *,
-    *:before,
-    *:after {
+    *::before,
+    *::after {
       box-sizing: border-box !important;
     }
 
     html {
       width: 100% !important;
       max-width: 100% !important;
+
       margin: 0 !important;
       padding: 0 !important;
+
       -webkit-text-size-adjust: 100% !important;
       -ms-text-size-adjust: 100% !important;
     }
@@ -57,6 +64,11 @@ const useGeneratedHtml = (formData: FormData) => {
     body {
       width: 100% !important;
       max-width: 100% !important;
+
+      /*
+       * IMPORTANT:
+       * Do not use min-width: 100%.
+       */
       min-width: 0 !important;
 
       margin: 0 !important;
@@ -64,28 +76,53 @@ const useGeneratedHtml = (formData: FormData) => {
 
       background-color: #f3f4f6;
 
-      overflow-x: hidden !important;
-
       -webkit-text-size-adjust: 100% !important;
       -ms-text-size-adjust: 100% !important;
     }
 
-    table,
-    td {
+
+    /* =====================================================
+       TABLES
+    ===================================================== */
+
+    table {
       border-collapse: collapse;
+      border-spacing: 0;
+
       mso-table-lspace: 0pt;
       mso-table-rspace: 0pt;
     }
 
+    td {
+      border-collapse: collapse;
+
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
+    }
+
+
+    /* =====================================================
+       IMAGES
+    ===================================================== */
+
     img {
       border: 0;
+
       height: auto;
       max-width: 100%;
+
       line-height: 100%;
+
       outline: none;
       text-decoration: none;
+
       -ms-interpolation-mode: bicubic;
     }
+
+
+    /* =====================================================
+       LINKS
+    ===================================================== */
 
     a {
       text-decoration: none;
@@ -101,6 +138,10 @@ const useGeneratedHtml = (formData: FormData) => {
       max-width: 100% !important;
 
       margin: 0 auto !important;
+
+      /*
+       * Small horizontal padding.
+       */
       padding: 12px 8px !important;
 
       font-family:
@@ -113,8 +154,6 @@ const useGeneratedHtml = (formData: FormData) => {
         sans-serif;
 
       box-sizing: border-box !important;
-
-      overflow-x: hidden !important;
     }
 
 
@@ -126,13 +165,20 @@ const useGeneratedHtml = (formData: FormData) => {
       width: 100% !important;
       max-width: 600px !important;
 
+      min-width: 0 !important;
+
       margin: 0 auto !important;
 
       background-color: #ffffff;
 
       border: 1px solid #e5e7eb;
+
       border-radius: 10px;
 
+      /*
+       * Card itself can hide its rounded corners.
+       * Text inside is still allowed to wrap correctly.
+       */
       overflow: hidden;
 
       box-sizing: border-box !important;
@@ -148,6 +194,7 @@ const useGeneratedHtml = (formData: FormData) => {
 
     .header {
       width: 100% !important;
+      max-width: 100% !important;
 
       padding: 20px 16px;
 
@@ -166,11 +213,13 @@ const useGeneratedHtml = (formData: FormData) => {
     }
 
     .header-text {
-      margin: 0;
+      margin: 0 !important;
+      padding: 0 !important;
 
       color: #ffffff;
 
       font-size: 18px;
+
       font-weight: 800;
 
       line-height: 1.2;
@@ -182,20 +231,22 @@ const useGeneratedHtml = (formData: FormData) => {
 
 
     /* =====================================================
-       BODY
+       BODY SECTION
     ===================================================== */
 
     .body-section {
       width: 100% !important;
       max-width: 100% !important;
 
+      min-width: 0 !important;
+
+      margin: 0 !important;
+
       padding: 24px 16px !important;
 
       background-color: #ffffff;
 
       box-sizing: border-box !important;
-
-      overflow: hidden !important;
     }
 
 
@@ -204,38 +255,48 @@ const useGeneratedHtml = (formData: FormData) => {
     ===================================================== */
 
     .greeting {
+      width: auto !important;
+      max-width: 100% !important;
+
       margin: 0 0 16px 0 !important;
+      padding: 0 !important;
 
       color: #111827;
 
       font-size: 16px;
+
       font-weight: 600;
 
       line-height: 1.5;
 
-      max-width: 100% !important;
+      white-space: normal !important;
+
+      overflow-wrap: anywhere !important;
+
+      word-break: normal !important;
 
       box-sizing: border-box !important;
     }
 
 
     /* =====================================================
-       CONTENT
+       QUILL CONTENT
        
        IMPORTANT:
-       word-break: normal prevents normal words from being
-       split like:
        
-       somethin
-       g
+       Do NOT use:
        
-       overflow-wrap: anywhere is NOT used here because
-       normal text should remain intact.
+       width: 100%
+       word-break: break-word
+       
+       on every nested element.
     ===================================================== */
 
     .content {
-      width: 100% !important;
+      width: auto !important;
       max-width: 100% !important;
+
+      min-width: 0 !important;
 
       margin: 0 !important;
       padding: 0 !important;
@@ -251,27 +312,36 @@ const useGeneratedHtml = (formData: FormData) => {
       white-space: normal !important;
 
       /*
-       * Allows very long unbroken strings/URLs to wrap,
-       * while normal words remain intact.
+       * Allows long strings to wrap.
        */
-      overflow-wrap: break-word !important;
+      overflow-wrap: anywhere !important;
 
+      /*
+       * Keep normal words intact.
+       */
       word-break: normal !important;
 
       box-sizing: border-box !important;
-
-      overflow-x: hidden !important;
     }
 
 
     /* =====================================================
-       CONTENT BLOCKS
+       QUILL PARAGRAPHS / DIVS
     ===================================================== */
 
     .content p,
     .content div {
-      width: 100% !important;
+      /*
+       * IMPORTANT:
+       * Do NOT force width: 100%.
+       *
+       * Let the browser calculate the available width.
+       */
+      width: auto !important;
+
       max-width: 100% !important;
+
+      min-width: 0 !important;
 
       margin: 0 0 16px 0 !important;
       padding: 0 !important;
@@ -284,8 +354,14 @@ const useGeneratedHtml = (formData: FormData) => {
 
       white-space: normal !important;
 
-      overflow-wrap: break-word !important;
+      /*
+       * Long words/URLs can break if necessary.
+       */
+      overflow-wrap: anywhere !important;
 
+      /*
+       * Normal words should NOT be split arbitrarily.
+       */
       word-break: normal !important;
 
       box-sizing: border-box !important;
@@ -298,25 +374,9 @@ const useGeneratedHtml = (formData: FormData) => {
 
     .content span,
     .content strong,
-    .content em {
-      max-width: 100% !important;
-
-      white-space: normal !important;
-
-      overflow-wrap: break-word !important;
-
-      word-break: normal !important;
-    }
-
-
-    /* =====================================================
-       LINKS
-       
-       URLs can be extremely long, so links are allowed to
-       break anywhere when necessary.
-    ===================================================== */
-
-    .content a {
+    .content b,
+    .content em,
+    .content i {
       max-width: 100% !important;
 
       white-space: normal !important;
@@ -324,8 +384,119 @@ const useGeneratedHtml = (formData: FormData) => {
       overflow-wrap: anywhere !important;
 
       word-break: normal !important;
+    }
 
-      color: inherit;
+
+    /* =====================================================
+       LINKS
+    ===================================================== */
+
+    .content a {
+      max-width: 100% !important;
+
+      white-space: normal !important;
+
+      /*
+       * Useful for very long URLs.
+       */
+      overflow-wrap: anywhere !important;
+
+      word-break: normal !important;
+    }
+
+
+    /* =====================================================
+       HEADINGS
+    ===================================================== */
+
+    .content h1,
+    .content h2,
+    .content h3,
+    .content h4,
+    .content h5,
+    .content h6 {
+      max-width: 100% !important;
+
+      margin-top: 0;
+
+      white-space: normal !important;
+
+      overflow-wrap: anywhere !important;
+
+      word-break: normal !important;
+    }
+
+
+    /* =====================================================
+       LISTS
+    ===================================================== */
+
+    .content ul,
+    .content ol {
+      max-width: 100% !important;
+
+      padding-left: 24px;
+
+      margin-top: 0;
+
+      overflow-wrap: anywhere !important;
+
+      word-break: normal !important;
+    }
+
+    .content li {
+      max-width: 100% !important;
+
+      overflow-wrap: anywhere !important;
+
+      word-break: normal !important;
+    }
+
+
+    /* =====================================================
+       BLOCKQUOTES
+    ===================================================== */
+
+    .content blockquote {
+      max-width: 100% !important;
+
+      margin-left: 0;
+      margin-right: 0;
+
+      overflow-wrap: anywhere !important;
+
+      word-break: normal !important;
+    }
+
+
+    /* =====================================================
+       IMAGES INSIDE CONTENT
+    ===================================================== */
+
+    .content img {
+      display: inline-block;
+
+      max-width: 100% !important;
+
+      width: auto !important;
+
+      height: auto !important;
+
+      box-sizing: border-box !important;
+    }
+
+
+    /* =====================================================
+       VIDEOS / IFRAMES
+    ===================================================== */
+
+    .content iframe,
+    .content video {
+      max-width: 100% !important;
+
+      width: 100% !important;
+
+      height: auto !important;
     }
 
 
@@ -350,6 +521,10 @@ const useGeneratedHtml = (formData: FormData) => {
        QUILL ALIGNMENT
     ===================================================== */
 
+    .content .ql-align-left {
+      text-align: left !important;
+    }
+
     .content .ql-align-center {
       text-align: center !important;
     }
@@ -362,27 +537,6 @@ const useGeneratedHtml = (formData: FormData) => {
       text-align: justify !important;
     }
 
-    .content .ql-align-left {
-      text-align: left !important;
-    }
-
-
-    /* =====================================================
-       IMAGES FROM QUILL
-    ===================================================== */
-
-    .content img {
-      display: inline-block;
-
-      max-width: 100% !important;
-
-      width: auto;
-
-      height: auto !important;
-
-      box-sizing: border-box !important;
-    }
-
 
     /* =====================================================
        FOOTER
@@ -391,6 +545,10 @@ const useGeneratedHtml = (formData: FormData) => {
     .footer {
       width: 100% !important;
       max-width: 100% !important;
+
+      min-width: 0 !important;
+
+      margin: 0 !important;
 
       background-color: #fafafa;
 
@@ -417,6 +575,8 @@ const useGeneratedHtml = (formData: FormData) => {
     .cta-button {
       display: inline-block;
 
+      max-width: 100%;
+
       background-color: #ff3b0a;
 
       color: #ffffff !important;
@@ -440,11 +600,12 @@ const useGeneratedHtml = (formData: FormData) => {
 
 
     /* =====================================================
-       SOCIAL ICONS
+       SOCIAL TABLE
     ===================================================== */
 
     .socials-table {
       width: 100% !important;
+
       max-width: 200px !important;
 
       margin: 0 auto !important;
@@ -482,6 +643,8 @@ const useGeneratedHtml = (formData: FormData) => {
     @media only screen and (max-width: 480px) {
 
       .email-wrapper {
+        width: 100% !important;
+
         padding: 8px 4px !important;
       }
 
@@ -502,10 +665,16 @@ const useGeneratedHtml = (formData: FormData) => {
       }
 
       .body-section {
+        width: 100% !important;
+
         padding: 22px 16px !important;
       }
 
       .content {
+        width: auto !important;
+
+        max-width: 100% !important;
+
         font-size: 15px !important;
 
         line-height: 1.8 !important;
@@ -513,15 +682,22 @@ const useGeneratedHtml = (formData: FormData) => {
 
       .content p,
       .content div {
+        width: auto !important;
+
+        max-width: 100% !important;
+
         line-height: 1.8 !important;
       }
 
       .footer {
+        width: 100% !important;
+
         padding: 22px 12px !important;
       }
     }
 
   </style>
+
 </head>
 
 
@@ -532,7 +708,9 @@ const useGeneratedHtml = (formData: FormData) => {
     <div class="email-card">
 
 
-      <!-- HEADER -->
+      <!-- =================================================
+           HEADER
+      ================================================== -->
 
       <div class="header">
 
@@ -543,7 +721,9 @@ const useGeneratedHtml = (formData: FormData) => {
       </div>
 
 
-      <!-- BODY -->
+      <!-- =================================================
+           BODY
+      ================================================== -->
 
       <div class="body-section">
 
@@ -561,7 +741,9 @@ const useGeneratedHtml = (formData: FormData) => {
       </div>
 
 
-      <!-- FOOTER -->
+      <!-- =================================================
+           FOOTER
+      ================================================== -->
 
       <div class="footer">
 
@@ -580,7 +762,7 @@ const useGeneratedHtml = (formData: FormData) => {
           "
         >
           &copy; ${new Date().getFullYear()} Bouwnce.
-          All rights reserved.<br />
+          All rights reserved.<br>
 
           You’re receiving this because you subscribed
           to our updates.
@@ -597,6 +779,8 @@ const useGeneratedHtml = (formData: FormData) => {
 
           <tr>
 
+            <!-- INSTAGRAM -->
+
             <td width="33%">
 
               <a
@@ -607,12 +791,14 @@ const useGeneratedHtml = (formData: FormData) => {
                   src="https://img.icons8.com/ios-filled/50/ff3b0a/instagram-new.png"
                   width="20"
                   alt="Instagram"
-                />
+                >
 
               </a>
 
             </td>
 
+
+            <!-- TIKTOK -->
 
             <td width="33%">
 
@@ -624,12 +810,14 @@ const useGeneratedHtml = (formData: FormData) => {
                   src="https://img.icons8.com/ios-filled/50/ff3b0a/tiktok.png"
                   width="20"
                   alt="TikTok"
-                />
+                >
 
               </a>
 
             </td>
 
+
+            <!-- LINKEDIN -->
 
             <td width="33%">
 
@@ -641,7 +829,7 @@ const useGeneratedHtml = (formData: FormData) => {
                   src="https://img.icons8.com/ios-filled/50/ff3b0a/linkedin.png"
                   width="20"
                   alt="LinkedIn"
-                />
+                >
 
               </a>
 
