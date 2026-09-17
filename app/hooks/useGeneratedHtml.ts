@@ -15,29 +15,28 @@ const useGeneratedHtml = (formData: any) => {
   <title>${debouncedData.subject || "Bouwnce Newsletter"}</title>
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style type="text/css">
     *, *:before, *:after {
       box-sizing: border-box !important;
     }
-    
-    html, body {
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 100% !important;
-      min-width: 100% !important;
+
+    html, body { 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      width: 100% !important; 
+      min-width: 100% !important; 
+      background-color: #f3f4f6; 
       -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-      background-color: #f3f4f6;
     }
 
-    table, td { border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; }
-    img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+    table, td { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
     
     .email-wrapper { 
-      padding: 20px 10px; 
+      padding: 16px 8px; 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      width: 100%;
+      width: 100% !important;
     }
 
     .email-card { 
@@ -46,71 +45,62 @@ const useGeneratedHtml = (formData: any) => {
       overflow: hidden; 
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06); 
       background-color: #ffffff; 
+      width: 100% !important;
       max-width: 600px; 
-      width: 100%;
       margin: 0 auto;
     }
     
-    .header { background: #ff6b35; background-image: linear-gradient(135deg, #ff3b0a, #ff6a3d); padding: 26px 20px; text-align: center; }
-    .header-text { font-weight: 800; letter-spacing: 3px; font-size: 18px; color: #ffffff; margin:0; }
+    .header { background: #ff6b35; background-image: linear-gradient(135deg, #ff3b0a, #ff6a3d); padding: 20px 16px; text-align: center; }
+    .header-text { font-weight: 800; letter-spacing: 3px; font-size: 18px; color: #ffffff; margin: 0; }
     
     .body-section { 
-      padding: 24px 20px; 
+      padding: 28px 20px; 
       background-color: #ffffff; 
-      width: 100%;
+      width: 100% !important;
+    }
+
+    @media only screen and (max-width: 480px) {
+      .email-wrapper { padding: 8px 4px !important; }
+      .body-section { padding: 20px 16px !important; }
     }
     
     .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0; }
     
-    /* Strict whole-word wrapping rules */
+    /* Responsive Text and Safe Word Wrapping */
     .content { 
       font-size: 15px; 
       color: #374151; 
       line-height: 1.8; 
-      width: 100%;
-      word-break: normal !important;
-      overflow-wrap: normal !important;
-      word-wrap: normal !important;
+      width: 100% !important;
+      overflow-wrap: break-word !important;
+      word-break: break-word !important;
       white-space: normal !important;
       hyphens: none !important;
       -webkit-hyphens: none !important;
     }
 
-    /* Target Quill elements and nested spans */
+    /* Paragraph & Rich Text Spacing */
     .content p, 
     .content div { 
       margin: 0 0 16px 0 !important; 
       line-height: 1.8 !important;
       width: 100% !important;
-      word-break: normal !important;
-      overflow-wrap: normal !important;
     }
 
-    /* Prevent inline formatted spans from splitting mid-word */
-    .content span, 
-    .content strong, 
-    .content em, 
-    .content a {
-      word-break: normal !important;
-      overflow-wrap: normal !important;
-      display: inline !important;
-    }
-
-    /* Blank line preservation */
     .content p:empty,
     .content p > br:only-child {
       min-height: 1.8em;
       display: block;
     }
 
-    /* Alignments */
+    /* Alignment Support */
     .content .ql-align-center { text-align: center !important; }
     .content .ql-align-right { text-align: right !important; }
     .content .ql-align-justify { text-align: justify !important; }
     
     .content img { max-width: 100% !important; height: auto !important; }
     
-    .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: center; padding: 28px 20px; }
+    .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: center; padding: 28px 16px; }
     .cta-button { display: inline-block; background-color: #ff3b0a; color: #ffffff !important; text-decoration: none !important; border-radius: 8px; font-weight: 600; font-size: 13px; padding: 12px 15px; margin-bottom: 20px;}
     
     .socials-table { margin: 0 auto; width: 100%; max-width: 200px;}
