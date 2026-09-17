@@ -44,7 +44,7 @@ const useGeneratedHtml = (formData: any) => {
   word-break: normal !important; 
   overflow-wrap: break-word !important; 
   word-wrap: break-word !important; 
-  hyphens: none !important; 
+  hyphens: auto !important; 
   white-space: pre-wrap !important; /* Preserves line breaks and wraps text */
 }
 .content img { max-width: 100% !important; height: auto !important; }
