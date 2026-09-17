@@ -43,9 +43,7 @@ const useGeneratedHtml = (formData: any) => {
       line-height: 1.8; 
       word-break: normal !important; 
       overflow-wrap: break-word !important; 
-      hyphens: none !important; 
-      -webkit-hyphens: none !important;
-      white-space: normal !important; 
+      white-space: pre-wrap !important; 
     }
     .content p { 
       margin: 0 0 16px 0 !important; 
@@ -54,7 +52,7 @@ const useGeneratedHtml = (formData: any) => {
       max-width: 100% !important; 
       height: auto !important; 
     } 
-    .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: center; padding: 28px 20px; }
+    .footer { background: #fafafa; border-top: 1px solid #eee; color: #6b7280; font-size: 12px; text-align: ceter; padding: 28px 20px; }
     .cta-button { display: inline-block; background-color: #ff3b0a; color: #ffffff !important; text-decoration: none !important; border-radius: 8px; font-weight: 600; font-size: 13px; padding: 12px 15px; margin-bottom: 20px;}
     
     .socials-table { margin: 0 auto; width: 100%; max-width: 200px;}
