@@ -34,7 +34,6 @@ const useGeneratedHtml = (formData: any) => {
     
     /* Strict word-wrap rules requested by backend */
         .content { 
-      fo.content { 
   font-size: 15px; 
   color: #374151; 
   line-height: 1.8; 
