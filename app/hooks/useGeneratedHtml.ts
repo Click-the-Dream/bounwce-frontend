@@ -85,24 +85,90 @@ const useGeneratedHtml = (formData: any) => {
       line-height: 1.8 !important;
       width: 100% !important;
       display: block !important;
+  <style type="text/css">
+    *, *:before, *:after {
+      box-sizing: border-box !important;
     }
 
-    /* Quill nested inline elements */
-    .content span,
-    .content strong,
-    .content em,
-    .content a {
-      display: inline !important;
+    html {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-text-size-adjust: 100% !important;
     }
 
-    /* Preserve height on Quill empty lines */
+    body { 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      width: 100% !important; 
+      min-width: 100% !important; 
+      background-color: #f3f4f6; 
+      overflow-x: hidden !important;
+    }
+
+    table, td { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    
+    .email-wrapper { 
+      padding: 12px 8px; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    .email-card { 
+      border: 1px solid #e5e7eb; 
+      border-radius: 10px; 
+      overflow: hidden; 
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06); 
+      background-color: #ffffff; 
+      width: 100% !important;
+      max-width: 600px; 
+      margin: 0 auto !important;
+      box-sizing: border-box !important;
+    }
+    
+    .header { background: #ff6b35; background-image: linear-gradient(135deg, #ff3b0a, #ff6a3d); padding: 20px 16px; text-align: center; }
+    .header-text { font-weight: 800; letter-spacing: 3px; font-size: 18px; color: #ffffff; margin: 0; }
+    
+    .body-section { 
+      padding: 24px 16px !important; 
+      background-color: #ffffff; 
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    .greeting { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0; }
+    
+    /* Content container forcing tight bounds */
+    .content { 
+      font-size: 15px; 
+      color: #374151; 
+      line-height: 1.8; 
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      
+      overflow-wrap: break-word !important;
+      word-break: break-word !important;
+      white-space: normal !important;
+    }
+
+    .content p, 
+    .content div { 
+      margin: 0 0 16px 0 !important; 
+      line-height: 1.8 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
     .content p:empty,
     .content p > br:only-child {
       min-height: 1.8em;
       display: block;
     }
 
-    /* Alignment Support */
     .content .ql-align-center { text-align: center !important; }
     .content .ql-align-right { text-align: right !important; }
     .content .ql-align-justify { text-align: justify !important; }
@@ -115,6 +181,7 @@ const useGeneratedHtml = (formData: any) => {
     .socials-table { margin: 0 auto; width: 100%; max-width: 200px;}
     .socials-table td { padding: 16px 10px 0 10px; text-align: center; }
   </style>
+  
 </head>
 <body>
   <div class="email-wrapper">
