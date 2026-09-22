@@ -48,17 +48,18 @@ const useNotificationServices = () => {
       queryClient.setQueryData(["notifications"], (old: any) => {
         if (!old) return old;
 
+        const readAt = new Date().toISOString();
+
         return {
           ...old,
-
           pages: old.pages.map((page: any) => ({
             ...page,
-
             data: {
               ...page.data,
-
-              items: (page.data?.items ?? []).filter(
-                (item: any) => item.id !== notificationId,
+              items: (page.data?.items ?? []).map((item: any) =>
+                item.id === notificationId
+                  ? { ...item, read_at: item.read_at || readAt }
+                  : item,
               ),
             },
           })),
@@ -80,13 +81,18 @@ const useNotificationServices = () => {
       queryClient.setQueryData(["notifications"], (old: any) => {
         if (!old) return old;
 
+        const readAt = new Date().toISOString();
+
         return {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
             data: {
               ...page.data,
-              items: [],
+              items: (page.data?.items ?? []).map((item: any) => ({
+                ...item,
+                read_at: item.read_at || readAt,
+              })),
             },
           })),
         };

@@ -21,6 +21,11 @@ self.addEventListener("push", (event) => {
     data.category === "chat";
 
   const targetUrl = data.url || (isChatNotification ? "/app/chat" : "/");
+  const notificationId = data.notification_id || data.id || null;
+
+  const notificationTag =
+    data.tag ||
+    (notificationId ? `bouwnce-notification:${notificationId}` : undefined);
 
   const options = {
     body: data.body || data.message || "New notification",
@@ -28,10 +33,10 @@ self.addEventListener("push", (event) => {
     badge: data?.profile_image?.url || data.badge || "/icons/icon-192.png",
     data: {
       url: targetUrl,
-      notificationId: data.notification_id || data.id,
+      notificationId,
     },
-    tag: data.tag || "bouwnce-notification",
-    //renotify: true,
+    ...(notificationTag ? { tag: notificationTag } : {}),
+    renotify: false,
   };
 
   event.waitUntil(
@@ -62,6 +67,7 @@ self.addEventListener("notificationclick", (event) => {
             return client.focus().then(() => client.navigate(url));
           }
         }
+
         return self.clients.openWindow(url);
       }),
   );

@@ -94,6 +94,19 @@ export const useSocketConnection = ({
       const isActiveChat =
         !!activeChatRef.current && otherUserId === activeChatRef.current;
 
+      const cachedMessages = queryClient.getQueryData<any>([
+        "messages",
+        otherUserId,
+      ]);
+      const alreadyKnownMessage = Boolean(
+        message?.id &&
+          cachedMessages?.pages?.some((page: any) =>
+            (page?.messages?.items ?? []).some(
+              (item: any) => item?.id === message.id,
+            ),
+          ),
+      );
+
       // Update Messages Cache
       // Cancel any in-flight fetch/prefetch first so an older server snapshot
       // cannot overwrite the newer real-time message.
@@ -141,9 +154,9 @@ export const useSocketConnection = ({
         },
       );
 
-      if (!isMyMessage && !isActiveChat) {
+      if (!isMyMessage && !isActiveChat && !alreadyKnownMessage) {
         pushNotification({
-          id: crypto.randomUUID(),
+          id: message?.id ? `chat:${message.id}` : crypto.randomUUID(),
           title: message.sender?.full_name || "New Message",
           body: message.body,
           event_type: "chat_message",
@@ -151,6 +164,7 @@ export const useSocketConnection = ({
             route: "chat.conversation",
             sender: message.sender,
             conversation_id: message.conversation_id,
+            message_id: message.id,
           },
           read_at: null,
           created_at: new Date().toISOString(),

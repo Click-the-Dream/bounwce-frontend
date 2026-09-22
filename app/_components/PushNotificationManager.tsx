@@ -85,10 +85,16 @@ export default function PushNotificationManager() {
     let cancelled = false;
 
     navigator.serviceWorker
-      .register("/push-sw.js")
-      .then((registered) => {
+      .register("/push-sw.js", { updateViaCache: "none" })
+      .then(async (registered) => {
         if (cancelled) return;
         setRegistration(registered);
+
+        try {
+          await registered.update();
+        } catch (error) {
+          console.debug("[PUSH] Service worker update check skipped", error);
+        }
       })
       .catch((error) => {
         console.error("[PUSH] Service worker registration failed", error);

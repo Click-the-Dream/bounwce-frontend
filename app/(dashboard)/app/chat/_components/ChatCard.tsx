@@ -7,8 +7,9 @@ import UserImage from "../../_components/UserImage";
 import { useAuth } from "@/app/context/AuthContext";
 import { ChatUser } from "@/app/_utils/types/chat";
 import { useNotifications } from "@/app/context/NotificationContext";
-import { useQueryClient } from "@tanstack/react-query";
-import api from "@/app/services/api";
+import { useEffect, useRef } from "react";
+import { useIsFetching } from "@tanstack/react-query";
+import useChat from "@/app/hooks/use-chat";
 
 const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const { chatId } = useParams();
@@ -16,7 +17,8 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const { authDetails } = useAuth();
   const { resetUnread } = useNotifications();
   const { typingUsers } = useChatUtils();
-  const queryClient = useQueryClient();
+  const { prefetchMessages } = useChat();
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const chatUser = chat?.user;
   const currentUserId = authDetails?.user?.id;
 
@@ -25,23 +27,37 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
   const lastMessage = chat?.last_message;
   const isMine = lastMessage?.sender_id === currentUserId;
 
-  const handlePrefetch = () => {
-    if (!chatUser?.id) return;
+  const messagesFetching =
+    useIsFetching({
+      queryKey: ["messages", chatUser?.id],
+    }) > 0;
 
-    void queryClient.prefetchInfiniteQuery({
-      queryKey: ["messages", chatUser.id],
-      initialPageParam: 1,
-      queryFn: async ({ pageParam = 1 }) => {
-        const response = await api.get(
-          `/chats/conversations/with/${chatUser.id}`,
-          { params: { page: Number(pageParam), page_size: 20 } },
-        );
+  useEffect(() => {
+    const element = cardRef.current;
+    if (!element || !chatUser?.id) return;
 
-        return response.data?.data;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+
+        void prefetchMessages(chatUser.id).catch((error) => {
+          console.debug("[CHAT] background prefetch skipped", {
+            userId: chatUser.id,
+            error,
+          });
+        });
       },
-      staleTime: 30_000,
-    });
-  };
+      {
+        root: null,
+        rootMargin: "180px 0px",
+        threshold: 0.01,
+      },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [chatUser?.id, prefetchMessages]);
+
   const renderLastMessage = () => {
     if (!lastMessage) {
       return `@${chatUser.username}`;
@@ -99,9 +115,8 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
 
   return (
     <div
-      onClick={() => goToChat()}
-      onMouseEnter={handlePrefetch}
-      onTouchStart={handlePrefetch}
+      ref={cardRef}
+      onClick={() => void goToChat()}
       key={chatUser?.id}
       className={`relative flex items-center gap-3 pt-3.25 pb-4.75 px-1 cursor-pointer hover:bg-gray-50 border-b-[0.53px] border-[#00000033] h-15.75 ${chatId === chatUser.id ? "bg-gray-100" : ""}`}
     >
@@ -120,22 +135,32 @@ const ChatCard = ({ chat }: { chat: ChatUser }) => {
             </span>
           )}
         </div>
-        <p
-          className={`text-[13px] truncate mt-0.5 pr-10 ${
-            isTyping ? "text-orange animate-pulse" : "text-[#A1A1A1]"
+        <div
+          className={`flex min-w-0 items-center text-[13px] truncate mt-0.5 pr-10 ${
+            isTyping ? "text-orange" : "text-[#A1A1A1]"
           }`}
         >
-          {isTyping ? (
-            "typing..."
-          ) : lastMessage ? (
-            <span className="flex items-center gap-1">
-              {isMine && <span className="text-gray-600">You: </span>}
-              {renderLastMessage()}
-            </span>
-          ) : (
-            `Start a conversation`
-          )}
-        </p>
+          <p className="min-w-0 truncate">
+            {isTyping ? (
+              <span className="animate-pulse">typing...</span>
+            ) : messagesFetching ? (
+              <span className="inline-flex items-center gap-1.5 text-gray-400">
+                <span
+                  className="size-1.5 shrink-0 animate-pulse rounded-full bg-gray-300"
+                  aria-hidden="true"
+                />
+                <span>Loading messages...</span>
+              </span>
+            ) : lastMessage ? (
+              <span className="flex items-center gap-1">
+                {isMine && <span className="text-gray-600">You: </span>}
+                {renderLastMessage()}
+              </span>
+            ) : (
+              `Start a conversation`
+            )}
+          </p>
+        </div>
       </div>
     </div>
   );

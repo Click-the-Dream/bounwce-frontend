@@ -60,8 +60,7 @@ const MessageList = forwardRef(
   ({ onScrollNearBottomChange, onUnreadChange }: Props, ref) => {
     const queryClient = useQueryClient();
     const { authDetails } = useAuth();
-    const { setReplyTo, typingUsers, activeUploadsRef } =
-      useChatUtils();
+    const { setReplyTo, typingUsers, activeUploadsRef } = useChatUtils();
     const { chatId } = useParams<{ chatId: string }>();
     const {
       useGetMessages,
@@ -565,8 +564,14 @@ const MessageList = forwardRef(
           }}
           className="flex-1 overflow-y-auto px-6 pt-2 space-y-6 pb-14 md:pb-6 bg-white overscroll-y-none"
         >
-          {/* Load older messages */}
-          <div className="sticky top-2 z-30 flex justify-center pointer-events-none">
+          {/* Loading state: first load uses the skeleton above; cached data gets a subtle sync indicator. */}
+          <div className="sticky top-2 z-30 flex justify-center pointer-events-none gap-2">
+            {isFetching && !isFetchingNextPage && (
+              <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-full px-3 py-1 text-[11px] text-gray-500 animate-in fade-in duration-200">
+                Syncing messages...
+              </div>
+            )}
+
             {isFetchingNextPage && (
               <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-full px-3 py-1 text-[11px] text-gray-500 animate-in fade-in duration-200">
                 Loading messages...

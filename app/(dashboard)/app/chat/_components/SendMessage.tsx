@@ -19,7 +19,6 @@ import { useAuth } from "@/app/context/AuthContext";
 import SmartReplyPreview from "./SmartReplyPreview";
 import { useChatUtils } from "@/app/context/ChatContext";
 import ScrollToBottomBtn from "./ScrollToBottomBtn";
-import { queryClient } from "@/app/services/query-client";
 // TYPES
 interface SendMessageProps {
   selectedChat?: User;
@@ -170,7 +169,7 @@ const SendMessage = ({
       transmitMessage({
         recipient: selectedChat,
         body: message.trim(),
-        reply_to: replyTo,
+        reply_to: replyTo.sender_id === selectedChat.id ? replyTo : null,
       });
       resetInput();
       return;
@@ -219,7 +218,7 @@ const SendMessage = ({
       recipient,
       type,
       caption,
-      reply_to: replyTo,
+      reply_to: replyTo.sender_id === selectedChat?.id ? replyTo : null,
     });
 
     if (!clientId) return;
@@ -244,7 +243,7 @@ const SendMessage = ({
         caption,
         signatures: signatureItems,
         clientId: [clientId],
-        reply_to: replyTo,
+        reply_to: replyTo.sender_id === selectedChat?.id ? replyTo : null,
       });
     } catch (err) {
       if (clientId) await markMessageFailed(clientId, recipient.id);
@@ -278,7 +277,7 @@ const SendMessage = ({
       )}
 
       {/* Reply preview bar */}
-      {replyTo && (
+      {replyTo?.sender_id === selectedChat?.id && (
         <div className="relative px-3 pb-1 pt-1 mb-1 w-full">
           <div
             className="flex items-center gap-3 px-3 py-2 bg-[#F4F4F4] rounded-[10px]"

@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "react-toastify";
+import { X } from "lucide-react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import UserImage from "../(dashboard)/app/_components/UserImage";
@@ -49,29 +50,41 @@ const ToastContent = ({
   const router = useRouter();
   const { resetUnread } = useNotifications();
 
-  const openChat = async () => {
+  const openChat = () => {
     toast.dismiss(toastId);
     resetUnread(userId);
     router.push(`/app/chat/${userId}`);
   };
 
   return (
-    <button
-      type="button"
-      onClick={openChat}
-      className="block cursor-pointer text-left outline-none transition-transform active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-orange/30"
-      aria-label={`Open conversation with ${senderName}`}
-    >
-      <MessageToast
-        senderName={senderName}
-        message={message}
-        profile_pic={profile_pic}
-      />
-      <span className="absolute right-2.5 top-2.5 hidden rounded-full bg-white/90 p-1.5 text-gray-400 shadow-sm group-hover:block" />
-    </button>
+    <div className="relative flex w-full items-stretch">
+      <button
+        type="button"
+        onClick={openChat}
+        className="block min-w-0 flex-1 cursor-pointer text-left outline-none transition-transform active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-orange/30"
+        aria-label={`Open conversation with ${senderName}`}
+      >
+        <MessageToast
+          senderName={senderName}
+          message={message}
+          profile_pic={profile_pic}
+        />
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          toast.dismiss(toastId);
+        }}
+        className="absolute right-2.5 top-2.5 z-10 inline-flex size-6 items-center justify-center rounded-full bg-white/90 text-gray-400 shadow-sm backdrop-blur transition-colors hover:bg-white hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange/30"
+        aria-label="Dismiss notification"
+      >
+        <X className="size-3.5" />
+      </button>
+    </div>
   );
 };
-
 export const onMessageToast = ({
   senderName,
   message,
@@ -101,6 +114,7 @@ export const onMessageToast = ({
     toast.update(toastId, {
       render: content,
       autoClose: 3500,
+      draggableDirection: "x",
     });
     return;
   }
@@ -114,6 +128,7 @@ export const onMessageToast = ({
     pauseOnHover: true,
     pauseOnFocusLoss: true,
     draggable: true,
+    draggableDirection: "x",
     closeOnClick: false,
   });
 };

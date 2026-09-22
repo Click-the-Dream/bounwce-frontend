@@ -1,8 +1,5 @@
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useCallback } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -12,7 +9,16 @@ import { ReplyTarget, User } from "../_utils/types/buyer";
 
 // HELPERS
 const MESSAGE_PAGE_SIZE = 20;
-const MESSAGE_STALE_TIME = 30_000;
+const MESSAGE_STALE_TIME = 5 * 60_000;
+const MESSAGE_GC_TIME = 30 * 60_000;
+
+const getNextMessagePageParam = (lastPage: any) => {
+  const page = Number(lastPage?.messages?.page ?? 1);
+  const total = Number(lastPage?.messages?.total ?? 0);
+  const pageSize = Number(lastPage?.messages?.page_size ?? MESSAGE_PAGE_SIZE);
+
+  return page * pageSize < total ? page + 1 : undefined;
+};
 
 type CachedConversation = {
   id: string;
@@ -192,22 +198,51 @@ const useChat = () => {
           Number(pageParam),
           options.params?.page_size || MESSAGE_PAGE_SIZE,
         ),
-      getNextPageParam: (lastPage: any) => {
-        const page = Number(lastPage?.messages?.page ?? 1);
-        const total = Number(lastPage?.messages?.total ?? 0);
-        const pageSize = Number(
-          lastPage?.messages?.page_size ??
-            options.params?.page_size ??
-            MESSAGE_PAGE_SIZE,
-        );
-        return page * pageSize < total ? page + 1 : undefined;
-      },
+      getNextPageParam: (lastPage: any) =>
+        getNextMessagePageParam({
+          messages: {
+            ...lastPage?.messages,
+            page_size:
+              lastPage?.messages?.page_size ??
+              options.params?.page_size ??
+              MESSAGE_PAGE_SIZE,
+          },
+        }),
       initialPageParam: 1,
       enabled: Boolean(options.userId),
       staleTime: MESSAGE_STALE_TIME,
-      refetchOnMount: true,
+      gcTime: MESSAGE_GC_TIME,
+      // The sidebar warms recent chats before the user opens them.
+      // Do not start another request merely because MessageList mounted.
+      refetchOnMount: false,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     });
+
+  /**
+   * Warm the newest message page before the user opens a conversation.
+   *
+   * We intentionally prefetch only the first page here. Page 1 is the newest
+   * messages in this API, so this gives the WhatsApp-style instant-open
+   * experience without downloading the entire history for every chat.
+   * Older pages are still fetched when the user scrolls upward.
+   */
+  const prefetchMessages = useCallback(
+    async (userId: string) => {
+      if (!userId) return;
+
+      await queryClient.prefetchInfiniteQuery({
+        queryKey: ["messages", userId],
+        queryFn: async ({ pageParam = 1 }) =>
+          fetchMessagesPage(userId, Number(pageParam), MESSAGE_PAGE_SIZE),
+        initialPageParam: 1,
+        getNextPageParam: getNextMessagePageParam,
+        staleTime: MESSAGE_STALE_TIME,
+        gcTime: MESSAGE_GC_TIME,
+      });
+    },
+    [queryClient],
+  );
 
   // CONVERSATION HELPERS
   const addConversationIfMissing = async ({
@@ -541,6 +576,7 @@ const useChat = () => {
   };
 
   return {
+    prefetchMessages,
     useGetConversations,
     useGetMessages,
     transmitMessage,

@@ -15,7 +15,7 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
-  const { useGetConversations } = useChat();
+  const { useGetConversations, prefetchMessages } = useChat();
   const { chatId } = useParams();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +36,24 @@ const ChatSidebar = ({ selectedUser, role = "buyer" }: ChatSidebarProps) => {
       data?.pages?.flatMap((page: any) => page?.items || []) || [],
     [data?.pages],
   );
+
+  // Warm the first five conversations as soon as the conversation list arrives.
+  // ChatCard continues warming later conversations as they enter the viewport.
+  useEffect(() => {
+    const firstBatch = conversations
+      .slice(0, 5)
+      .map((conversation: any) => conversation?.user?.id)
+      .filter(Boolean);
+
+    firstBatch.forEach((userId: string) => {
+      void prefetchMessages(userId).catch((error) => {
+        console.debug("[CHAT] first-batch prefetch skipped", {
+          userId,
+          error,
+        });
+      });
+    });
+  }, [conversations, prefetchMessages]);
 
   const activeConversation = useMemo(() => {
     if (!selectedUser) return null;

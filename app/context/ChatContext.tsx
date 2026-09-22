@@ -26,9 +26,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const activeUploadsRef = useRef(new Map<string, File[]>());
 
   /**
-   * Warm only the first conversation page after authentication.
-   * Message history is intentionally NOT prefetched for every conversation:
-   * each thread fetches its first page when opened and older pages on scroll.
+   * Warm the conversation list after authentication.
+   * Individual message threads are warmed by the visible ChatCard items so
+   * the first visible batch is ready before the user opens a conversation.
    */
   const warmChatCache = useCallback(async () => {
     if (!authUserId) return;

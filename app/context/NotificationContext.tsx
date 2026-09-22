@@ -144,6 +144,17 @@ export const NotificationProvider = ({
           };
         }
 
+        const exists = oldData.pages.some((page: any) =>
+          (page.data?.items ?? []).some(
+            (item: any) =>
+              item.id === n.id ||
+              (n.payload?.message_id &&
+                item.payload?.message_id === n.payload.message_id),
+          ),
+        );
+
+        if (exists) return oldData;
+
         return {
           ...oldData,
           pages: oldData.pages.map((page: any, i: number) =>
