@@ -85,7 +85,9 @@ const Sidebar = ({
   const { logout } = useAuthServices();
   const [collapsed, setCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [eventsOpen, setEventsOpen] = useState(pathname.startsWith("/app/events"));
+  const [eventsOpen, setEventsOpen] = useState(
+    pathname.startsWith("/app/events"),
+  );
 
   useEffect(() => {
     if (pathname.startsWith("/app/events")) {
@@ -114,7 +116,7 @@ const Sidebar = ({
         name: "Requests",
         href: "/app/requests",
         icon: UserPlus,
-        badge: data?.total,
+        badge: 0, //data?.total,
       },
       { name: "Profile", href: "/app/profile", icon: LuSquareUserRound },
     ];
@@ -252,7 +254,9 @@ const Sidebar = ({
                       {!collapsed && (
                         <button
                           type="button"
-                          aria-label={eventsOpen ? "Collapse Events" : "Expand Events"}
+                          aria-label={
+                            eventsOpen ? "Collapse Events" : "Expand Events"
+                          }
                           aria-expanded={eventsOpen}
                           onClick={() => setEventsOpen((open) => !open)}
                           className="mr-2 rounded-md p-2 text-gray-500 transition hover:bg-white/70 hover:text-gray-900"
@@ -320,7 +324,7 @@ const Sidebar = ({
 
                     {typeof item.badge === "number" && item.badge > 0 ? (
                       <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-[10px] text-violet-700">
-                        {item.badge}
+                        {item.badge > 99 ? "99+" : item.badge}
                       </span>
                     ) : null}
                   </Link>

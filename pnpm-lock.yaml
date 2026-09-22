@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@mgreminger/quill-image-resize-module':
+        specifier: ^1.2.1
+        version: 1.2.1
       '@tailwindcss/line-clamp':
         specifier: ^0.4.4
         version: 0.4.4(tailwindcss@4.2.2)
@@ -391,6 +394,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@mgreminger/quill-image-resize-module@1.2.1':
+    resolution: {integrity: sha512-BGQvnF3/6zbbOf5kjTElD2xF+Ty0kpavj54ZSXYui1oiKaqppTayJS9lUDunFAyWfRhHvUVDEn1iGDCiOQzJKw==}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -1618,6 +1624,9 @@ packages:
   lodash.startswith@4.2.1:
     resolution: {integrity: sha512-XClYR1h4/fJ7H+mmCKppbiBmljN/nGs73iq2SjCT9SF4CBPoUHzLvWmH1GtZMhMBZSiRkHXfeA2RY1eIlJ75ww==}
 
+  lodash@4.18.1:
+    resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
+
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
@@ -2478,6 +2487,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@mgreminger/quill-image-resize-module@1.2.1':
+    dependencies:
+      lodash: 4.18.1
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
@@ -3783,6 +3796,8 @@ snapshots:
   lodash.reduce@4.6.0: {}
 
   lodash.startswith@4.2.1: {}
+
+  lodash@4.18.1: {}
 
   loose-envify@1.4.0:
     dependencies:

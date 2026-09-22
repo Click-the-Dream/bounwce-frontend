@@ -11,6 +11,7 @@ self.addEventListener("push", (event) => {
   let data;
   try {
     data = event.data.json();
+    console.log("push message", data);
   } catch {
     data = { title: "Bouwnce", body: event.data.text() };
   }
@@ -30,7 +31,11 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || data.message || "New notification",
     icon: data.icon || "/icons/icon-192.png",
-    badge: data?.profile_image?.url || data.badge || "/icons/icon-192.png",
+    badge:
+      data?.sender?.profile_pic ||
+      data?.profile_image?.url ||
+      data.badge ||
+      "/icons/icon-192.png",
     data: {
       url: targetUrl,
       notificationId,

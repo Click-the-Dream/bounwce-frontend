@@ -100,11 +100,11 @@ export const useSocketConnection = ({
       ]);
       const alreadyKnownMessage = Boolean(
         message?.id &&
-          cachedMessages?.pages?.some((page: any) =>
-            (page?.messages?.items ?? []).some(
-              (item: any) => item?.id === message.id,
-            ),
+        cachedMessages?.pages?.some((page: any) =>
+          (page?.messages?.items ?? []).some(
+            (item: any) => item?.id === message.id,
           ),
+        ),
       );
 
       // Update Messages Cache
@@ -114,9 +114,8 @@ export const useSocketConnection = ({
         queryKey: ["messages", otherUserId],
       });
 
-      queryClient.setQueryData(
-        ["messages", otherUserId],
-        (old: any) => mergeIntoQuery(old, message),
+      queryClient.setQueryData(["messages", otherUserId], (old: any) =>
+        mergeIntoQuery(old, message),
       );
 
       // Update Conversations Cache
@@ -174,7 +173,6 @@ export const useSocketConnection = ({
         onMessageToast({
           senderName: message.sender?.full_name,
           message: message.body,
-          avatar: message.sender?.avatar,
           conversationId: message.conversation_id,
           profile_pic: message?.sender?.profile_pic,
           userId: message.sender_id,

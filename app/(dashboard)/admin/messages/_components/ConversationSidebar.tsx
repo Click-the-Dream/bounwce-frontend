@@ -98,14 +98,16 @@ export default function ConversationSidebar({
             Loading chats...
           </div>
         ) : filtered.length > 0 ? (
-          filtered.map((c) => (
+          <>
+            {/* filtered.map((c) => (
             <ConversationItem
               key={c.id}
               convo={c}
               active={c.id === activeId}
               onClick={() => onSelect(c.id)}
             />
-          ))
+          )) */}
+          </>
         ) : (
           <div className="text-center mt-10 text-gray-400 text-sm">
             No messages found

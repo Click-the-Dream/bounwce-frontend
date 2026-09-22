@@ -26,8 +26,6 @@
   border: none !important;
 }
 
-
-
 /* remove last extra gap */
 .quill .ql-editor p:last-child {
   margin-bottom: 0 !important;
@@ -118,4 +116,51 @@
 .ql-editor p > br {
   content: "";
   display: block;
+}
+
+.quill .ql-editor img {
+  max-width: 100%;
+  height: auto;
+  cursor: pointer;
+  box-sizing: border-box !important;
+}
+.quill .ql-editor img[style] {
+  max-width: 100%;
+  height: auto;
+}
+.quill .image-resizer {
+  z-index: 50 !important;
+}
+
+.quill .ql-editor .ql-align-left {
+  text-align: left !important;
+}
+
+.quill .ql-editor .ql-align-center {
+  text-align: center !important;
+}
+
+.quill .ql-editor .ql-align-right {
+  text-align: right !important;
+}
+
+.quill .ql-editor .ql-align-justify {
+  text-align: justify !important;
+}
+.quill .ql-editor .ql-align-center img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.quill .ql-editor .ql-align-right img {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.quill .ql-editor .ql-align-left img {
+  display: block;
+  margin-left: 0;
+  margin-right: auto;
 }

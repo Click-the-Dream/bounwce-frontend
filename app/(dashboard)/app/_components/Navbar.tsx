@@ -65,7 +65,7 @@ const Navbar = ({ onMenuClick }: { onMenuClick: () => void }) => {
           <MessageCircleMore className="shrink-0 size-5 cursor-pointer" />
           {totalUnread > 0 && (
             <span className="absolute -top-2 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">
-              {totalUnread}
+              {totalUnread > 100 ? "99+" : totalUnread}
             </span>
           )}
         </Link>

@@ -1,9 +1,13 @@
 "use client";
 
-import ReactQuill from "react-quill-new";
+import ReactQuill, { Quill } from "react-quill-new";
+import ImageResize from "@mgreminger/quill-image-resize-module";
 import "react-quill-new/dist/quill.snow.css";
 import "./editor.css";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+// Register once with the same Quill instance used by react-quill-new.
+Quill.register("modules/imageResize", ImageResize);
 
 const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
   if (previewMode === "mobile") return null;
@@ -13,35 +17,48 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
   // ESC to exit fullscreen
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+      }
     };
 
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
   }, []);
 
-  const modules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ["bold", "italic", "underline", "strike"],
-      [{ align: [] }],
-      [{ list: "ordered" }, { list: "bullet" }],
-      ["link", "image"],
-      ["clean"],
-    ],
-  };
+  const modules = useMemo(
+    () => ({
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ["bold", "italic", "underline", "strike"],
+        [{ align: [] }],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link", "image"],
+        ["clean"],
+      ],
+
+      // Enables click-to-select + drag-to-resize images.
+      imageResize: {
+        modules: ["Resize", "DisplaySize", "AltText"],
+      },
+    }),
+    [],
+  );
 
   return (
     <>
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-white flex flex-col">
-          {/* HEADER BAR */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
             <span className="text-xs font-black uppercase text-stone-500">
               Focus Mode
             </span>
 
             <button
+              type="button"
               onClick={() => setIsFullscreen(false)}
               className="text-xs font-bold text-stone-600 hover:text-black"
             >
@@ -49,12 +66,16 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
             </button>
           </div>
 
-          {/* EDITOR */}
           <div className="flex-1 p-6 overflow-hidden">
             <ReactQuill
               theme="snow"
               value={formData.content}
-              onChange={(value) => setFormData({ ...formData, content: value })}
+              onChange={(value) =>
+                setFormData({
+                  ...formData,
+                  content: value,
+                })
+              }
               className="h-full"
               modules={modules}
             />
@@ -69,11 +90,15 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
             <label className="text-[10px] font-black text-stone-500 uppercase mb-3 block">
               Campaign Description
             </label>
+
             <input
               className="w-full border-b border-stone-100 py-2 outline-none text-sm italic"
               value={formData.description}
               onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
+                setFormData({
+                  ...formData,
+                  description: e.target.value,
+                })
               }
             />
           </div>
@@ -83,11 +108,15 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
             <label className="text-[10px] font-black text-stone-500 uppercase mb-3 block">
               Public Subject Line
             </label>
+
             <input
               className="w-full border-b-2 border-stone-100 py-4 outline-none font-bold text-xl"
               value={formData.subject}
               onChange={(e) =>
-                setFormData({ ...formData, subject: e.target.value })
+                setFormData({
+                  ...formData,
+                  subject: e.target.value,
+                })
               }
             />
           </div>
@@ -100,6 +129,7 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
               </label>
 
               <button
+                type="button"
                 onClick={() => setIsFullscreen(true)}
                 className="text-[10px] font-bold text-stone-500 hover:text-stone-900"
               >
@@ -112,8 +142,12 @@ const EditorSidebar = ({ formData, setFormData, previewMode }: any) => {
                 theme="snow"
                 value={formData.content}
                 onChange={(value) =>
-                  setFormData({ ...formData, content: value })
+                  setFormData({
+                    ...formData,
+                    content: value,
+                  })
                 }
+                modules={modules}
                 className="min-h-[40vh]"
               />
             </div>

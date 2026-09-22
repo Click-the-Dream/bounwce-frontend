@@ -94,7 +94,6 @@ export const onMessageToast = ({
 }: {
   senderName: string;
   message: string;
-  avatar?: string;
   userId: string;
   conversationId: string;
   profile_pic?: { url: string };
