@@ -164,7 +164,7 @@ export default function EventEditor({
       setBannerPreview(null);
       router.push("/app/events");
     } else {
-      router.refresh();
+      router.push("/app/events");
     }
   };
   // FORM SUBMISSION
