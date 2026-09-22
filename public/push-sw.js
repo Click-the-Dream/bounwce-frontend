@@ -31,7 +31,7 @@ self.addEventListener("push", (event) => {
       notificationId: data.notification_id || data.id,
     },
     tag: data.tag || "bouwnce-notification",
-    renotify: true,
+    //renotify: true,
   };
 
   event.waitUntil(
