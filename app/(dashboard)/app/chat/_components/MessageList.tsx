@@ -239,6 +239,7 @@ const MessageList = forwardRef(
       readSet.current = new Set();
       lastMessageIdRef.current = null;
       loadingOlderRef.current = false;
+      setReplyTo(null);
     }, [chatId]);
 
     // INITIAL SCROLL TO BOTTOM
