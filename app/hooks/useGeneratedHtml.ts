@@ -116,24 +116,25 @@ const useGeneratedHtml = (formData: FormData) => {
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
     }
 
-    .header {
-      width: 100% !important;
-      padding: 20px 16px;
-      text-align: center;
-      background-color: #ff6b35;
-      box-sizing: border-box !important;
-    }
+   .header {
+  width: 100% !important;
+  padding: 24px 20px !important;
+  background-color: #ff3b0a;
+  text-align: center !important;
+  box-sizing: border-box !important;
+}
 
-    .header-text {
-      margin: 0 !important;
-      padding: 0 !important;
-      color: #ffffff;
-      font-size: 18px;
-      font-weight: 800;
-      line-height: 1.2;
-      letter-spacing: 3px;
-      text-align: center;
-    }
+.header-logo {
+  display: inline-block !important;
+  width: 120px !important;
+  max-width: 60% !important;
+  height: auto !important;
+  border: 0 !important;
+  outline: none !important;
+  text-decoration: none !important;
+  vertical-align: middle !important;
+  filter: brightness(50) invert(1);
+}
 
     .body-section {
       width: 100% !important;
@@ -316,7 +317,7 @@ const useGeneratedHtml = (formData: FormData) => {
 
     .socials-table {
       width: 100% !important;
-      max-width: 200px !important;
+      max-width: max-content !important;
       margin: 0 auto !important;
       table-layout: fixed;
     }
@@ -330,8 +331,8 @@ const useGeneratedHtml = (formData: FormData) => {
 
     .socials-table img {
       display: inline-block;
-      width: 20px !important;
-      max-width: 20px !important;
+      width: 30px !important;
+      max-width: 30px !important;
       height: auto !important;
     }
 
@@ -347,14 +348,14 @@ const useGeneratedHtml = (formData: FormData) => {
         border-radius: 8px;
       }
 
-      .header {
-        padding: 18px 12px !important;
-      }
+       .header {
+    padding: 20px 16px !important;
+  }
 
-      .header-text {
-        font-size: 17px !important;
-      }
-
+  .header-logo {
+    width: 105px !important;
+    max-width: 65% !important;
+  }
       .body-section {
         width: 100% !important;
         padding: 22px 16px !important;
@@ -387,10 +388,13 @@ const useGeneratedHtml = (formData: FormData) => {
     <div class="email-card">
 
       <div class="header">
-        <p class="header-text">
-          BOUWNCE
-        </p>
-      </div>
+  <img
+    class="header-logo"
+    src="https://bouwnce.com/bouwnce.png"
+    width="120"
+    alt="Bouwnce"
+  />
+</div>
 
       <div class="body-section">
         <p class="greeting">
