@@ -178,7 +178,7 @@ const UserImage = ({
                     <>
                       <button
                         onClick={handleMessage}
-                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-600 active:scale-[0.98]"
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-black/90 active:scale-[0.98]"
                       >
                         <MessageCircle size={18} />
                         Message
