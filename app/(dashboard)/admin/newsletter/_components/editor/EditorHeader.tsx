@@ -36,7 +36,7 @@ const EditorHeader = ({
         />
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4 ml-auto">
+      <div className="flex flex-wrap items-center gap-2 md:gap-4 ml-auto">
         <div className="flex bg-stone-100 p-1 rounded-full">
           <button
             onClick={() => setPreviewMode("desktop")}
