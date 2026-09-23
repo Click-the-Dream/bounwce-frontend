@@ -24,12 +24,18 @@ const Editor = ({ setIsEditorOpen, formData, setFormData, editingId }: any) => {
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">(
     "desktop",
   );
+  const normalizeNewsletterContent = (content = "") =>
+    content.replace(/&nbsp;/gi, " ").replace(/\u00a0/g, " ");
 
   const generatedHtml = useGeneratedHtml(formData);
   const handleBroadcast = () => {
     const action = editingId ? updateNewsletter : createNewsletter;
+    const payload = {
+      ...formData,
+      content: normalizeNewsletterContent(formData.content),
+    };
 
-    action.mutate(editingId ? { id: editingId, payload: formData } : formData, {
+    action.mutate(editingId ? { id: editingId, payload } : formData, {
       onSuccess: async (res: any, variables: any) => {
         setFormData(res.data);
 
