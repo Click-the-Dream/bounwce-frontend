@@ -9,6 +9,7 @@ import {
   LogOut,
   UserPlus,
   LucideProps,
+  MessageSquareText,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -111,6 +112,7 @@ const Sidebar = ({
   const navItems = useMemo(() => {
     const items = [
       { name: "Home", href: "/app", icon: Home },
+      { name: "Feeds", href: "/app/feeds", icon: MessageSquareText },
       { name: "Explore", href: "/app/explore", icon: Compass },
       {
         name: "Requests",
