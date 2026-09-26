@@ -200,9 +200,9 @@ export default function FeedPage() {
 
       {notice && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-120 flex justify-center px-4">
-          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#111] px-4 py-3 text-[14px] font-medium text-white shadow-[0_12px_36px_rgba(0,0,0,0.35)]">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#111] px-4 py-3 text-xs font-medium text-white shadow-[0_12px_36px_rgba(0,0,0,0.35)]">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-orange">
-              <Check className="h-4 w-4" strokeWidth={2.2} />
+              <Check className="h-4 w-4 shrink-0" strokeWidth={2.2} />
             </span>
             <span>{notice}</span>
             <button
