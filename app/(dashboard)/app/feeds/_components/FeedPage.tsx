@@ -151,7 +151,7 @@ export default function FeedPage() {
 
   return (
     <main className="min-h-full pb-16">
-      <div className="w-full max-w-3xl bg-transparent mx-auto">
+      <div className="w-full max-w-3xl bg-transparent mx-auto pt-4">
         <FeedComposer
           user={currentUser}
           onSubmit={handleCreatePost}

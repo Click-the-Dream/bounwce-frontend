@@ -63,7 +63,7 @@ export default function FeedImageViewer({
 
   return (
     <div
-      className="fixed inset-0 z-[160] flex items-center justify-center bg-black/75 p-4 backdrop-blur-[3px] sm:p-7"
+      className="fixed inset-0 z-160 flex items-center justify-center bg-black/75 p-4 backdrop-blur-[3px] sm:p-7"
       role="dialog"
       aria-modal="true"
       aria-label="Image viewer"

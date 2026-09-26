@@ -27,7 +27,11 @@ type PostDetailProps = {
   onRepostComment?: (postId: string, commentId: string) => void;
   onReplyToComment?: (postId: string, commentId: string) => void;
   onShareComment?: (postId: string, comment: FeedComment) => void;
-  onCommentMenuAction?: (postId: string, comment: FeedComment, action: PostMenuAction) => void;
+  onCommentMenuAction?: (
+    postId: string,
+    comment: FeedComment,
+    action: PostMenuAction,
+  ) => void;
   onOpenComment: (commentId: string) => void;
 };
 
@@ -149,9 +153,7 @@ export default function PostDetail({
 
           <div className="mt-4 text-[13px] leading-7">
             {post.text.split("\n").map((line, index) => (
-              <p key={`${post.id}-detail-${index}`}>
-                {linkifyFeedText(line)}
-              </p>
+              <p key={`${post.id}-detail-${index}`}>{linkifyFeedText(line)}</p>
             ))}
           </div>
 
@@ -256,7 +258,7 @@ export default function PostDetail({
       </div>
 
       {notice && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[170] flex justify-center px-4">
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-170 flex justify-center px-4">
           <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[#111] px-4 py-3 text-[14px] font-medium text-white shadow-[0_12px_36px_rgba(0,0,0,0.35)]">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-orange">
               <Check className="h-4 w-4" strokeWidth={2.2} />
