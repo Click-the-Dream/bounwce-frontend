@@ -17,7 +17,7 @@ export const generateMetadata = async ({ params }: any) => {
       title: event.name,
       description: event.desc,
       imageUrl: event.banner_url,
-      keywords: event.interests,
+      keywords: event.interests ? event.interests : [],
     });
   } catch (err) {
     console.error("Failed to fetch event metadata:", err);

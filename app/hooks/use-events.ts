@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { extractErrorMessage } from "../_utils/formatters";
@@ -22,6 +23,7 @@ const useEvents = () => {
 
   const handleFailure = (action: string, error: any) => {
     const message = extractErrorMessage(error);
+
     onFailure({
       title: `${action} Failed`,
       message,
@@ -34,9 +36,7 @@ const useEvents = () => {
       message,
     });
   };
-
   // EXPLORE LIVE EVENTS
-
   const useExploreEvents = (filters: ExploreEventParams = {}) => {
     const { page_size = 10, keyword, date, location } = filters;
 
@@ -62,7 +62,9 @@ const useEvents = () => {
       getNextPageParam: (lastPage) => {
         const pagination = lastPage.pagination;
 
-        if (!pagination) return undefined;
+        if (!pagination) {
+          return undefined;
+        }
 
         return pagination.has_next ? pagination.page + 1 : undefined;
       },
@@ -70,33 +72,82 @@ const useEvents = () => {
       enabled: !!authDetails?.access_token,
     });
   };
-
   // GET EVENT BY ID
-
   const useGetEvent = (eventId: string) =>
     useQuery({
       queryKey: ["events", eventId],
+
       queryFn: async () => {
         const response = await api.get(`/outgoing/events/events/${eventId}`);
+
         return response.data.data;
       },
+
       enabled: !!eventId,
     });
-
   // USER ATTENDANCE
-
   const useMyAttendance = () =>
     useQuery({
       queryKey: ["events", "my-attendance"],
+
       queryFn: async () => {
         const response = await api.get("/outgoing/events/events/my-attendance");
+
         return response.data.data;
       },
+
       enabled: !!authDetails?.access_token,
     });
+  // USER EVENT PAYMENT STATUSES
+  const useMyPaymentStatuses = (params?: {
+    page?: number;
+    page_size?: number;
+    event_id?: string | number;
+  }) =>
+    useQuery({
+      queryKey: [
+        "events",
+        "my-payment-status",
+        params?.page ?? 1,
+        params?.page_size ?? 100,
+        params?.event_id ?? null,
+      ],
 
+      queryFn: async () => {
+        const response = await api.get(
+          "/outgoing/events/events/my-payment-status",
+          {
+            params: {
+              page: params?.page ?? 1,
+              page_size: params?.page_size ?? 100,
+
+              ...(params?.event_id
+                ? {
+                    event_id: params.event_id,
+                  }
+                : {}),
+            },
+          },
+        );
+
+        /*
+         * Your API returns:
+         *
+         * {
+         *   status_code: 200,
+         *   status: "success",
+         *   message: "...",
+         *   data: [...]
+         * }
+         *
+         * So return the attendance/payment array directly.
+         */
+        return response.data.data;
+      },
+
+      enabled: !!authDetails?.access_token && !!params?.event_id,
+    });
   // MY CREATED EVENTS
-
   const useMyEvents = (filters?: {
     name?: string;
     status?: string;
@@ -105,40 +156,53 @@ const useEvents = () => {
   }) =>
     useInfiniteQuery({
       queryKey: ["events", "my-events", filters],
+
       queryFn: async ({ pageParam = 1 }) => {
         const response = await api.get("/outgoing/events/events/my-events", {
           params: {
             page: pageParam,
             page_size: filters?.page_size ?? 10,
-            ...(filters?.name && { name: filters.name }),
-            ...(filters?.status && { status: filters.status }),
-            ...(filters?.date && { date: filters.date }),
+
+            ...(filters?.name && {
+              name: filters.name,
+            }),
+
+            ...(filters?.status && {
+              status: filters.status,
+            }),
+
+            ...(filters?.date && {
+              date: filters.date,
+            }),
           },
         });
+
         return response.data.data;
       },
+
       initialPageParam: 1,
+
       getNextPageParam: (lastPage) =>
         lastPage.pagination?.next_page ?? undefined,
+
       enabled: !!authDetails?.access_token,
     });
-
   // EVENT ATTENDEES
-
   const useEventAttendees = (eventId: string | number) =>
     useQuery({
       queryKey: ["events", eventId, "attendees"],
+
       queryFn: async () => {
         const response = await api.get(
           `/outgoing/events/events/${eventId}/attendees`,
         );
+
         return response.data.data;
       },
+
       enabled: !!eventId && !!authDetails?.access_token,
     });
-
   // CREATE EVENT
-
   const createEvent = useMutation({
     mutationFn: async (eventData: any) => {
       const response = await api.post("/outgoing/events/events", eventData);
@@ -156,12 +220,12 @@ const useEvents = () => {
 
     onError: (error) => handleFailure("Event Creation", error),
   });
-
   // UPDATE EVENT
-
   const updateEvent = useMutation({
     mutationFn: async ({ id, ...eventData }: any) => {
-      if (!id) throw Error("Event ID is required");
+      if (!id) {
+        throw Error("Event ID is required");
+      }
 
       const response = await api.put(
         `/outgoing/events/events/${id}`,
@@ -181,12 +245,12 @@ const useEvents = () => {
 
     onError: (error) => handleFailure("Event Update", error),
   });
-
   // DELETE EVENT
-
   const deleteEvent = useMutation({
     mutationFn: async (id: string | number) => {
-      if (!id) throw Error("Event ID is required");
+      if (!id) {
+        throw Error("Event ID is required");
+      }
 
       const response = await api.delete(`/outgoing/events/events/${id}`);
 
@@ -203,16 +267,18 @@ const useEvents = () => {
 
     onError: (error) => handleFailure("Event Deletion", error),
   });
-
   // ATTEND EVENT
-
   const attendEvent = useMutation({
     mutationFn: async ({
       eventId,
       payload,
     }: {
       eventId: string | number;
-      payload: { ticket_name: string; quantity: number };
+
+      payload: {
+        ticket_name: string;
+        quantity: number;
+      };
     }) => {
       const response = await api.post(
         `/outgoing/events/events/${eventId}/attend`,
@@ -224,8 +290,11 @@ const useEvents = () => {
       return response.data.data;
     },
 
-    onSuccess: () => {
-      handleSuccess("Attendance", "You are attending this event!");
+    onSuccess: (data) => {
+      console.log("payment info", data);
+      if (!data?.payment_url) {
+        handleSuccess("Attendance", "You are attending this event!");
+      }
 
       queryClient.invalidateQueries({
         queryKey: ["events"],
@@ -234,9 +303,7 @@ const useEvents = () => {
 
     onError: (error) => handleFailure("Attendance", error),
   });
-
   // CANCEL ATTENDANCE
-
   const cancelAttendance = useMutation({
     mutationFn: async (eventId: string | number) => {
       const response = await api.post(
@@ -259,9 +326,7 @@ const useEvents = () => {
 
     onError: (error) => handleFailure("Attendance Cancellation", error),
   });
-
   // UPDATE EVENT STATUS
-
   const updateEventStatus = useMutation({
     mutationFn: async ({
       id,
@@ -287,15 +352,17 @@ const useEvents = () => {
 
     onError: (error) => handleFailure("Status Update", error),
   });
-
+  // RETURN
   return {
     // Queries
     useExploreEvents,
     useGetEvent,
     useMyAttendance,
+    useMyPaymentStatuses,
     useMyEvents,
     useEventAttendees,
 
+    // Mutations
     createEvent,
     updateEvent,
     deleteEvent,
