@@ -19,6 +19,7 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
 
   const isVendorRoute = pathname.startsWith("/vendor");
   const isAdminRoute = pathname.startsWith("/admin");
+  const isAppRoute = pathname.startsWith("/app");
 
   // Only fetch onboarding status on vendor routes
   const { data: onboardingStatus, isLoading: statusLoading } =
@@ -46,15 +47,27 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
     return <Redirect to="/login" />;
   }
 
+  // --------------------------------------------------
   // ADMIN ROUTE PROTECTION
-  if (isAdminRoute && user.role !== "admin") {
+  // --------------------------------------------------
+
+  // Only admins can access /admin
+  if (isAdminRoute && user?.role !== "admin") {
     return <Redirect to="/app" replace />;
   }
 
+  // Admins should NOT use /app
+  if (isAppRoute && user?.role === "admin") {
+    return <Redirect to="/admin" replace />;
+  }
+
+  // --------------------------------------------------
   // VENDOR ROUTE PROTECTION
+  // --------------------------------------------------
+
   if (isVendorRoute) {
     // Only vendors can access vendor routes
-    if (user.role !== "vendor") {
+    if (user?.role !== "vendor") {
       return <Redirect to="/app" replace />;
     }
 

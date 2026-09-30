@@ -28,10 +28,9 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     <SecureRoute>
       <NotificationProvider>
         <ChatProvider>
-          <div className="flex h-[100dvh] min-h-0 w-full bg-slate-50 overflow-hidden">
+          <div className="flex h-dvh min-h-0 w-full bg-slate-50 overflow-hidden">
             {/* ── Sidebar ── */}
             <AdminSidebar onClose={() => setSidebarOpen(false)} />
-
             {/* Mobile Sidebar */}
             <div
               className={`fixed inset-0 z-40 md:hidden transition ${
@@ -95,7 +94,9 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               </header>
 
               {/* Content */}
-              <main className="flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto p-2 sm:p-3 lg:p-4">{children}</main>
+              <main className="flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto p-2 sm:p-3 lg:p-4">
+                {children}
+              </main>
             </div>
           </div>
         </ChatProvider>
