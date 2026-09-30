@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,9 +9,7 @@ import {
   Ticket,
   XCircle,
 } from "lucide-react";
-
-import { useRouter, useSearchParams } from "next/navigation";
-
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useEvents from "@/app/hooks/use-events";
 
 interface EventTicket {
@@ -53,8 +50,9 @@ interface PaymentStatus {
 export default function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
   const reference = searchParams.get("reference");
-
+  const eventId = params.eventId as string;
   const { useMyPaymentStatuses } = useEvents();
 
   /*
@@ -84,8 +82,6 @@ export default function PaymentSuccessPage() {
     }
   }, []);
 
-  const eventId = pendingPayment?.eventId;
-
   /*
    * Get payment status for this event.
    */
@@ -100,6 +96,8 @@ export default function PaymentSuccessPage() {
     page: 1,
     page_size: 100,
   });
+
+  console.log("payment", paymentStatuses, eventId);
 
   /*
    * Find the exact transaction using the
@@ -168,14 +166,14 @@ export default function PaymentSuccessPage() {
               Payment could not be confirmed
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-gray-500">
+            <p className="mt-3 text-[13px] leading-6 text-gray-500">
               We could not find a payment reference from Paystack. Please return
               to the event and try again.
             </p>
 
             <button
               onClick={() => router.push("/app/events")}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-[13px] font-semibold text-white transition hover:bg-neutral-800"
             >
               <ArrowLeft size={16} />
               Back to Events
@@ -210,7 +208,7 @@ export default function PaymentSuccessPage() {
                 Your ticket is confirmed
               </h1>
 
-              <p className="mt-3 text-sm leading-6 text-gray-500">
+              <p className="mt-3 text-[13px] leading-6 text-gray-500">
                 Your payment has been confirmed and your attendance has been
                 successfully recorded.
               </p>
@@ -244,7 +242,7 @@ export default function PaymentSuccessPage() {
                 <div>
                   <p className="text-xs text-gray-500">Ticket</p>
 
-                  <p className="text-sm font-semibold text-black">
+                  <p className="text-[13px] font-semibold text-black">
                     {ticket?.ticket_name ||
                       ticketInfo?.ticket_name ||
                       "Event Ticket"}
@@ -257,7 +255,7 @@ export default function PaymentSuccessPage() {
                 <div>
                   <p className="text-xs text-gray-500">Quantity</p>
 
-                  <p className="mt-1 text-sm font-semibold text-black">
+                  <p className="mt-1 text-[13px] font-semibold text-black">
                     {payment.total_tickets}
                   </p>
                 </div>
@@ -266,7 +264,7 @@ export default function PaymentSuccessPage() {
                 <div>
                   <p className="text-xs text-gray-500">Amount Paid</p>
 
-                  <p className="mt-1 text-sm font-semibold text-black">
+                  <p className="mt-1 text-[13px] font-semibold text-black">
                     ₦{payment.total_amount.toLocaleString("en-NG")}
                   </p>
                 </div>
@@ -276,7 +274,7 @@ export default function PaymentSuccessPage() {
                   <div className="col-span-2">
                     <p className="text-xs text-gray-500">Ticket Code</p>
 
-                    <p className="mt-1 font-mono text-sm font-semibold text-black">
+                    <p className="mt-1 font-mono text-[13px] font-semibold text-black">
                       {ticket.code}
                     </p>
                   </div>
@@ -311,7 +309,7 @@ export default function PaymentSuccessPage() {
 
                   router.push(`/app/events/${payment.event_id}`);
                 }}
-                className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+                className="cursor-pointer mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-[13px] font-medium text-white transition hover:bg-neutral-800"
               >
                 View Event
                 <ArrowRight size={16} />
@@ -323,7 +321,7 @@ export default function PaymentSuccessPage() {
 
                   router.push("/app/events");
                 }}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-5 py-3 text-sm font-semibold text-black transition hover:bg-gray-50"
+                className="cursor-pointer mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 px-5 py-3 text-[13px] font-medium text-black transition hover:bg-gray-50"
               >
                 <ArrowLeft size={16} />
                 Back to Events
@@ -353,7 +351,7 @@ export default function PaymentSuccessPage() {
               Payment was not completed
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-gray-500">
+            <p className="mt-3 text-[13px] leading-6 text-gray-500">
               We could not confirm this payment. Your ticket has not been
               issued.
             </p>
@@ -368,7 +366,7 @@ export default function PaymentSuccessPage() {
 
             <button
               onClick={() => router.push(`/app/events/${eventId}`)}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              className="cursor-pointer mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-[13px] font-medium text-white transition hover:bg-neutral-800"
             >
               Try Again
               <ArrowRight size={16} />
@@ -376,7 +374,7 @@ export default function PaymentSuccessPage() {
 
             <button
               onClick={() => router.push("/app/events")}
-              className="mt-3 w-full rounded-xl border border-black/10 px-5 py-3 text-sm font-semibold text-black transition hover:bg-gray-50"
+              className="cursor-pointer mt-3 w-full rounded-xl border border-black/10 px-5 py-3 text-[13px] font-medium text-black transition hover:bg-gray-50"
             >
               Back to Events
             </button>
@@ -403,7 +401,7 @@ export default function PaymentSuccessPage() {
             Confirming your payment
           </h1>
 
-          <p className="mt-3 text-sm leading-6 text-gray-500">
+          <p className="mt-3 text-[13px] leading-6 text-gray-500">
             Your payment has been submitted. We are waiting for confirmation
             from the payment system before issuing your ticket.
           </p>
@@ -428,7 +426,7 @@ export default function PaymentSuccessPage() {
 
           <button
             onClick={() => refetch()}
-            className="mt-6 rounded-xl border border-black/10 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-gray-50"
+            className="cursor-pointer mt-6 rounded-xl border border-black/10 px-5 py-2.5 text-[13px] font-medium text-black transition hover:bg-gray-50"
           >
             Check Again
           </button>
