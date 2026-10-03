@@ -19,12 +19,16 @@ type PostMenuProps = {
   align?: "left" | "right";
   onAction: (action: PostMenuAction) => void;
   onClose: () => void;
+  containerRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 const items: {
   action: PostMenuAction;
   label: (handle: string) => string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{
+    className?: string;
+    strokeWidth?: number;
+  }>;
   danger?: boolean;
   dividerBefore?: boolean;
 }[] = [
@@ -71,28 +75,45 @@ export default function PostMenu({
   align = "right",
   onAction,
   onClose,
+  containerRef,
 }: PostMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
 
-    const onPointerDown = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) onClose();
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+
+      // Treat the trigger button + menu as one unit.
+      if (containerRef?.current?.contains(target)) {
+        return;
+      }
+
+      // Fallback if no containerRef was provided.
+      if (menuRef.current?.contains(target)) {
+        return;
+      }
+
+      onClose();
     };
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
     };
 
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onClose]);
+  }, [open, onClose, containerRef]);
 
   if (!open) return null;
 
@@ -107,11 +128,13 @@ export default function PostMenu({
     >
       {items.map((item) => {
         const Icon = item.icon;
-        const label = item.action === "copy-link"
-          ? `Copy link to ${targetLabel}`
-          : item.action === "report"
-            ? `Report ${targetLabel}`
-            : item.label(handle);
+
+        const label =
+          item.action === "copy-link"
+            ? `Copy link to ${targetLabel}`
+            : item.action === "report"
+              ? `Report ${targetLabel}`
+              : item.label(handle);
 
         return (
           <div key={item.action}>
@@ -131,6 +154,7 @@ export default function PostMenu({
                 className="h-3 w-3 shrink-0 text-[#858585]"
                 strokeWidth={1.6}
               />
+
               <span>{label}</span>
             </button>
           </div>
@@ -158,6 +182,8 @@ export function MoreButton({
         active ? "bg-black/5 text-black" : ""
       }`}
       aria-label="More options"
+      aria-expanded={active}
+      aria-haspopup="menu"
     >
       <MoreHorizontal className="h-4.5 w-4.5" strokeWidth={1.8} />
     </button>

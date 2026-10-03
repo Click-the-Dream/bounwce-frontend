@@ -40,13 +40,13 @@ export default function CreatePostModal({
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[3px]"
+      className="fixed inset-0 z-110 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[3px]"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose();
       }}
     >
       <div
-        className="relative w-full max-w-[640px] overflow-hidden rounded-[15px] bg-black text-white shadow-[0_30px_90px_rgba(0,0,0,0.4)]"
+        className="relative w-full max-w-160 overflow-hidden rounded-[15px] bg-black text-white shadow-[0_30px_90px_rgba(0,0,0,0.4)]"
         role="dialog"
         aria-modal="true"
         aria-label="Create a new post"

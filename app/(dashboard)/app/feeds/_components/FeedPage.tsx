@@ -164,11 +164,15 @@ export default function FeedPage() {
               key={post.id}
               post={post}
               menuOpen={openMenuPostId === post.id}
-              onToggleMenu={() =>
+              onToggleMenu={(action?: string) => {
+                if (action === "close") {
+                  setOpenMenuPostId(null);
+                  return;
+                }
                 setOpenMenuPostId((current) =>
                   current === post.id ? null : post.id,
-                )
-              }
+                );
+              }}
               onMenuAction={(action) => handleMenuAction(post, action)}
               onOpenDetail={() => handleOpenPost(post.id)}
               onReply={() =>

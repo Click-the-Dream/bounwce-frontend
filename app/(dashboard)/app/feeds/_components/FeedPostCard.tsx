@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+
 import { FeedPost, FeedUser, PostMenuAction } from "./types";
+
 import FeedActions from "./FeedActions";
 import PostMenu, { MoreButton } from "./PostMenu";
 import UserImage from "../../_components/UserImage";
 import PostUser from "./PostUser";
 import FeedMedia from "./FeedMedia";
+
 import { formatPostTimestamp, linkifyFeedText } from "./feedUtils";
+
 import { Repeat } from "lucide-react";
 
 type FeedPostCardProps = {
@@ -40,21 +44,29 @@ export default function FeedPostCard({
   showQuickReply,
 }: FeedPostCardProps) {
   const [quickReply, setQuickReply] = useState("");
+
   const replyInputRef = useRef<HTMLInputElement>(null);
+
+  // This contains BOTH the MoreButton and PostMenu.
+  const menuContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (showQuickReply) {
-      requestAnimationFrame(() => replyInputRef.current?.focus());
+      requestAnimationFrame(() => {
+        replyInputRef.current?.focus();
+      });
     }
   }, [showQuickReply]);
 
-  const isHashtagOnly = post.text.split("\n").length === 1 && /^#\S+$/.test(post.text.trim());
+  const isHashtagOnly =
+    post.text.split("\n").length === 1 && /^#\S+$/.test(post.text.trim());
 
   return (
     <article
       className="relative border-t-[0.53px] border-[#dfdfdf] text-[#111] hover:bg-[#FAF9F7]"
       onClick={(event) => {
         const target = event.target as HTMLElement;
+
         if (
           target.closest("button") ||
           target.closest("input") ||
@@ -62,12 +74,14 @@ export default function FeedPostCard({
         ) {
           return;
         }
+
         onOpenDetail();
       }}
     >
       {post.repostedBy && (
         <div className="flex items-center gap-1 px-5 pb-0 pt-4 text-xs text-[#767676]">
           <Repeat size={14} />
+
           <span>{post.repostedBy.fullName} reposted</span>
         </div>
       )}
@@ -87,14 +101,24 @@ export default function FeedPostCard({
 
           <PostUser post={post} />
 
-          <MoreButton active={menuOpen} onClick={onToggleMenu} />
+          {/* IMPORTANT: button + menu share the same container */}
+          <div
+            ref={menuContainerRef}
+            className="relative ml-auto"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <MoreButton active={menuOpen} onClick={onToggleMenu} />
 
-          <PostMenu
-            handle={post.author.handle}
-            open={menuOpen}
-            onAction={onMenuAction}
-            onClose={onToggleMenu}
-          />
+            <PostMenu
+              handle={post.author.handle}
+              open={menuOpen}
+              onAction={onMenuAction}
+              onClose={onToggleMenu}
+              containerRef={menuContainerRef}
+            />
+          </div>
         </header>
 
         <div
@@ -142,6 +166,7 @@ export default function FeedPostCard({
               size={28}
               clickable={false}
             />
+
             <input
               ref={replyInputRef}
               value={quickReply}
@@ -154,8 +179,11 @@ export default function FeedPostCard({
 
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
+
                   const value = quickReply.trim();
+
                   if (!value) return;
+
                   onQuickReplySubmit(value);
                   setQuickReply("");
                 }
@@ -163,11 +191,14 @@ export default function FeedPostCard({
               placeholder={`Reply to @${post.author.handle}`}
               className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#B5B1B1]"
             />
+
             <button
               type="button"
               onClick={() => {
                 const value = quickReply.trim();
+
                 if (!value) return;
+
                 onQuickReplySubmit(value);
                 setQuickReply("");
               }}
@@ -183,7 +214,7 @@ export default function FeedPostCard({
           dateTime={post.createdAt}
           className="mt-5 block text-[14px] text-[#8d8d8d] sm:hidden"
         >
-{formatPostTimestamp(post.createdAt)}
+          {formatPostTimestamp(post.createdAt)}
         </time>
       </div>
     </article>
