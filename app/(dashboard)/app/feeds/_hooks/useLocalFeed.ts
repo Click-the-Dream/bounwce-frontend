@@ -1,18 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-
 import {
   CreateFeedPostInput,
   FeedComment,
   FeedPost,
 } from "../_components/types";
-
 import {
   createLocalPostId,
   normalizeStoredPosts,
 } from "../_components/feedUtils";
-
 import { DEMO_POSTS } from "../_components/mockFeed";
 
 import {
@@ -66,9 +63,6 @@ const updateCommentTree = (
   };
 };
 
-/**
- * Add a reply to a nested comment.
- */
 const appendReplyToComment = (
   comments: FeedComment[],
   parentId: string,
@@ -114,21 +108,6 @@ const appendReplyToComment = (
   };
 };
 
-/**
- * Move data/blob URLs into IndexedDB.
- *
- * Remote URLs such as:
- * https://...
- *
- * are left untouched.
- *
- * Local URLs such as:
- * data:image/...
- * blob:...
- *
- * become:
- * idb:...
- */
 const migratePostMedia = async (post: FeedPost): Promise<FeedPost> => {
   if (!post.media?.length) {
     return post;
@@ -253,23 +232,10 @@ export const useLocalFeed = () => {
 
           return;
         }
-
-        /**
-         * Important:
-         * migrate old base64/blob images into IndexedDB
-         * before marking the feed as ready.
-         */
         const migrated = await migratePostsMedia(stored);
-
         if (cancelled) return;
 
         setPosts(migrated);
-
-        /**
-         * Rewrite localStorage with only metadata + IDB refs.
-         *
-         * This replaces the old giant payload.
-         */
         persistPosts(migrated);
       } catch (error) {
         console.error("Failed to load feed from localStorage:", error);
@@ -285,15 +251,10 @@ export const useLocalFeed = () => {
     };
 
     void loadFeed();
-
     return () => {
       cancelled = true;
     };
   }, []);
-
-  /**
-   * Persist whenever the feed changes.
-   */
   useEffect(() => {
     if (!ready) {
       return;
@@ -302,14 +263,6 @@ export const useLocalFeed = () => {
     persistPosts(posts);
   }, [posts, ready]);
 
-  /**
-   * CREATE POST
-   *
-   * The post is added immediately so the UI feels instant.
-   *
-   * Any data/blob image is then moved into IndexedDB
-   * asynchronously.
-   */
   const addPost = useCallback(
     (input: CreateFeedPostInput, author: FeedPost["author"]) => {
       const newPost: FeedPost = {
@@ -328,9 +281,6 @@ export const useLocalFeed = () => {
 
       setPosts((current) => [newPost, ...current]);
 
-      /**
-       * Move local images to IndexedDB in the background.
-       */
       void migratePostMedia(newPost)
         .then((migratedPost) => {
           if (migratedPost === newPost) {
@@ -352,9 +302,6 @@ export const useLocalFeed = () => {
     [],
   );
 
-  /**
-   * LIKE POST
-   */
   const toggleLike = useCallback((postId: string) => {
     setPosts((current) =>
       current.map((post) => {
@@ -373,9 +320,6 @@ export const useLocalFeed = () => {
     );
   }, []);
 
-  /**
-   * REPOST
-   */
   const toggleRepost = useCallback((postId: string) => {
     setPosts((current) =>
       current.map((post) => {
@@ -394,9 +338,6 @@ export const useLocalFeed = () => {
     );
   }, []);
 
-  /**
-   * ADD COMMENT
-   */
   const addComment = useCallback((postId: string, comment: FeedComment) => {
     setPosts((current) =>
       current.map((post) => {
@@ -413,9 +354,6 @@ export const useLocalFeed = () => {
     );
   }, []);
 
-  /**
-   * ADD REPLY
-   */
   const addReply = useCallback(
     (postId: string, parentCommentId: string, reply: FeedComment) => {
       setPosts((current) =>
@@ -445,9 +383,6 @@ export const useLocalFeed = () => {
     [],
   );
 
-  /**
-   * LIKE COMMENT
-   */
   const toggleLikeComment = useCallback((postId: string, commentId: string) => {
     setPosts((current) =>
       current.map((post) => {
@@ -479,9 +414,6 @@ export const useLocalFeed = () => {
     );
   }, []);
 
-  /**
-   * REPOST COMMENT
-   */
   const toggleRepostComment = useCallback(
     (postId: string, commentId: string) => {
       setPosts((current) =>
@@ -519,9 +451,6 @@ export const useLocalFeed = () => {
     [],
   );
 
-  /**
-   * REPLACE POST
-   */
   const replacePost = useCallback((updated: FeedPost) => {
     setPosts((current) =>
       current.map((post) => (post.id === updated.id ? updated : post)),

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import FeedImageViewer from "./FeedImageViewer";
 import SafeImage from "@/app/_components/SafeImage";
 
