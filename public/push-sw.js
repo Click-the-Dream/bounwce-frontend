@@ -90,9 +90,9 @@ self.addEventListener("push", (event) => {
       notificationData.message ||
       "New notification",
 
-    icon: senderIcon || "/icons/icon-192.png",
+    icon: "/icons/icon-192.png",
 
-    badge: "/icons/icon-192.png",
+    badge: senderIcon || "/icons/icon-192.png",
 
     data: {
       url: targetUrl,
