@@ -169,7 +169,10 @@ const MandatoryProfileGuard = () => {
           });
         },
         onError: (err: any) => {
-          setError(err?.response?.data?.message || "We couldn't save your bio. Please try again.");
+          setError(
+            err?.response?.data?.message ||
+              "We couldn't save your bio. Please try again.",
+          );
         },
       },
     );
@@ -196,7 +199,6 @@ const MandatoryProfileGuard = () => {
             <div className="px-5 pt-5 sm:px-8 sm:pt-8">
               <div className="flex items-center justify-between">
                 <div className="inline-flex items-center gap-2 rounded-full border border-orange/15 bg-orange/[0.07] px-3 py-1.5 text-[11px] font-bold text-[#d84223]">
-                  <Sparkles className="size-3.5" />
                   Finish your profile
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#aaa09a]">
@@ -212,8 +214,9 @@ const MandatoryProfileGuard = () => {
                   Put a face to your Bouwnce
                 </h2>
                 <p className="mx-auto mt-2 max-w-110 text-[13px] leading-6 text-[#716a66] sm:text-[14px]">
-                  Add a profile photo and a short bio so people can recognize you
-                  and understand a little about you when they discover and connect.
+                  Add a profile photo and a short bio so people can recognize
+                  you and understand a little about you when they discover and
+                  connect.
                 </p>
               </div>
 
@@ -246,10 +249,15 @@ const MandatoryProfileGuard = () => {
 
               <div className="mx-auto mt-4 max-w-82.5 rounded-2xl border border-black/8 bg-white p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <label htmlFor="mandatory-profile-bio" className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f6762]">
+                  <label
+                    htmlFor="mandatory-profile-bio"
+                    className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f6762]"
+                  >
                     Your bio
                   </label>
-                  <span className={`text-[10px] font-semibold ${bio.length >= BIO_LIMIT - 20 ? "text-red-500" : "text-[#aaa09a]"}`}>
+                  <span
+                    className={`text-[10px] font-semibold ${bio.length >= BIO_LIMIT - 20 ? "text-red-500" : "text-[#aaa09a]"}`}
+                  >
                     {bio.length}/{BIO_LIMIT}
                   </span>
                 </div>
@@ -308,12 +316,14 @@ const MandatoryProfileGuard = () => {
                 ) : (
                   <Check className="size-4" />
                 )}
-                {updateCurrentUser.isPending ? "Saving profile…" : "Continue to Bouwnce"}
+                {updateCurrentUser.isPending
+                  ? "Saving profile…"
+                  : "Continue to Bouwnce"}
               </button>
 
               <p className="mt-3 pb-6 text-center text-[10px] leading-5 text-[#aaa09a] sm:pb-8">
-                Your photo and bio are required once after signing in. You can update
-                them anytime from your profile settings.
+                Your photo and bio are required once after signing in. You can
+                update them anytime from your profile settings.
               </p>
             </div>
           </section>

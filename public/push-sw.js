@@ -6,22 +6,42 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener("push", (event) => {
-  console.log("[PUSH SW] Push event received");
-
-  if (!event.data) {
-    console.log("[PUSH SW] No event data");
-    return;
-  }
-
-  let payload;
+function normalizeImageUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
 
   try {
-    payload = event.data.json();
-    console.log("[PUSH SW] Raw push payload:", payload);
-  } catch (error) {
-    console.error("[PUSH SW] Failed to parse JSON:", error);
+    const url = new URL(value, self.location.origin);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
 
+function getSenderProfileImage(payload, notificationData) {
+  const profileImage =
+    notificationData?.sender_profile_image ??
+    payload?.sender_profile_image ??
+    notificationData?.sender_profile_image_url ??
+    payload?.sender_profile_image_url;
+
+  const url =
+    typeof profileImage === "string"
+      ? profileImage
+      : profileImage && typeof profileImage === "object"
+        ? profileImage.url ?? profileImage.src ?? profileImage.thumbnail_url
+        : null;
+
+  return normalizeImageUrl(url);
+}
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
     payload = {
       title: "Bouwnce",
       body: event.data.text(),
@@ -29,46 +49,25 @@ self.addEventListener("push", (event) => {
     };
   }
 
-  /*Backend structure is:
-   * {
-   *   title,
-   *   body,
-   *   data: {
-   *     type,
-   *     url,
-   *     icon,
-   *     tag,
-   *     sender_profile_image: {
-   *       url
-   *     }
-   *   }
-   * }*/
-
   const notificationData =
     payload?.data && typeof payload.data === "object" ? payload.data : {};
 
-  console.log("[PUSH SW] Notification data:", notificationData);
-
+  const notificationType =
+    notificationData.type || payload.event_type || payload.type || null;
   const isChatNotification =
-    notificationData.type === "chat_message" ||
-    payload.event_type === "chat_message" ||
-    payload.type === "chat_message" ||
-    payload.category === "chat";
+    notificationType === "chat_message" || payload.category === "chat";
 
-  const senderProfileImage =
-    typeof notificationData.sender_profile_image === "string"
-      ? notificationData.sender_profile_image
-      : notificationData.sender_profile_image?.url || null;
-
-  const senderIcon = senderProfileImage || notificationData.icon || null;
+  const senderProfileImage = getSenderProfileImage(payload, notificationData);
+  const appIcon = normalizeImageUrl(notificationData.app_icon) || "/icons/icon-192.png";
+  const suppliedIcon = normalizeImageUrl(notificationData.icon);
 
   let targetUrl =
     notificationData.url ||
     payload.url ||
     (isChatNotification ? "/app/chat" : "/");
 
-  if (!targetUrl.startsWith("/")) {
-    targetUrl = `/${targetUrl}`;
+  if (!/^https?:\/\//i.test(targetUrl)) {
+    targetUrl = targetUrl.startsWith("/") ? targetUrl : `/${targetUrl}`;
   }
 
   const notificationId =
@@ -82,6 +81,7 @@ self.addEventListener("push", (event) => {
     notificationData.tag ||
     payload.tag ||
     (notificationId ? `bouwnce-notification:${notificationId}` : undefined);
+
   const options = {
     body:
       payload.body ||
@@ -90,26 +90,31 @@ self.addEventListener("push", (event) => {
       notificationData.message ||
       "New notification",
 
-    icon: "/icons/icon-192.png",
+    // Chat notifications use the sender's avatar as the primary notification
+    // icon (the familiar messaging-app pattern). Other notifications retain
+    // the app/notification icon.
+    icon:
+      isChatNotification && senderProfileImage
+        ? senderProfileImage
+        : suppliedIcon || appIcon,
 
-    badge: senderIcon || "/icons/icon-192.png",
+    // Keep Bouwnce branding in the compact monochrome status-bar slot.
+    badge: appIcon,
+
+    // Supported desktop/browser surfaces can show a larger sender-photo preview.
+    ...(isChatNotification && senderProfileImage
+      ? { image: senderProfileImage }
+      : {}),
 
     data: {
       url: targetUrl,
       notificationId,
-      type: notificationData.type || payload.type || null,
+      type: notificationType,
     },
 
-    ...(notificationTag
-      ? {
-          tag: notificationTag,
-        }
-      : {}),
-
+    ...(notificationTag ? { tag: notificationTag } : {}),
     renotify: false,
   };
-
-  console.log("[PUSH SW] Final notification options:", options);
 
   event.waitUntil(
     self.registration.showNotification(
@@ -123,33 +128,21 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const rawUrl = event.notification?.data?.url || "/";
-
   const normalizedPath =
     rawUrl === "/chat" || rawUrl.startsWith("/chat?")
-      ? "/app/chat" +
-        (rawUrl.includes("?") ? rawUrl.slice(rawUrl.indexOf("?")) : "")
+      ? "/app/chat" + (rawUrl.includes("?") ? rawUrl.slice(rawUrl.indexOf("?")) : "")
       : rawUrl;
 
   const url = new URL(normalizedPath, self.location.origin).href;
 
-  console.log("[PUSH SW] Notification clicked:", url);
-
   event.waitUntil(
     self.clients
-      .matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      })
+      .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
-          if (
-            "focus" in client &&
-            client.url.startsWith(self.location.origin)
-          ) {
+          if ("focus" in client && client.url.startsWith(self.location.origin)) {
             return client.focus().then(() => {
-              if ("navigate" in client) {
-                return client.navigate(url);
-              }
+              if ("navigate" in client) return client.navigate(url);
             });
           }
         }
