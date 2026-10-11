@@ -6,20 +6,6 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-function getSenderProfileImage(payload, notificationData) {
-  const profileImage =
-    notificationData?.sender_profile_image ?? payload?.sender_profile_image;
-
-  const url =
-    typeof profileImage === "string"
-      ? profileImage
-      : profileImage && typeof profileImage === "object"
-        ? profileImage.url
-        : null;
-
-  return url;
-}
-
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
@@ -39,13 +25,19 @@ self.addEventListener("push", (event) => {
 
   const notificationType =
     notificationData.type || payload.event_type || payload.type || null;
-  const isChatNotification =
-    notificationType === "chat_message" || payload.category === "chat";
+    const isChatNotification =
+    notificationData.type === "chat_message" ||
+    payload.event_type === "chat_message" ||
+    payload.type === "chat_message" ||
+    payload.category === "chat";
 
-  const senderProfileImage = getSenderProfileImage(payload, notificationData);
-  const appIcon =
-    normalizeImageUrl(notificationData.app_icon) || "/icons/icon-192.png";
-  const suppliedIcon = normalizeImageUrl(notificationData.icon);
+  const senderProfileImage =
+    typeof notificationData.sender_profile_image === "string"
+      ? notificationData.sender_profile_image
+      : notificationData.sender_profile_image?.url || null;
+
+  const senderIcon = senderProfileImage || notificationData.icon || null;
+  const appIcon = "/icons/icon-192.png";
 
   let targetUrl =
     notificationData.url ||
@@ -79,10 +71,7 @@ self.addEventListener("push", (event) => {
     // Chat notifications use the sender's avatar as the primary notification
     // icon (the familiar messaging-app pattern). Other notifications retain
     // the app/notification icon.
-    icon:
-      isChatNotification && senderProfileImage
-        ? senderProfileImage
-        : suppliedIcon || appIcon,
+    icon: senderIcon ?? appIcon,
 
     // Keep Bouwnce branding in the compact monochrome status-bar slot.
     badge: appIcon,
