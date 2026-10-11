@@ -6,33 +6,18 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-function normalizeImageUrl(value) {
-  if (typeof value !== "string" || !value.trim()) return null;
-
-  try {
-    const url = new URL(value, self.location.origin);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
-    return url.href;
-  } catch {
-    return null;
-  }
-}
-
 function getSenderProfileImage(payload, notificationData) {
   const profileImage =
-    notificationData?.sender_profile_image ??
-    payload?.sender_profile_image ??
-    notificationData?.sender_profile_image_url ??
-    payload?.sender_profile_image_url;
+    notificationData?.sender_profile_image ?? payload?.sender_profile_image;
 
   const url =
     typeof profileImage === "string"
       ? profileImage
       : profileImage && typeof profileImage === "object"
-        ? profileImage.url ?? profileImage.src ?? profileImage.thumbnail_url
+        ? profileImage.url
         : null;
 
-  return normalizeImageUrl(url);
+  return url;
 }
 
 self.addEventListener("push", (event) => {
@@ -58,7 +43,8 @@ self.addEventListener("push", (event) => {
     notificationType === "chat_message" || payload.category === "chat";
 
   const senderProfileImage = getSenderProfileImage(payload, notificationData);
-  const appIcon = normalizeImageUrl(notificationData.app_icon) || "/icons/icon-192.png";
+  const appIcon =
+    normalizeImageUrl(notificationData.app_icon) || "/icons/icon-192.png";
   const suppliedIcon = normalizeImageUrl(notificationData.icon);
 
   let targetUrl =
@@ -130,7 +116,8 @@ self.addEventListener("notificationclick", (event) => {
   const rawUrl = event.notification?.data?.url || "/";
   const normalizedPath =
     rawUrl === "/chat" || rawUrl.startsWith("/chat?")
-      ? "/app/chat" + (rawUrl.includes("?") ? rawUrl.slice(rawUrl.indexOf("?")) : "")
+      ? "/app/chat" +
+        (rawUrl.includes("?") ? rawUrl.slice(rawUrl.indexOf("?")) : "")
       : rawUrl;
 
   const url = new URL(normalizedPath, self.location.origin).href;
@@ -140,7 +127,10 @@ self.addEventListener("notificationclick", (event) => {
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
-          if ("focus" in client && client.url.startsWith(self.location.origin)) {
+          if (
+            "focus" in client &&
+            client.url.startsWith(self.location.origin)
+          ) {
             return client.focus().then(() => {
               if ("navigate" in client) return client.navigate(url);
             });

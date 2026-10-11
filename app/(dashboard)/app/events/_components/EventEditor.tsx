@@ -10,6 +10,7 @@ import useEvent from "@/app/hooks/use-events";
 import { useRouter } from "next/navigation";
 import useChat from "@/app/hooks/use-chat";
 import { useEffect, useState } from "react";
+import EventPreviewModal from "./EventPreviewModal";
 
 type EventEditorProps = {
   mode: "create" | "update";
@@ -67,8 +68,10 @@ export default function EventEditor({
         mode === "create" ? "create_event_draft" : `update_event_${eventId}`,
     });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // WATCHED VALUES
+  const previewData = watch();
   const locationType = watch("location_type");
   const eventInterests = watch("interests") || [];
   const ticketPrices = watch("ticket_info") || [];
@@ -308,7 +311,20 @@ export default function EventEditor({
         onToggleTicket={toggleTicketType}
         onOpenPricingModal={() => setIsModalOpen(true)}
         onSubmit={onSubmit}
+        onPreview={() => setIsPreviewOpen(true)}
         isLoading={isSubmitting}
+      />
+
+      <EventPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        eventData={previewData}
+        bannerPreview={
+          bannerPreview ||
+          (typeof previewData.banner_url === "string"
+            ? previewData.banner_url
+            : null)
+        }
       />
 
       <TicketPricingModal

@@ -12,6 +12,7 @@
     "@mgreminger/quill-image-resize-module": "^1.2.1",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tanstack/react-query": "^5.96.2",
+    "@zxing/browser": "^0.2.1",
     "axios": "^1.14.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

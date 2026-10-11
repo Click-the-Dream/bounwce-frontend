@@ -32,10 +32,11 @@ const useUser = () => {
       enabled,
     });
 
-  const useGetUserById = (userId: string) =>
+  const useGetUserById = (userId?: string) =>
     useQuery<User>({
       queryKey: ["user", userId],
       queryFn: async () => {
+        if (!userId) throw new Error("User id is required");
 
         const res = await client.get(`/users/${userId}`);
         const user = res.data?.data;
@@ -43,7 +44,34 @@ const useUser = () => {
         if (!user) throw new Error("User not found");
         return user;
       },
-      enabled: !!userId,
+      enabled: Boolean(userId),
+      // Use data already available from the conversation list (or the sender
+      // embedded in a notification) immediately, while the full profile loads.
+      // placeholderData does not make that partial object the canonical cache.
+      placeholderData: (previousData) => {
+        if (!userId) return undefined;
+        if (previousData?.id === userId) return previousData;
+
+        const notificationPreview = queryClient.getQueryData<User>([
+          "chatUserPreview",
+          userId,
+        ]);
+        if (notificationPreview) return notificationPreview;
+
+        const conversations = queryClient.getQueryData<any>(["conversations"]);
+        const pages = conversations?.pages ?? [];
+        for (const page of pages) {
+          const conversation = (page?.items ?? []).find(
+            (item: any) =>
+              item?.user?.id === userId ||
+              item?.peer_id === userId ||
+              item?.user_id === userId,
+          );
+          if (conversation?.user?.id) return conversation.user as User;
+        }
+
+        return undefined;
+      },
       staleTime: 1000 * 60 * 5,
     });
 

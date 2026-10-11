@@ -9,9 +9,14 @@ import UserImage from "../../_components/UserImage";
 interface ChatHeaderProps {
   selectedChat?: User;
   role?: "buyer" | "vendor";
+  isLoading?: boolean;
 }
 
-const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
+const ChatHeader = ({
+  selectedChat,
+  role = "buyer",
+  isLoading = false,
+}: ChatHeaderProps) => {
   const router = useRouter();
   const { chatId } = useParams();
   const { onlineUsers, typingUsers } = useChatUtils();
@@ -46,6 +51,15 @@ const ChatHeader = ({ selectedChat, role = "buyer" }: ChatHeaderProps) => {
             </span>
           </div>
         </>
+      )}
+      {chatId && !selectedChat && isLoading && (
+        <div className="flex items-center gap-3" aria-label="Loading contact details">
+          <div className="size-[37px] animate-pulse rounded-lg bg-gray-200" />
+          <div className="flex flex-col gap-2">
+            <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+            <div className="h-2 w-20 animate-pulse rounded bg-gray-100" />
+          </div>
+        </div>
       )}
     </div>
   );

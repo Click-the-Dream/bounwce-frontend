@@ -107,16 +107,42 @@ export const useSocketConnection = ({
         ),
       );
 
-      // Update Messages Cache
-      // Cancel any in-flight fetch/prefetch first so an older server snapshot
-      // cannot overwrite the newer real-time message.
-      await queryClient.cancelQueries({
-        queryKey: ["messages", otherUserId],
-      });
+      // Update Messages Cache. If the thread has never been loaded, this
+      // creates a clearly-marked partial cache (the incoming message only),
+      // then invalidates it so an open thread fetches the full server history.
+      // Complete caches can be updated in-place without another network call.
+      if (cachedMessages) {
+        const cacheNeedsHistory = Boolean(
+          cachedMessages?.pages?.some((page: any) => page?.__needsHistoryFetch),
+        );
 
-      queryClient.setQueryData(["messages", otherUserId], (old: any) =>
-        mergeIntoQuery(old, message),
-      );
+        await queryClient.cancelQueries({
+          queryKey: ["messages", otherUserId],
+          exact: true,
+        });
+
+        queryClient.setQueryData(["messages", otherUserId], (old: any) =>
+          mergeIntoQuery(old, message),
+        );
+
+        if (cacheNeedsHistory) {
+          void queryClient.invalidateQueries({
+            queryKey: ["messages", otherUserId],
+            exact: true,
+            refetchType: "active",
+          });
+        }
+      } else {
+        queryClient.setQueryData(["messages", otherUserId], (old: any) =>
+          mergeIntoQuery(old, message),
+        );
+
+        void queryClient.invalidateQueries({
+          queryKey: ["messages", otherUserId],
+          exact: true,
+          refetchType: "active",
+        });
+      }
 
       // Update Conversations Cache
       queryClient.setQueriesData(

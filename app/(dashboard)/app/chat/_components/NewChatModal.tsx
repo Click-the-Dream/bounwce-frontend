@@ -5,6 +5,7 @@ import SafeImage from "@/app/_components/SafeImage";
 import { X, Search } from "lucide-react";
 import useUser from "@/app/hooks/use-user";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/context/AuthContext";
 import { useChatUtils } from "@/app/context/ChatContext";
 import UserImage from "../../_components/UserImage";
@@ -17,6 +18,7 @@ interface NewChatModalProps {
 export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
   const { authDetails } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { useGetUsers } = useUser();
   const { onlineUsers } = useChatUtils();
 
@@ -113,7 +115,13 @@ export default function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
                   <div
                     key={user.id}
                     ref={isLast ? lastUserRef : null}
-                    onClick={() => router.push(`/app/chat/${user.id}`)}
+                    onClick={() => {
+                      // The selected user is already available here; seed a
+                      // lightweight preview so the chat header does not wait
+                      // for a second user-profile request to render.
+                      queryClient.setQueryData(["chatUserPreview", user.id], user);
+                      router.push(`/app/chat/${user.id}`);
+                    }}
                     className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2"
                   >
                     <UserImage

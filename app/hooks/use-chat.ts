@@ -48,6 +48,9 @@ export const mergeIntoQuery = (old: any, message: any): any => {
   const emptyState = {
     pages: [
       {
+        // Socket/optimistic updates can happen before the server page has been
+        // cached. Mark this as partial so opening the chat still hydrates history.
+        __needsHistoryFetch: true,
         messages: {
           items: [message],
           page: 1,
@@ -212,9 +215,16 @@ const useChat = () => {
       enabled: Boolean(options.userId),
       staleTime: MESSAGE_STALE_TIME,
       gcTime: MESSAGE_GC_TIME,
-      // The sidebar warms recent chats before the user opens them.
-      // Do not start another request merely because MessageList mounted.
-      refetchOnMount: false,
+      // Usually the sidebar has already prefetched a complete page, so keep
+      // chat opening instant. If only a socket/optimistic message was cached,
+      // fetch page 1 on mount to hydrate the actual conversation history.
+      refetchOnMount: (query) =>
+        query.state.isInvalidated ||
+        Boolean(
+          (query.state.data as any)?.pages?.some(
+            (page: any) => page?.__needsHistoryFetch,
+          ),
+        ),
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
     });

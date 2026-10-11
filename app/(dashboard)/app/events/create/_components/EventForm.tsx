@@ -33,6 +33,7 @@ interface EventFormProps {
   onToggleTicket: (type: string) => void;
   onOpenPricingModal: () => void;
   onSubmit: (data: EventFormInputs) => Promise<void>;
+  onPreview: () => void;
   mode?: "create" | "update";
   isLoading: boolean;
   eventInterests: string[];
@@ -55,6 +56,7 @@ export const EventForm: React.FC<EventFormProps> = ({
   onToggleTicket,
   onOpenPricingModal,
   onSubmit,
+  onPreview,
   isLoading,
   mode = "create",
 }) => {
@@ -130,8 +132,9 @@ export const EventForm: React.FC<EventFormProps> = ({
       <FormActions
         mode={mode}
         isLoading={isLoading}
-        onPreview={() => console.log("Preview")}
+        onPreview={onPreview}
         onSaveDraft={handleDraft}
+        watch={watch}
       />
     </form>
   );

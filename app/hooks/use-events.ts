@@ -130,18 +130,6 @@ const useEvents = () => {
           },
         );
 
-        /*
-         * Your API returns:
-         *
-         * {
-         *   status_code: 200,
-         *   status: "success",
-         *   message: "...",
-         *   data: [...]
-         * }
-         *
-         * So return the attendance/payment array directly.
-         */
         return response.data.data;
       },
 
@@ -326,6 +314,57 @@ const useEvents = () => {
 
     onError: (error) => handleFailure("Attendance Cancellation", error),
   });
+
+  const verifyTicket = useMutation({
+    mutationFn: async ({
+      eventId,
+      code,
+    }: {
+      eventId: string | number;
+      code: string;
+    }) => {
+      if (!eventId) {
+        throw new Error("Event ID is required to verify a ticket.");
+      }
+
+      const ticketCode = code.trim();
+      if (!ticketCode) {
+        throw new Error("Enter a ticket code or scan its QR code.");
+      }
+
+      const response = await api.post(
+        `/outgoing/events/events/${eventId}/tickets/verify`,
+        { code: ticketCode },
+      );
+
+      const payload = response.data;
+      const status = String(payload?.status ?? "").toLowerCase();
+      if (["error", "failed", "failure"].includes(status)) {
+        throw new Error(
+          payload?.message || "The ticket could not be verified.",
+        );
+      }
+
+      return payload;
+    },
+
+    onSuccess: (data, variables) => {
+      handleSuccess(
+        "Ticket Verification",
+        data?.message || "Ticket verified successfully.",
+      );
+
+      // Refresh attendee information so the updated ticket status is visible.
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "attendees"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId],
+      });
+    },
+
+    onError: (error) => handleFailure("Ticket Verification", error),
+  });
   // UPDATE EVENT STATUS
   const updateEventStatus = useMutation({
     mutationFn: async ({
@@ -368,6 +407,7 @@ const useEvents = () => {
     deleteEvent,
     attendEvent,
     cancelAttendance,
+    verifyTicket,
     updateEventStatus,
   };
 };

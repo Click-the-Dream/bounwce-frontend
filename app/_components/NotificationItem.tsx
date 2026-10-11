@@ -1,9 +1,12 @@
+"use client";
+
 import UserImage from "../(dashboard)/app/_components/UserImage";
 import { timeAgo } from "../_utils/formatters";
 import { Notification } from "../_utils/types/notification";
 import { useNotifications } from "../context/NotificationContext";
 import useNotificationServices from "../hooks/use-notification";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   notification: Notification;
@@ -19,6 +22,7 @@ export const NotificationItem = ({
   const { resetUnread } = useNotifications();
   const { markAsRead } = useNotificationServices();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isChat = notification.event_type === "chat_message";
 
   const sender = notification.payload?.sender;
@@ -26,12 +30,26 @@ export const NotificationItem = ({
 
   const handleItemClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const target = isChat ? "/app/chat" : "#";
+    const senderId = sender?.id || notification.payload?.sender_id;
     if (isUnread) {
       markAsRead.mutate(notification.id);
     }
-    if (sender?.id) resetUnread(sender.id);
-    router.push(target);
+
+    if (isChat && senderId) {
+      // Paint the chat header immediately from notification payload while the
+      // full /users/:id profile request continues in the background.
+      queryClient.setQueryData(["chatUserPreview", senderId], {
+        id: senderId,
+        full_name: sender?.full_name || notification.title || "Chat",
+        username: sender?.username || "",
+        profile_pic: sender?.profile_pic,
+        email: sender?.email,
+      });
+      resetUnread(senderId);
+      router.push(`/app/chat/${senderId}`);
+    } else {
+      router.push(isChat ? "/app/chat" : "#");
+    }
     onClose();
   };
 
