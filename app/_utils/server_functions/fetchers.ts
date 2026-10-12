@@ -32,19 +32,25 @@ export const allStoresFetcher = async () => {
     let allStores: any[] = [];
 
     while (true) {
-      const { data } = await api.get("/stores", {
-        params: { page, per_page: 50 },
+      const { data } = await api.get("/store", {
+        params: { page, page_size: 50 },
         timeout: 10000,
       });
 
+      // Matches your infinite query response structure: response.data.data
       const result = data?.data || data;
-      const stores = Array.isArray(result) ? result : result?.stores || result?.items || [];
+      const stores = Array.isArray(result) 
+        ? result 
+        : result?.stores || result?.items || result?.data || [];
+        
       allStores = [...allStores, ...stores];
 
-      const total = result?.total || stores.length;
-      const hasMore = allStores.length < total && stores.length > 0;
-      
-      if (!hasMore || page > 20) break; // safety guard against infinite loops
+      const currentPage = result?.page || page;
+      const pageSize = result?.page_size || 50;
+      const total = result?.total || allStores.length;
+
+      const hasMore = currentPage * pageSize < total;
+      if (!hasMore || stores.length === 0 || page > 20) break;
 
       page++;
     }
@@ -55,6 +61,7 @@ export const allStoresFetcher = async () => {
     return [];
   }
 };
+
 
 export const storeFetcher = async (userId: string) => {
   if (!userId) return null;
