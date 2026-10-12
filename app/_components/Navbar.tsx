@@ -60,6 +60,19 @@ const Navbar = () => {
             />
           </div>
 
+          {/* Desktop Links */}
+          <div className="ml-auto mr-2 hidden md:flex items-center gap-6 text-gray-700 text-[13px] font-medium">
+            {navLinks.map((link: { name: string; path: string }) => (
+              <Link
+                key={link.name}
+                href={link.path}
+                className="hover:text-black cursor-pointer transition-colors"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
+
           {/* Right Actions */}
           <div className="flex items-center gap-3">
             {!user && (
@@ -72,8 +85,9 @@ const Navbar = () => {
               </Link>
             )}
 
+            {user && <ProfileDropdown />}
             {/* Mobile Toggle */}
-            {/* <button
+            <button
               onClick={() => setIsOpen(!isOpen)}
               className="md:hidden flex items-center justify-center w-8.5 h-8.5 rounded-lg border-2 border-black bg-white transition-all active:scale-90"
             >
@@ -82,13 +96,11 @@ const Navbar = () => {
               ) : (
                 <Menu size={18} strokeWidth={2.5} />
               )}
-            </button> */}
-
-            {user && <ProfileDropdown />}
+            </button>
           </div>
 
           {isOpen && (
-            <div className="absolute top-15 left-4 right-4 bg-white border-2 border-black rounded-[15px] shadow-xl p-6 md:hidden z-50">
+            <div className="absolute top-15 left-4 right-4 bg-white rounded-[15px] border-2 border-[#0000001A] shadow-xl p-6 pb-0 md:hidden z-50">
               <ul className="flex flex-col gap-5">
                 {navLinks.map((link: { name: string; path: string }) => (
                   <Link
