@@ -189,14 +189,14 @@ const MandatoryProfileGuard = () => {
       />
 
       <div className="fixed inset-0 z-10000 overflow-y-auto bg-[#211915]/75 backdrop-blur-md">
-        <div className="min-h-full w-full flex items-center justify-center p-4 sm:p-6">
+        <div className="min-h-full w-full flex items-center justify-center p-4">
           <section
             className="w-full max-w-140 overflow-hidden rounded-[30px] border border-white/70 bg-[#fffdfb] shadow-[0_35px_110px_rgba(27,15,10,0.32)]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="mandatory-profile-title"
           >
-            <div className="px-5 pt-5 sm:px-8 sm:pt-8">
+            <div className="px-5 pt-5 sm:px-8">
               <div className="flex items-center justify-between">
                 <div className="inline-flex items-center gap-2 rounded-full border border-orange/15 bg-orange/[0.07] px-3 py-1.5 text-[11px] font-bold text-[#d84223]">
                   Finish your profile
@@ -209,7 +209,7 @@ const MandatoryProfileGuard = () => {
               <div className="mt-6 text-center">
                 <h2
                   id="mandatory-profile-title"
-                  className="text-[27px] font-bold tracking-[-0.045em] text-[#171413] sm:text-[32px]"
+                  className="text-[27px] font-semibold tracking-[-0.045em] text-[#171413] sm:text-[32px]"
                 >
                   Put a face to your Bouwnce
                 </h2>
@@ -229,7 +229,11 @@ const MandatoryProfileGuard = () => {
                 <div className="mx-auto flex size-34 items-center justify-center rounded-full bg-linear-to-br from-orange via-[#ff6a4f] to-[#ffb19f] p-0.75 shadow-[0_18px_45px_rgba(255,75,43,0.18)]">
                   <div className="flex size-full items-center justify-center rounded-full bg-[#fffdfb]">
                     {user.profile_pic ? (
-                      <UserImage user={user} size={124} />
+                      <UserImage
+                        user={user}
+                        size={120}
+                        rounded="rounded-full"
+                      />
                     ) : (
                       <div className="flex size-31 items-center justify-center rounded-full bg-[#f5e8e1] text-[#b75d45]">
                         <ImagePlus className="size-10" strokeWidth={1.6} />
@@ -381,9 +385,9 @@ const MandatoryProfileGuard = () => {
                   onClick={() =>
                     setZoom((z) => Math.max(1, Number((z - 0.1).toFixed(1))))
                   }
-                  className="flex size-9 items-center justify-center rounded-full border border-black/10 bg-white"
+                  className="shrink-0 flex size-6 md:size-9 items-center justify-center rounded-full border border-black/10 bg-white"
                 >
-                  <ZoomOut className="size-4" />
+                  <ZoomOut className="size-3 md:size-4" />
                 </button>
                 <input
                   aria-label="Zoom"
@@ -400,9 +404,9 @@ const MandatoryProfileGuard = () => {
                   onClick={() =>
                     setZoom((z) => Math.min(3, Number((z + 0.1).toFixed(1))))
                   }
-                  className="flex size-9 items-center justify-center rounded-full border border-black/10 bg-white"
+                  className="shrink-0 flex size-6 md:size-9 items-center justify-center rounded-full border border-black/10 bg-white"
                 >
-                  <ZoomIn className="size-4" />
+                  <ZoomIn className="size-3 md:size-4" />
                 </button>
                 <button
                   type="button"
@@ -410,9 +414,9 @@ const MandatoryProfileGuard = () => {
                     setZoom(1);
                     setCrop({ x: 0, y: 0 });
                   }}
-                  className="flex size-9 items-center justify-center rounded-full border border-black/10 bg-white"
+                  className="shrink-0 flex size-6 md:size-9 items-center justify-center rounded-full border border-black/10 bg-white"
                 >
-                  <RotateCcw className="size-4" />
+                  <RotateCcw className="size-3 md:size-4" />
                 </button>
               </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
@@ -21,9 +21,15 @@ import useProduct from "@/app/hooks/use-product";
 import useUser from "@/app/hooks/use-user";
 import ProductCard from "@/app/marketplace/_components/ProductCard";
 import SafeImage from "@/app/_components/SafeImage";
+import { useAuth } from "@/app/context/AuthContext";
+import AuthModal from "@/app/_components/AuthModal";
+import { formatCurrency } from "@/app/_utils/formatters";
 
 const StoreFront = () => {
   const { storeId } = useParams<{ storeId: string }>();
+  const router = useRouter();
+  const { authDetails, setShowAuthModal, showAuthModal } = useAuth();
+  const isAuthenticated = Boolean(authDetails?.access_token);
 
   const { useGetStoreInfo } = useStore();
   const { useGetUserById } = useUser();
@@ -36,6 +42,42 @@ const StoreFront = () => {
   );
 
   const [query, setQuery] = useState("");
+
+  const messageVendor = (product?: any) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (!vendor?.id && !store?.user_id) return;
+    const vendorId = vendor?.id || store?.user_id;
+    const params = new URLSearchParams();
+    params.set("source", "storefront");
+    params.set("storeName", store?.name || "Vendor store");
+
+    if (product) {
+      params.set("productId", String(product.id));
+      params.set("productName", product.name || "Product");
+      params.set("productPrice", product.amount == null ? "" : formatCurrency(product.amount));
+      params.set("productImage", product.images?.[0]?.url || "");
+      params.set("productUrl", `/marketplace/products/${product.id}`);
+    }
+
+    router.push(`/app/chat/${encodeURIComponent(vendorId)}?${params.toString()}`);
+  };
+
+  const shareStore = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: store?.name || "Bouwnce Store", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+      }
+    } catch {
+      // Sharing may be dismissed by the user; no further action is needed.
+    }
+  };
 
   const productList = useMemo(
     () => products?.pages?.flatMap((p: any) => p?.products ?? []) ?? [],
@@ -134,12 +176,18 @@ const StoreFront = () => {
 
             {/* ACTIONS */}
             <div className="flex md:flex-col gap-2 md:justify-center">
-              <button className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800 transition flex items-center justify-center gap-2">
+              <button
+                onClick={() => messageVendor()}
+                className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800 transition flex items-center justify-center gap-2"
+              >
                 <MessageCircle size={14} />
-                Message
+                Message vendor
               </button>
 
-              <button className="px-4 py-2 rounded-lg border border-zinc-200 text-xs font-medium hover:bg-zinc-50 transition flex items-center justify-center gap-2">
+              <button
+                onClick={shareStore}
+                className="px-4 py-2 rounded-lg border border-zinc-200 text-xs font-medium hover:bg-zinc-50 transition flex items-center justify-center gap-2"
+              >
                 <Share2 size={14} />
                 Share
               </button>
@@ -208,6 +256,14 @@ const StoreFront = () => {
                   exit={{ opacity: 0 }}
                 >
                   <ProductCard product={product} />
+                  <button
+                    type="button"
+                    onClick={() => messageVendor(product)}
+                    className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:border-orange-400 hover:text-orange-600 transition flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle size={14} />
+                    Ask vendor about this item
+                  </button>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -409,6 +465,10 @@ const StoreFront = () => {
           </div>
         </div>
       </footer>
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </div>
   );
 };

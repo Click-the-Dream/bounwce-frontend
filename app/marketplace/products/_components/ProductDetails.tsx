@@ -22,11 +22,15 @@ import ratingsIcon from "../../../assets/icons/ratings-icon.svg";
 import stockIcon from "../../../assets/icons/stock-icon.svg";
 import { formatCurrency } from "@/app/_utils/formatters";
 import VendorFeatureCard from "./VendorFeatureCard";
+import { useAuth } from "@/app/context/AuthContext";
+import AuthModal from "@/app/_components/AuthModal";
 
 const ProductDetails = () => {
   const { productId } = useParams();
   const router = useRouter();
   const { carts } = useMarketStore();
+  const { authDetails, showAuthModal, setShowAuthModal } = useAuth();
+  const isAuthenticated = Boolean(authDetails?.access_token);
   const { useGetProductById } = useProduct();
   const { data: product, isLoading, isError } = useGetProductById(productId);
   const { addToCart, updateCart, removeFromCart } = useCart();
@@ -74,6 +78,10 @@ const ProductDetails = () => {
   }
 
   const handleQuantity = (qauntity: number) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     updateCart.mutate(
       { cartId: productInCart?.id, data: { quantity: Math.max(1, qauntity) } },
       {
@@ -84,10 +92,18 @@ const ProductDetails = () => {
   };
 
   const handleRemove = async () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     removeFromCart.mutate(productInCart?.id);
   };
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     addToCart.mutate({ product_id: product?.id, quantity });
   };
 
@@ -327,6 +343,10 @@ const ProductDetails = () => {
           </div>
         )}
       </div>
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import {
   BadgeCheck,
   User,
   Sparkles,
+  Bell,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import useUser from "@/app/hooks/use-user";
@@ -35,6 +36,10 @@ export default function EditProfileModal({
   const { updateCurrentUser } = useUser();
   const backdropRef = useRef<HTMLDivElement>(null);
   const [interestOpen, setInterestOpen] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>("default");
 
   const [form, setForm] = useState({
     full_name: "",
@@ -52,6 +57,22 @@ export default function EditProfileModal({
       institution: user?.institution || "",
     });
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncNotificationState = (event?: Event) => {
+      const detail = (event as CustomEvent<{
+        enabled?: boolean; permission?: NotificationPermission;
+      }> | undefined)?.detail;
+      const permission = detail?.permission ??
+        (("Notification" in window) ? Notification.permission : "default");
+      setNotificationPermission(permission);
+      setNotificationsEnabled(typeof detail?.enabled === "boolean" ? detail.enabled : false);
+    };
+    syncNotificationState();
+    window.addEventListener("push:ready", syncNotificationState);
+    return () => window.removeEventListener("push:ready", syncNotificationState);
+  }, []);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -206,6 +227,50 @@ export default function EditProfileModal({
                 placeholder="Tell people a little about yourself…"
                 className="w-full rounded-[10px] border border-black/10 p-3 text-[13px] text-[#111] placeholder:text-[#bbb] outline-none resize-none focus:border-black/30 focus:ring-2 focus:ring-black/5 transition-all leading-relaxed bg-white"
               />
+            </div>
+
+            {/* ── NOTIFICATION PREFERENCES ── */}
+            <div className="flex items-center justify-between gap-4 py-3 px-4 rounded-[10px] border border-black/[0.07] bg-white">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                  <Bell className="size-3.5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-[#111] leading-tight">
+                    Notifications
+                  </p>
+                  <p className="text-[11px] text-[#888] mt-0.5">
+                    {notificationsEnabled
+                      ? "Notifications are enabled on this device"
+                      : notificationPermission === "denied"
+                        ? "Blocked in device/browser settings"
+                        : "Turn on alerts for messages and activity"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notificationsEnabled}
+                aria-label="Enable notifications"
+                disabled={notificationBusy}
+                onClick={() => {
+                  setNotificationBusy(true);
+                  window.dispatchEvent(new CustomEvent("push:toggle"));
+                  window.setTimeout(() => setNotificationBusy(false), 1200);
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center transition-colors focus:outline-none focus:ring-2 focus:ring-orange-300 disabled:opacity-60 ${
+                  notificationsEnabled ? "bg-orange-500" : "bg-zinc-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                    notificationsEnabled
+                      ? "translate-x-6"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
 
             {/* ── INTERESTS ROW ── */}

@@ -16,6 +16,7 @@ import { websocket } from "@/app/services/websocket";
 import useChat from "@/app/hooks/use-chat";
 import MediaUploadModal from "./MediaUploadViewer";
 import { useAuth } from "@/app/context/AuthContext";
+import { useSearchParams } from "next/navigation";
 import SmartReplyPreview from "./SmartReplyPreview";
 import { useChatUtils } from "@/app/context/ChatContext";
 import ScrollToBottomBtn from "./ScrollToBottomBtn";
@@ -44,6 +45,8 @@ const SendMessage = ({
   unreadCount,
 }: SendMessageProps) => {
   const { authDetails } = useAuth();
+  const searchParams = useSearchParams();
+  const productPrefillHandledRef = useRef<string | null>(null);
   const { replyTo, setReplyTo, activeUploadsRef } = useChatUtils();
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -78,6 +81,34 @@ const SendMessage = ({
       textareaRef.current?.focus();
     }
   }, [replyTo]);
+
+  // Storefront product enquiries arrive as a draft. We never send it
+  // automatically; the buyer reviews it and presses Send.
+  useEffect(() => {
+    const productId = searchParams.get("productId");
+    if (!productId || !selectedChat?.id) return;
+    if (productPrefillHandledRef.current === productId) return;
+
+    const productName = searchParams.get("productName") || "this item";
+    const productPrice = searchParams.get("productPrice");
+    const productUrl = searchParams.get("productUrl");
+    const productImage = searchParams.get("productImage");
+    const storeName = searchParams.get("storeName") || "your store";
+
+    const lines = [
+      `Hi! I'm interested in ${productName} from ${storeName}.`,
+      productPrice ? `Price: ${productPrice}` : "",
+      productUrl
+        ? `Product details: ${window.location.origin}${productUrl}`
+        : "",
+      productImage ? `Product image: ${productImage}` : "",
+      "Could you please share more details?",
+    ].filter(Boolean);
+
+    setMessage(lines.join("\\n"));
+    productPrefillHandledRef.current = productId;
+    window.setTimeout(() => textareaRef.current?.focus(), 100);
+  }, [searchParams, selectedChat?.id]);
 
   // Cleanup typing state on unmount
   useEffect(() => {

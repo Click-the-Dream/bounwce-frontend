@@ -108,7 +108,7 @@ const ProfileImage = ({
 
       {/* AVATAR + CAMERA BUTTON */}
       <div
-        className={`relative w-fit mb-3.25 ${isOwnProfile && onboarding ? "cursor-pointer" : ""}`}
+        className={`shrink-0 relative w-fit mb-3.25 ${isOwnProfile && onboarding ? "cursor-pointer" : ""}`}
         onClick={() => {
           if (isOwnProfile && onboarding) fileRef.current?.click();
         }}

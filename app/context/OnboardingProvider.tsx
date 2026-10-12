@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthContext";
 import api from "../services/api";
+import useInterest from "../hooks/use-interest";
 
 interface OnboardingContextType {
   user: any | null;
@@ -27,6 +28,13 @@ const TOUR_VERSION = "v3";
 export const OnboardingProvider = ({ children }: { children: React.ReactNode }) => {
   const { authDetails, updateUser } = useAuth();
   const user = authDetails?.user ?? null;
+  const { useGetUserInterests } = useInterest();
+  const {
+    data: userInterests = [],
+    isLoading: interestsLoading,
+    isError: interestsError,
+  } = useGetUserInterests();
+  const hasSelectedInterests = Array.isArray(userInterests) && userInterests.length > 0;
 
   const [isTourActive, setIsTourActive] = useState(false);
   const [tourBooted, setTourBooted] = useState(false);
@@ -64,19 +72,19 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
   }, []);
 
   const startTour = useCallback(() => {
-    if (!user || mustUpdateProfile) return;
+    if (!user || mustUpdateProfile || !hasSelectedInterests) return;
     setIsTourActive(false);
     window.setTimeout(() => setIsTourActive(true), 0);
-  }, [mustUpdateProfile, user]);
+  }, [hasSelectedInterests, mustUpdateProfile, user]);
 
   const resetTour = useCallback(() => {
-    if (!user || mustUpdateProfile || !onboardingStorageKey) return;
+    if (!user || mustUpdateProfile || !hasSelectedInterests || !onboardingStorageKey) return;
     localStorage.removeItem(onboardingStorageKey);
     updateUser({ ...user, hasCompletedOnboarding: false });
     setTourBooted(true);
     setIsTourActive(false);
     window.setTimeout(() => setIsTourActive(true), 0);
-  }, [mustUpdateProfile, onboardingStorageKey, updateUser, user]);
+  }, [hasSelectedInterests, mustUpdateProfile, onboardingStorageKey, updateUser, user]);
 
   const completeTour = useCallback(async () => {
     setIsTourActive(false);
@@ -110,7 +118,7 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
     setTourBooted(false);
     setIsTourActive(false);
 
-    if (!user || mustUpdateProfile) return;
+    if (!user || mustUpdateProfile || !hasSelectedInterests) return;
 
     const forceTour = new URLSearchParams(window.location.search).get("tour") === "1";
     const serverCompleted = Boolean(user.hasCompletedOnboarding);
@@ -129,7 +137,7 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
     }, 450);
 
     return () => window.clearTimeout(timer);
-  }, [user?.id, user?.hasCompletedOnboarding, mustUpdateProfile, onboardingStorageKey]);
+  }, [user?.id, user?.hasCompletedOnboarding, mustUpdateProfile, onboardingStorageKey, hasSelectedInterests, interestsLoading, interestsError]);
 
   const value = useMemo(
     () => ({

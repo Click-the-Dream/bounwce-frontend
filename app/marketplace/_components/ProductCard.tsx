@@ -48,8 +48,9 @@ const ProductCard = ({
     // Prevent navigation if clicking buttons
     if (e.target.closest("button")) return;
 
-    if (!checkAuth(e)) return;
-
+    // Product pages are public. Authentication is only required for cart
+    // and checkout actions, not for browsing product details.
+    e.stopPropagation();
     router.push(`/marketplace/products/${product?.id}`);
   };
 

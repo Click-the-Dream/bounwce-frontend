@@ -49,6 +49,7 @@ export default function PushNotificationManager() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [promptVisible, setPromptVisible] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [promptBusy, setPromptBusy] = useState(false);
   const [promptError, setPromptError] = useState<string | null>(null);
 
@@ -151,6 +152,7 @@ export default function PushNotificationManager() {
       await subscribePushRef.current(subscription.toJSON());
       syncedEndpointRef.current = endpoint;
       window.localStorage.setItem(PUSH_SYNCED_ENDPOINT_KEY, endpoint);
+      setPushEnabled(true);
     } finally {
       syncInProgressRef.current = false;
     }
@@ -251,19 +253,22 @@ export default function PushNotificationManager() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const publishState = () => window.dispatchEvent(new CustomEvent("push:ready", {
+      detail: {
+        enablePush, requestAndEnablePush, disablePush,
+        permission: notificationPermission, enabled: pushEnabled,
+      },
+    }));
+    const handleToggle = () => {
+      if (pushEnabled) void disablePush();
+      else void requestAndEnablePush();
+    };
+    window.addEventListener("push:toggle", handleToggle);
+    publishState();
+    return () => window.removeEventListener("push:toggle", handleToggle);
+  }, [disablePush, enablePush, notificationPermission, pushEnabled, requestAndEnablePush]);
 
-    window.dispatchEvent(
-      new CustomEvent("push:ready", {
-        detail: {
-          enablePush,
-          disablePush,
-          permission: notificationPermission,
-        },
-      }),
-    );
-  }, [disablePush, enablePush, notificationPermission]);
-
-  if (!promptVisible || notificationPermission === "granted") {
+    if (!promptVisible || notificationPermission === "granted") {
     return null;
   }
 
