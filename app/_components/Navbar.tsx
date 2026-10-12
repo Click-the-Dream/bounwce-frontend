@@ -96,8 +96,8 @@ const Navbar = () => {
               ) : (
                 <Menu size={18} strokeWidth={2.5} />
               )}
-            </button>
-          </div>*/}
+            </button>*/}
+          </div>
 
           {isOpen && (
             <div className="absolute top-15 left-4 right-4 bg-white rounded-[15px] border-2 border-[#0000001A] shadow-xl p-6 md:hidden z-50">
