@@ -118,7 +118,9 @@ export default function PushNotificationManager() {
 
     const publicKey = vapidData?.public_key;
     if (!publicKey) {
-      throw new Error("Push notifications are still being prepared. Try again in a moment.");
+      throw new Error(
+        "Push notifications are still being prepared. Try again in a moment.",
+      );
     }
 
     syncInProgressRef.current = true;
@@ -190,7 +192,9 @@ export default function PushNotificationManager() {
       }
 
       if (!registration || !vapidData?.public_key) {
-        setPromptError("Notifications are preparing. Tap Allow notifications again in a moment.");
+        setPromptError(
+          "Notifications are preparing. Tap Allow notifications again in a moment.",
+        );
         return;
       }
 
@@ -203,7 +207,14 @@ export default function PushNotificationManager() {
     } finally {
       setPromptBusy(false);
     }
-  }, [enablePush, isIOS, isStandalone, promptBusy, registration, vapidData?.public_key]);
+  }, [
+    enablePush,
+    isIOS,
+    isStandalone,
+    promptBusy,
+    registration,
+    vapidData?.public_key,
+  ]);
 
   // If permission was already granted, silently sync an existing subscription.
   useEffect(() => {
@@ -257,7 +268,7 @@ export default function PushNotificationManager() {
   }
 
   return (
-    <div className="fixed inset-x-4 bottom-4 z-[100000] mx-auto max-w-md rounded-2xl border border-black/10 bg-white p-4 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+    <div className="fixed inset-x-4 bottom-4 z-100000 mx-auto max-w-md rounded-2xl border border-black/10 bg-white p-4 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
       <div className="flex items-start gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-orange/10 text-orange">
           <Bell className="size-5" />
@@ -266,7 +277,9 @@ export default function PushNotificationManager() {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-bold text-[#171413]">Enable notifications</p>
+              <p className="text-sm font-bold text-[#171413]">
+                Enable notifications
+              </p>
               <p className="mt-0.5 text-xs leading-5 text-[#756d68]">
                 Get alerts for new messages and important account activity.
               </p>
@@ -286,8 +299,8 @@ export default function PushNotificationManager() {
             <div className="mt-3 rounded-xl bg-[#faf7f5] p-3 text-[11px] leading-5 text-[#5e5651]">
               <strong>iPhone setup:</strong> open Bouwnce in Safari, tap Share,
               choose <strong>Add to Home Screen</strong>, keep
-              <strong> Open as Web App</strong> enabled, then launch Bouwnce from
-              the Home Screen and tap Allow notifications.
+              <strong> Open as Web App</strong> enabled, then launch Bouwnce
+              from the Home Screen and tap Allow notifications.
               <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-orange">
                 <ExternalLink className="size-3" />
                 Home Screen app required on iPhone

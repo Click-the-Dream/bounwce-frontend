@@ -11,8 +11,8 @@ const categories = [
     suggestion: "Need a gym partner nearby to stay consistent.",
   },
   {
-    name: "Food spot",
-    suggestion: "Looking for somewhere nice to eat.",
+    name: "Karaoke night",
+    suggestion: "Looking for somewhere to sing and have fun.",
   },
   {
     name: "Networking event",

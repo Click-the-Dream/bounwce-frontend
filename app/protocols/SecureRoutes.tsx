@@ -46,11 +46,6 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
   if (user && !user.is_active) {
     return <Redirect to="/login" />;
   }
-
-  // --------------------------------------------------
-  // ADMIN ROUTE PROTECTION
-  // --------------------------------------------------
-
   // Only admins can access /admin
   if (isAdminRoute && user?.role !== "admin") {
     return <Redirect to="/app" replace />;
@@ -60,10 +55,6 @@ const SecureRoute = ({ children }: { children: React.ReactNode }) => {
   if (isAppRoute && user?.role === "admin") {
     return <Redirect to="/admin" replace />;
   }
-
-  // --------------------------------------------------
-  // VENDOR ROUTE PROTECTION
-  // --------------------------------------------------
 
   if (isVendorRoute) {
     // Only vendors can access vendor routes

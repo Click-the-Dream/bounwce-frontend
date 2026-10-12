@@ -13,8 +13,6 @@ const SearchBar = () => {
 
   const handleSearch = () => {
     const trimmedQuery = query.trim();
-    router.push("/waitlist");
-    /*
     if (!trimmedQuery) {
       return;
     }
@@ -23,7 +21,7 @@ const SearchBar = () => {
       router.push(`/app?q=${encodeURIComponent(trimmedQuery)}`);
     } else {
       setShowAuthModal(true);
-    }*/
+    }
   };
 
   const handleAuthSuccess = () => {
