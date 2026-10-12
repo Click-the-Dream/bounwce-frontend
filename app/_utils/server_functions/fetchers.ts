@@ -26,6 +26,36 @@ export const marketFetcher = async ({ filters }: any) => {
  * Public store URLs currently use the vendor user ID (see the stores directory
  * navigation and useGetStoreInfo), so `userId` is intentionally used here.
  */
+export const allStoresFetcher = async () => {
+  try {
+    let page = 1;
+    let allStores: any[] = [];
+
+    while (true) {
+      const { data } = await api.get("/stores", {
+        params: { page, per_page: 50 },
+        timeout: 10000,
+      });
+
+      const result = data?.data || data;
+      const stores = Array.isArray(result) ? result : result?.stores || result?.items || [];
+      allStores = [...allStores, ...stores];
+
+      const total = result?.total || stores.length;
+      const hasMore = allStores.length < total && stores.length > 0;
+      
+      if (!hasMore || page > 20) break; // safety guard against infinite loops
+
+      page++;
+    }
+
+    return allStores;
+  } catch (error) {
+    console.error("Failed to fetch all stores:", error);
+    return [];
+  }
+};
+
 export const storeFetcher = async (userId: string) => {
   if (!userId) return null;
 
