@@ -7,12 +7,13 @@ import { useAuth } from "@/app/context/AuthContext";
 import Link from "next/link";
 import useAuthServices from "@/app/hooks/use-authservices";
 import UserImage from "@/app/(dashboard)/app/_components/UserImage";
+import LogoutModal from "@/app/(dashboard)/app/_components/LogoutModal";
 
 const ProfileDropdown = ({ fullMode = false }) => {
   const { authDetails } = useAuth();
   const user = authDetails?.user;
   const [isOpen, setIsOpen] = useState(false);
-  const { logout } = useAuthServices();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   if (!user) return null; // Don't render if no user data is available
 
@@ -95,7 +96,7 @@ const ProfileDropdown = ({ fullMode = false }) => {
                 className="px-4 py-2.5 flex items-center gap-2 text-red-500 hover:bg-red-50 cursor-pointer transition-colors"
                 onClick={() => {
                   setIsOpen(false);
-                  logout.mutate();
+                  setShowLogoutModal(true);
                 }}
               >
                 <FiLogOut size={18} /> Logout
@@ -104,6 +105,11 @@ const ProfileDropdown = ({ fullMode = false }) => {
           </div>
         </>
       )}
+
+      <LogoutModal
+        open={showLogoutModal}
+        onCancel={() => setShowLogoutModal(false)}
+      />
     </div>
   );
 };

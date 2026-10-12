@@ -83,7 +83,6 @@ const Sidebar = ({
 }) => {
   const pathname = usePathname();
   const { authDetails } = useAuth();
-  const { logout } = useAuthServices();
   const [collapsed, setCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(
@@ -102,12 +101,6 @@ const Sidebar = ({
   const isActive = (path: string) => pathname === path;
   const eventsActive = pathname.startsWith("/app/events");
   const onToggleCollapse = () => setCollapsed(!collapsed);
-
-  const handleLogoutConfirm = () => {
-    logout.mutate(undefined, {
-      onSettled: () => setShowLogoutModal(false),
-    });
-  };
 
   const navItems = useMemo(() => {
     const items = [
@@ -146,11 +139,8 @@ const Sidebar = ({
     <>
       <LogoutModal
         open={showLogoutModal}
-        onConfirm={handleLogoutConfirm}
         onCancel={() => setShowLogoutModal(false)}
-        isLoading={logout.isPending}
       />
-
       <motion.aside
         initial={false}
         animate={{ width: collapsed ? 80 : 256 }}
