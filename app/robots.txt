@@ -7,7 +7,15 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/marketplace", "/waitlist", "/app/profile/"],
+        allow: [
+          "/",
+          "/marketplace",
+          "/marketplace/",
+          "/stores",
+          "/stores/",
+          "/waitlist",
+          "/app/profile/",
+        ],
         disallow: [
           "/api/",
           "/admin/",
@@ -15,7 +23,6 @@ export default function robots(): MetadataRoute.Robots {
           "/vendor/",
           "/login",
           "/register",
-          "/*?*",
         ],
       },
     ],
