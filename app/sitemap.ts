@@ -1,8 +1,8 @@
 import { MetadataRoute } from "next";
-import { marketFetcher, allStoresFetcher } from "./_utils/server_functions/fetchers"; // Add your store fetcher
-import { createStorePath } from "./_utils/store-url";
+import { marketFetcher, allStoresFetcher } from "./_utils/server_functions/fetchers";
+import { createStorePath } from "@/app/_utils/store-url";
 
-export const revalidate = 3600; // Cache for 1 hour instead of 0 for better performance
+export const revalidate = 3600; // Cache for 1 hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.bouwnce.com";
@@ -48,17 +48,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
       : [];
 
-    // 2. Fetch stores
-    const storesRes = await allStoresFetcher(); // Ensure you fetch active stores
-    const stores = storesRes?.stores || storesRes?.data || storesRes || [];
+    // 2. Fetch all stores using your endpoint format
+    const stores = await allStoresFetcher();
 
     const storeRoutes: MetadataRoute.Sitemap = Array.isArray(stores)
       ? stores
           .filter((store: any) => store.is_active !== false)
           .map((store: any) => {
+            const storeName = String(store.name || "store").trim();
             const storePath = createStorePath({
               user_id: store.user_id ?? store.id,
-              name: store.name,
+              name: storeName,
             });
 
             return {
