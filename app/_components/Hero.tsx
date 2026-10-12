@@ -22,7 +22,8 @@ const Hero = () => {
         </h1>
 
         <p className="max-w-125 mt-4 text-[13px] text-[#4E4E4E] font-medium">
-          Meet people who share your interests and discover experience and businesses worth exploring. Your next meaningful connection or great find could be closer than you think.
+          Describe what you need — Bouwnce connects you with people who share
+          your interests, and the right places
         </p>
 
         <SearchBar />
