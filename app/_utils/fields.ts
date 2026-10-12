@@ -89,7 +89,7 @@ export const socialLinks = [
 
 export const navLinks = [
   { name: "Home", path: "/" },
-  //{ name: "Stores", path: "/stores" },
+  { name: "Stores", path: "/stores" },
   // { name: "Marketplace", path: "/marketplace" },
 ];
 
