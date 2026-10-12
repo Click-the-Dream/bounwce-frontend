@@ -44,10 +44,10 @@ const useAuthServices = () => {
       const { data } = await client.post("/auth/register", userData);
       return data?.data;
     },
-    onSuccess: (userData, variables: any) => {
+    onSuccess: (_, variables: any) => {
       onSuccess({
         title: "Registration Successful!",
-        message: `User created successfully - ${userData?.otp}`,
+        message: `User created successfully. Please check your email for verification.`,
       });
       storedUserEmail(variables.email);
       router.push("/email_verification");
