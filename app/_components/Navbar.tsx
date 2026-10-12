@@ -100,7 +100,7 @@ const Navbar = () => {
           </div>
 
           {isOpen && (
-            <div className="absolute top-15 left-4 right-4 bg-white rounded-[15px] border-2 border-[#0000001A] shadow-xl p-6 pb-0 md:hidden z-50">
+            <div className="absolute top-15 left-4 right-4 bg-white rounded-[15px] border-2 border-[#0000001A] shadow-xl p-6 md:hidden z-50">
               <ul className="flex flex-col gap-5">
                 {navLinks.map((link: { name: string; path: string }) => (
                   <Link
@@ -111,16 +111,16 @@ const Navbar = () => {
                     {link.name}
                   </Link>
                 ))}
-                <li>
+                {/* <li>
                   {!user && (
                     <Link
                       href="/register"
-                      className="text-[13px] w-full h-11.25 flex justify-center items-center gap-2 bg-orange text-black font-bold rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                      className="text-[13px] w-full h-11.25 flex justify-center items-center gap-2 mb-3 bg-orange text-black font-bold rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                     >
                       Sign Up <Play size={12} fill="#FFC501" />
                     </Link>
                   )}
-                </li>
+                </li> */}
               </ul>
             </div>
           )}
