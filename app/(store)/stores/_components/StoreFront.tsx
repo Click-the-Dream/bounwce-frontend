@@ -24,9 +24,11 @@ import SafeImage from "@/app/_components/SafeImage";
 import { useAuth } from "@/app/context/AuthContext";
 import AuthModal from "@/app/_components/AuthModal";
 import { formatCurrency } from "@/app/_utils/formatters";
+import { createStorePath, extractStoreId } from "@/app/_utils/store-url";
 
 const StoreFront = () => {
-  const { storeId } = useParams<{ storeId: string }>();
+  const { storeId: storeRef } = useParams<{ storeId: string }>();
+  const storeId = extractStoreId(storeRef);
   const router = useRouter();
   const { authDetails, setShowAuthModal, showAuthModal } = useAuth();
   const isAuthenticated = Boolean(authDetails?.access_token);
@@ -58,24 +60,40 @@ const StoreFront = () => {
     if (product) {
       params.set("productId", String(product.id));
       params.set("productName", product.name || "Product");
-      params.set("productPrice", product.amount == null ? "" : formatCurrency(product.amount));
+      params.set(
+        "productPrice",
+        product.amount == null ? "" : formatCurrency(product.amount),
+      );
       params.set("productImage", product.images?.[0]?.url || "");
       params.set("productUrl", `/marketplace/products/${product.id}`);
     }
 
-    router.push(`/app/chat/${encodeURIComponent(vendorId)}?${params.toString()}`);
+    router.push(
+      `/app/chat/${encodeURIComponent(vendorId)}?${params.toString()}`,
+    );
   };
 
   const shareStore = async () => {
-    const url = window.location.href;
+    const url = new URL(
+      createStorePath({
+        user_id: store.user_id,
+        name: store.name,
+      }),
+      window.location.origin,
+    ).toString();
+
     try {
       if (navigator.share) {
-        await navigator.share({ title: store?.name || "Bouwnce Store", url });
+        await navigator.share({
+          title: store.name || "Bouwnce Store",
+          text: `Visit ${store.name || "our store"} on Bouwnce.`,
+          url,
+        });
       } else {
         await navigator.clipboard.writeText(url);
       }
     } catch {
-      // Sharing may be dismissed by the user; no further action is needed.
+      // The user may dismiss the native sharing dialog.
     }
   };
 

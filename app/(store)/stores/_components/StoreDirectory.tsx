@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/app/_components/Navbar";
 import Footer from "@/app/_components/Footer";
 import SafeImage from "@/app/_components/SafeImage";
+import { createStorePath } from "@/app/_utils/store-url";
 
 const StoreSkeleton = () => {
   return (
@@ -89,7 +90,7 @@ const Stores = () => {
         {stores.map((store: any) => (
           <motion.div
             key={store.id}
-            onClick={() => router.push(`/stores/${store.user_id}`)}
+            onClick={() => router.push(createStorePath(store))}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
