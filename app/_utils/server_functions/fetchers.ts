@@ -21,6 +21,29 @@ export const marketFetcher = async ({ filters }: any) => {
   }
 };
 
+/**
+ * Fetches a public store for server-rendered pages such as generateMetadata.
+ * Public store URLs currently use the vendor user ID (see the stores directory
+ * navigation and useGetStoreInfo), so `userId` is intentionally used here.
+ */
+export const storeFetcher = async (userId: string) => {
+  if (!userId) return null;
+
+  try {
+    const { data } = await api.get(`/store/${encodeURIComponent(userId)}`, {
+      timeout: 10000,
+    });
+    const storeData = data?.data;
+
+    // The current public endpoint returns data as an array; tolerate a single
+    // object as well so metadata does not break if the API response is normalized.
+    return Array.isArray(storeData) ? storeData[0] ?? null : storeData ?? null;
+  } catch (error) {
+    console.error("Failed to fetch store:", error);
+    return null;
+  }
+};
+
 export const productFetcher = async (id: string) => {
   const { data } = await api.get(`/store/products/${id}`);
   return data?.data || {};

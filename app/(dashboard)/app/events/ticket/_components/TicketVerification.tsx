@@ -1,18 +1,21 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   AlertCircle,
   CheckCircle2,
   ChevronLeft,
   LoaderCircle,
+  Search,
+  ChevronDown,
   X,
 } from "lucide-react";
 
 import { ScannerIcon, TicketIcon } from "@/app/_utils/CustomIcons";
 
 import useEvents from "@/app/hooks/use-events";
+import type { Event } from "@/app/_utils/types/event";
 
 type TicketVerificationMode = "page" | "modal";
 
@@ -271,9 +274,19 @@ export default function TicketVerification({
   onCancel,
   mode = "page",
 }: TicketVerificationProps) {
-  const { verifyTicket } = useEvents();
+  const { verifyTicket, useMyEvents } = useEvents();
 
   const [ticketRef, setTicketRef] = useState("");
+  const [eventSearch, setEventSearch] = useState("");
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const { data: eventsData, isLoading: isLoadingEvents, isError: isEventsError } =
+    useMyEvents({ name: eventSearch.trim() || undefined, page_size: 100 });
+  const events: Event[] = useMemo(
+    () => eventsData?.pages.flatMap((page: any) => page.events ?? page) ?? [],
+    [eventsData],
+  );
+  const selectedEventId = selectedEvent?.id || eventId || "";
   const [isScanning, setIsScanning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -297,6 +310,12 @@ export default function TicketVerification({
     verifyTicketRef.current = verifyTicket;
   }, [verifyTicket]);
 
+  useEffect(() => {
+    if (!eventId) return;
+    const matchingEvent = events.find((item) => String(item.id) === String(eventId));
+    if (matchingEvent) setSelectedEvent(matchingEvent);
+  }, [eventId, events]);
+
   const submitCode = useCallback(
     async (rawValue: string, options?: { scanned?: boolean }) => {
       if (busyRef.current) {
@@ -306,9 +325,9 @@ export default function TicketVerification({
       const parsed = extractTicketData(rawValue);
       const code = parsed.code.trim();
 
-      // The event ID in the QR takes priority. The prop supports
-      // manual entry or a page already scoped to an event.
-      const resolvedEventId = (parsed.eventId || eventId || "").trim();
+      // QR event IDs take priority. Manual ticket codes require an event
+      // selected from the organizer's created-event list (or a scoped event prop).
+      const resolvedEventId = (parsed.eventId || selectedEventId || "").trim();
 
       if (!code) {
         setError("Enter a valid ticket reference or scan a ticket QR code.");
@@ -317,7 +336,7 @@ export default function TicketVerification({
 
       if (!resolvedEventId) {
         setError(
-          "The event ID is missing. Scan a QR containing the event ID or open verification from the relevant event.",
+          "Select the event you want to verify before entering a ticket code, or scan a QR code that contains its event ID.",
         );
         setIsScanning(false);
         return;
@@ -370,7 +389,7 @@ export default function TicketVerification({
       // Intentionally handled outside the finally block so the
       // scanner only resumes after a confirmed server response.
     },
-    [eventId],
+    [selectedEventId],
   );
 
   // Start and stop the camera as needed.
@@ -530,6 +549,72 @@ export default function TicketVerification({
         </p>
 
         <div className="mb-6 w-full text-left">
+          <label className="mb-2 block text-sm font-medium text-black" htmlFor="eventSearch">
+            Select Event <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              aria-expanded={isEventDropdownOpen}
+              aria-haspopup="listbox"
+              disabled={isSubmitting || Boolean(eventId && selectedEvent)}
+              onClick={() => setIsEventDropdownOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-3 rounded-[10px] border border-black/20 bg-white px-4 py-3 text-left text-sm text-black focus:outline-none focus:ring-2 focus:ring-black disabled:cursor-not-allowed disabled:bg-gray-50"
+            >
+              <span className={selectedEvent || eventId ? "truncate" : "truncate text-black/40"}>
+                {selectedEvent?.name || (eventId ? "Selected event" : "Choose an event to verify")}
+              </span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
+            </button>
+            {isEventDropdownOpen && !eventId && (
+              <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                <div className="border-b border-gray-100 p-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-3">
+                    <Search className="h-4 w-4 shrink-0 text-gray-400" />
+                    <input
+                      id="eventSearch"
+                      autoFocus
+                      value={eventSearch}
+                      onChange={(e) => setEventSearch(e.target.value)}
+                      placeholder="Search your events..."
+                      className="w-full border-0 py-2.5 text-sm text-black outline-none focus:ring-0"
+                    />
+                  </div>
+                </div>
+                <div role="listbox" aria-label="Your created events" className="max-h-56 overflow-y-auto py-1">
+                  {isLoadingEvents ? (
+                    <p className="px-4 py-3 text-sm text-gray-500">Loading your events...</p>
+                  ) : isEventsError ? (
+                    <p className="px-4 py-3 text-sm text-red-600">Could not load your events. Close and try again.</p>
+                  ) : events.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-gray-500">{eventSearch ? "No matching events found." : "You have no created events yet."}</p>
+                  ) : events.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedEvent?.id === item.id}
+                      onClick={() => {
+                        setSelectedEvent(item);
+                        setIsEventDropdownOpen(false);
+                        setEventSearch("");
+                        setError("");
+                        setSuccess("");
+                      }}
+                      className={`block w-full px-4 py-3 text-left transition hover:bg-gray-50 ${selectedEvent?.id === item.id ? "bg-gray-50 font-medium" : ""}`}
+                    >
+                      <span className="block truncate text-sm text-gray-900">{item.name}</span>
+                      {item.date && <span className="mt-1 block text-xs text-gray-500">{item.date}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-gray-400">Choose the event this ticket belongs to. You can search by event name.</p>
+        </div>
+
+        <div className="mb-6 w-full text-left">
           <label
             htmlFor="ticketRef"
             className="mb-2 block text-sm font-medium text-black"
@@ -672,7 +757,7 @@ export default function TicketVerification({
         <div className="w-full space-y-3 pt-2">
           <button
             type="submit"
-            disabled={!ticketRef.trim() || isSubmitting}
+            disabled={!ticketRef.trim() || (!selectedEventId && !eventId) || isSubmitting}
             className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-black px-4 py-3 text-[13px] font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isSubmitting && <LoaderCircle className="h-4 w-4 animate-spin" />}
