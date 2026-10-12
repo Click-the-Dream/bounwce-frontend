@@ -87,31 +87,18 @@ export default function PWARestore() {
    * normal website homepage.
    */
   useEffect(() => {
-    if (restoredRef.current) {
+    if (restoredRef.current) return;
+    if (typeof window === "undefined") return;
+    if (pathname !== "/") return;
+
+    // Do not restore the last app route in a regular browser.
+    if (!isStandalonePWA()) {
+      restoredRef.current = true;
       return;
     }
 
-    if (typeof window === "undefined") {
-      return;
-    }
+    if (authLoading) return;
 
-    /**
-     * Only restore when the app is opened at the root.
-     */
-    if (pathname !== "/") {
-      return;
-    }
-
-    /**
-     * Wait until authentication has finished loading.
-     */
-    if (authLoading) {
-      return;
-    }
-
-    /**
-     * Not logged in.
-     */
     if (!authDetails?.user?.id) {
       restoredRef.current = true;
       return;
@@ -119,26 +106,17 @@ export default function PWARestore() {
 
     const lastRoute = localStorage.getItem(LAST_APP_ROUTE_KEY);
 
-    /**
-     * No previous app location.
-     */
-    if (!lastRoute) {
-      restoredRef.current = true;
-      router.replace("/app");
-      return;
-    }
-
-    /**
-     * Safety check.
-     */
-    if (!lastRoute.startsWith("/app")) {
+    // Validate the saved route before redirecting.
+    if (
+      !lastRoute ||
+      !(lastRoute === "/app" || lastRoute.startsWith("/app/"))
+    ) {
       restoredRef.current = true;
       router.replace("/app");
       return;
     }
 
     restoredRef.current = true;
-
     router.replace(lastRoute);
   }, [authDetails, authLoading, pathname, router]);
 
