@@ -7,14 +7,17 @@ interface DiscoveryCardProps {
     score: number;
     distance_km: number;
     shared_interests: string[];
-    profile_pic: { url: string };
+    profile_pic: string;
   };
 }
 export const DiscoveryCard = ({ currentUser }: DiscoveryCardProps) => {
   return (
     <div className="flex items-start gap-3 w-full min-w-0 p-2">
       {/* Avatar */}
-      <UserImage user={currentUser} />
+      <UserImage user={{
+      ...currentUser,
+      profile_pic:{url: currentUser?.profile_pic}
+      }} />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
