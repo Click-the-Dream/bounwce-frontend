@@ -152,7 +152,7 @@ const Sidebar = ({
       >
         {/* Header */}
         <div
-          className={`h-14 flex items-center px-3 py-6.5 bg-white border-b-[0.53px] border-[#00000033] relative overflow-hidden ${
+          className={`h-14 flex items-center px-3  bg-white border-b-[0.53px] border-[#00000033] relative overflow-hidden ${
             collapsed ? "justify-center" : "justify-start"
           }`}
         >
