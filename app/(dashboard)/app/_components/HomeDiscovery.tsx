@@ -98,8 +98,8 @@ const HomeDiscovery = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col px-6 pt-24 pb-4">
       <div className="flex-1 w-full flex flex-col items-center pb-20 md:pb-0">
         {urlQuery && (
-          <div className="flex w-full max-w-2xl items-center gap-2 mb-5">
-            <span className="text-xs text-gray-500">Results for</span>
+          <div className="flex flex-wrap w-full max-w-2xl items-center gap-2 mb-5">
+            <span className="text-xs text-gray-500">Results for: </span>
 
             <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-600 text-xs font-medium line-clamp-1">
               "{urlQuery}"
