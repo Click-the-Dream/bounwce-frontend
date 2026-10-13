@@ -7,27 +7,27 @@ import BouwnceDemo from "./BouwnceDemo";
 const STEPS = [
   {
     id: 1,
-    title: "Find Your People",
+    title: "Meet People",
     description:
-      "Want to go out, hit the gym, attend an event, or just not be bored? Just type it, Bouwnce connects you with people that share your vibe, interests, or plans.",
+      "From technology and entrepreneurship to fitness, creativity, and everyday interests, discover people you can connect with, learn from, and share experiences with.",
   },
   {
     id: 2,
-    title: "See What’s Happening",
+    title: "Discover Shared Interests",
     description:
-      "Discover things you can actually do right now: Places to visit, Events to attend and opportunities that suit your interest.",
+      "Find people who enjoy the things you do, explore new interests, and connect over the things that matter to you. Every shared interest is an opportunity to start a conversation.",
   },
   {
     id: 3,
-    title: "Get What You Need",
+    title: "Explore Experiences",
     description:
-      "Looking for food, accessories, services, or something to buy, Bouwnce shows you the right vendors for you when you need them.",
+      "Discover events, activities, and experiences that match your interests. Find something exciting to do, meet people along the way, and create memories worth sharing.",
   },
   {
     id: 4,
-    title: "Make It Happen",
+    title: "Turn Connections Into Action",
     description:
-      "Chat, plan, link up, buy, show up. Everything flows in one place, from thoughts to results.",
+      "Start conversations, make plans, and share experiences. Because sometimes, one interaction is all it takes to get things moving.",
   },
 ];
 
@@ -59,11 +59,12 @@ const AboutSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               className="text-xl lg:text-[24px] font-bold leading-[1.05] tracking-tight text-black"
             >
-              Bouwnce brings your world together, people, places, and resources.
+              Bouwnce brings people together around shared interests, making it
+              easier to explore beyond your usual circle.
             </motion.h2>
             <p className="text-sm text-[#949494] font-medium">
-              You type it. Bouwnce find it. A person, a vendor, or an
-              experience, and Bouwnce connect you to exactly that.
+              There's always someone new to meet, something new to discover, or
+              an experience waiting to be explored.
             </p>
           </header>
 

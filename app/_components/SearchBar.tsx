@@ -50,7 +50,7 @@ const SearchBar = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             //onKeyDown={(e) => e.key === 'Enter' && handleSearch()} // Search on Enter key
-            placeholder="I want to connect with..."
+            placeholder="Who or what do you want to discover?"
             className="grow rounded-lg md:rounded-[5px] px-4 md:px-6 py-4 md:py-3 bg-[#F4F4F5] text-gray-700 outline-none placeholder:text-gray-400 font-medium text-[13px]"
           />
 
@@ -59,7 +59,7 @@ const SearchBar = () => {
             className="cursor-pointer bg-[#FF5030] hover:bg-[#e4462a] text-black font-semibold px-6 md:px-7.5 py-3 md:py-3.75 rounded-lg md:rounded-[5px] border-2 border-black transition-all active:scale-[0.98] h-13 md:h-11.5 text-[14px] md:text-[13px] flex items-center justify-center"
           >
             <Search className="block lg:hidden" />
-            <span className="hidden lg:block">Connect</span>
+            <span className="hidden lg:block">Start Exploring</span>
           </button>
         </div>
       </div>

@@ -49,7 +49,7 @@ const Navbar = () => {
           className="w-full max-w-250 h-12.25 p-2.25 flex items-center justify-between gap-4 rounded-[15px] border-[0.83px] border-[#0000001A] bg-white"
         >
           {/* Logo */}
-          <div className="flex items-center gap-2 ml-2">
+          <Link href="/" className="flex items-center gap-2 ml-2">
             <Image
               src={navLogo}
               alt="logo"
@@ -58,7 +58,7 @@ const Navbar = () => {
               width={100}
               height={20}
             />
-          </div>
+          </Link>
 
           {/* Desktop Links */}
           {/*<div className="ml-auto mr-2 hidden md:flex items-center gap-6 text-gray-700 text-[13px] font-medium">
