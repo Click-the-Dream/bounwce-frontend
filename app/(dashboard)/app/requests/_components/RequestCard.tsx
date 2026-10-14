@@ -1,14 +1,19 @@
 "use client";
 
-import { avatarColor, STATUS_CONFIG, timeAgo } from "@/app/_utils/formatters";
+import { STATUS_CONFIG, timeAgo } from "@/app/_utils/formatters";
 import { slugify } from "@/app/_utils/slugify";
-import {
-  ConnectionRequest,
-  RequestStatus,
-} from "@/app/_utils/types/connection";
-import { getInitials } from "@/app/_utils/utility";
+import { ConnectionRequest, RequestStatus } from "@/app/_utils/types/connection";
 import { useAuth } from "@/app/context/AuthContext";
-import { Check, Clock, Link2, Loader2, UserCheck, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  Clock3,
+  Link2,
+  Loader2,
+  UserCheck,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import UserImage from "../../_components/UserImage";
 
@@ -25,114 +30,104 @@ const RequestCard = ({
 }) => {
   const { authDetails } = useAuth();
   const router = useRouter();
-  // Access the user ID from the auth context
   const currentUserId = authDetails?.user?.id;
-
-  const normalizeStatus = (status: RequestStatus) =>
-    status === "expired" ? "rejected" : status;
-
-  const normalized = normalizeStatus(r.status);
-  const statusCfg = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.pending;
+  const isRecipient = r.target_user?.id === currentUserId;
+  const person = isRecipient ? r.requester : r.target_user;
+  const status = String(r.status).toLowerCase() as RequestStatus;
+  const statusCfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+  const pending = status === "pending";
   const isActing = !!actionLoading;
 
-  // Logic: Am I the recipient?
-  const isRecipient = r.target_user.id === currentUserId;
-
   const goToProfile = () => {
-    router.push(
-      `/app/profile/${slugify(r.requester.full_name)}_${r.requester.id}`,
-    );
+    if (!person?.id) return;
+    router.push(`/app/profile/${slugify(person.full_name)}_${person.id}`);
   };
 
   return (
-    <div className="group flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all duration-150">
-      {/* Avatar */}
-
-      <UserImage user={r.requester} rounded="rounded-full" size={40} />
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="cursor-pointer flex items-center gap-2 flex-wrap">
-          {/* If I am the recipient, show the Requester's name. If I am the requester, show the Target's name. */}
-          <span
-            onClick={goToProfile}
-            className="hover:underline text-sm font-semibold text-slate-800 truncate"
-          >
-            {isRecipient ? r.requester.full_name : r.target_user.full_name}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusCfg.pill}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-            {statusCfg.label}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5 truncate">
-          <Link2 size={10} className="shrink-0" />
-          <span className="truncate">
-            {isRecipient
-              ? "sent you a connection request"
-              : `you requested to connect with ${r.target_user.full_name}`}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-1">
-          <Clock size={10} className="shrink-0" />
-          {timeAgo(r.created_at)}
-        </div>
-      </div>
-
-      {/* Actions Logic */}
-      <div className="flex items-center gap-2 shrink-0">
-        {normalized === "pending" ? (
-          isRecipient ? (
-            // I am the target, I can act
-            <>
-              <button
-                onClick={onAccept}
-                disabled={isActing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
-              >
-                {actionLoading === "accept" ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Check size={13} />
-                )}
-                Accept
-              </button>
-              <button
-                onClick={onReject}
-                disabled={isActing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 transition-colors"
-              >
-                {actionLoading === "reject" ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <X size={13} />
-                )}
-                Reject
-              </button>
-            </>
+    <article className="group flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 transition duration-200 hover:border-slate-300 hover:shadow-[0_5px_20px_rgba(15,23,42,0.05)] sm:flex-row sm:items-center sm:gap-4 sm:p-4.5">
+      <button
+        type="button"
+        onClick={goToProfile}
+        aria-label={`View ${person?.full_name ?? "user"}'s profile`}
+        className="flex min-w-0 flex-1 items-center gap-3.5 text-left"
+      >
+        <span className="relative shrink-0">
+          {person ? (
+            <UserImage user={person} rounded="rounded-full" size={48} />
           ) : (
-            // I am the requester, I must wait
-            <div className="text-xs text-slate-400 italic px-3 py-1.5">
-              Pending response
-            </div>
-          )
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <UserRound size={20} />
+            </span>
+          )}
+          {pending && isRecipient && (
+            <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-orange-500" />
+          )}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="truncate text-sm font-semibold text-slate-900 transition group-hover:text-orange-700">
+              {person?.full_name ?? "Bouwnce member"}
+            </span>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusCfg.pill}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`} />
+              {statusCfg.label}
+            </span>
+          </span>
+          <span className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
+            <Link2 size={12} className="shrink-0 text-slate-400" />
+            <span className="truncate">
+              {isRecipient
+                ? "Would like to connect with you"
+                : `You sent a request to ${person?.full_name ?? "this member"}`}
+            </span>
+          </span>
+          <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-400">
+            <Clock3 size={11} className="shrink-0" />
+            {timeAgo(r.created_at)}
+            {person?.username && <span className="truncate">· @{person.username}</span>}
+          </span>
+        </span>
+        <ArrowUpRight className="hidden h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-slate-500 sm:block" />
+      </button>
+
+      <div className="flex shrink-0 items-center gap-2 border-t border-slate-100 pt-3 sm:border-0 sm:pt-0">
+        {pending && isRecipient ? (
+          <>
+            <button
+              type="button"
+              onClick={onReject}
+              disabled={isActing}
+              className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+            >
+              {actionLoading === "reject" ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+              Decline
+            </button>
+            <button
+              type="button"
+              onClick={onAccept}
+              disabled={isActing}
+              className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+            >
+              {actionLoading === "accept" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              Accept
+            </button>
+          </>
+        ) : pending ? (
+          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 sm:w-auto">
+            <Clock3 size={13} /> Waiting for response
+          </span>
+        ) : status === "accepted" ? (
+          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 sm:w-auto">
+            <UserCheck size={14} /> Connected
+          </span>
         ) : (
-          // Request finalized
-          <div
-            className={`flex items-center gap-1.5 text-xs font-medium ${
-              normalized === "accepted" ? "text-emerald-600" : "text-slate-400"
-            }`}
-          >
-            <UserCheck size={14} />
-            {statusCfg.label}
-          </div>
+          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500 sm:w-auto">
+            <X size={13} /> Closed
+          </span>
         )}
       </div>
-    </div>
+    </article>
   );
 };
 
