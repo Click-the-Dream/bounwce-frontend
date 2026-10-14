@@ -15,7 +15,7 @@ const categories = [
     suggestion: "Looking for somewhere to sing and have fun.",
   },
   {
-    name: "Networking event",
+    name: "Events to explore",
     suggestion: "Looking for a social or  business event to attend.",
   },
 ];
