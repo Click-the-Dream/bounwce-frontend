@@ -20,6 +20,8 @@ import { useSearchParams } from "next/navigation";
 import SmartReplyPreview from "./SmartReplyPreview";
 import { useChatUtils } from "@/app/context/ChatContext";
 import ScrollToBottomBtn from "./ScrollToBottomBtn";
+import MessageLinkPreview from "./MessageLinkPreview";
+import { extractMessageUrls } from "./message-links";
 // TYPES
 interface SendMessageProps {
   selectedChat?: User;
@@ -51,6 +53,7 @@ const SendMessage = ({
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [message, setMessage] = useState("");
+  const [dismissedPreviewUrl, setDismissedPreviewUrl] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSendingMedia, setIsSendingMedia] = useState(false);
   // Tracks which accept type is active so the input key forces a remount
@@ -284,12 +287,20 @@ const SendMessage = ({
   const resetInput = () => {
     setPendingFiles([]);
     setMessage("");
+    setDismissedPreviewUrl(null);
     stopTyping();
     setReplyTo(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
   const canSend = message.trim().length > 0 || pendingFiles.length > 0;
+  const draftLinkInfo = extractMessageUrls(message)[0]?.info;
+  const draftHostParts = draftLinkInfo?.host.split(".") ?? [];
+  const draftTopLevelDomain = draftHostParts[draftHostParts.length - 1] || "";
+  const draftLinkUrl =
+    draftHostParts.length >= 2 && draftTopLevelDomain.length >= 2
+      ? draftLinkInfo?.href ?? null
+      : null;
 
   return (
     <div className="w-full fixed bottom-0 z-10 md:relative py-2 px-3 md:px-6 border-t border-b border-[#00000033] bg-white">
@@ -367,6 +378,22 @@ const SendMessage = ({
         </div>
       )}
 
+      {/* WhatsApp-style link preview sits in the composer chrome, above the
+          input row (like the reply bar), rather than inside the text field. */}
+      {draftLinkUrl &&
+        dismissedPreviewUrl !== draftLinkUrl &&
+        pendingFiles.length === 0 && (
+          <div className="relative w-full px-3 pb-1 pt-1 mb-1">
+            <MessageLinkPreview
+              text={message}
+              isSender={true}
+              interactive={false}
+              variant="composer"
+              onDismiss={setDismissedPreviewUrl}
+            />
+          </div>
+        )}
+
       {/* Input row */}
       <div className="flex items-end gap-3 bg-[#EFF3F4] border-[0.5px] border-orange rounded-[30px] px-2.5 py-2 shadow-sm">
         <button
@@ -387,7 +414,10 @@ const SendMessage = ({
           rows={1}
           value={message}
           onChange={(e) => {
-            handleTyping(e.target.value);
+            const nextMessage = e.target.value;
+            const nextUrl = extractMessageUrls(nextMessage)[0]?.info?.href ?? null;
+            if (nextUrl !== draftLinkUrl) setDismissedPreviewUrl(null);
+            handleTyping(nextMessage);
             autoResize(e.target);
           }}
           placeholder="Message"

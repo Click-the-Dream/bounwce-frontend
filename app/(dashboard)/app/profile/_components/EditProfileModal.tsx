@@ -61,17 +61,26 @@ export default function EditProfileModal({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const syncNotificationState = (event?: Event) => {
-      const detail = (event as CustomEvent<{
-        enabled?: boolean; permission?: NotificationPermission;
-      }> | undefined)?.detail;
-      const permission = detail?.permission ??
-        (("Notification" in window) ? Notification.permission : "default");
+      const detail = (
+        event as
+          | CustomEvent<{
+              enabled?: boolean;
+              permission?: NotificationPermission;
+            }>
+          | undefined
+      )?.detail;
+      const permission =
+        detail?.permission ??
+        ("Notification" in window ? Notification.permission : "default");
       setNotificationPermission(permission);
-      setNotificationsEnabled(typeof detail?.enabled === "boolean" ? detail.enabled : false);
+      setNotificationsEnabled(
+        typeof detail?.enabled === "boolean" ? detail.enabled : false,
+      );
     };
     syncNotificationState();
     window.addEventListener("push:ready", syncNotificationState);
-    return () => window.removeEventListener("push:ready", syncNotificationState);
+    return () =>
+      window.removeEventListener("push:ready", syncNotificationState);
   }, []);
 
   useEffect(() => {
@@ -230,7 +239,7 @@ export default function EditProfileModal({
             </div>
 
             {/* ── NOTIFICATION PREFERENCES ── */}
-            <div className="flex items-center justify-between gap-4 py-3 px-4 rounded-[10px] border border-black/[0.07] bg-white">
+            {/* <div className="flex items-center justify-between gap-4 py-3 px-4 rounded-[10px] border border-black/[0.07] bg-white">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
                   <Bell className="size-3.5 text-orange-500" />
@@ -271,7 +280,7 @@ export default function EditProfileModal({
                   }`}
                 />
               </button>
-            </div>
+            </div> */}
 
             {/* ── INTERESTS ROW ── */}
             <div className="flex items-center justify-between py-3 px-4 rounded-[10px] border border-black/[0.07] bg-[#fafafa]">

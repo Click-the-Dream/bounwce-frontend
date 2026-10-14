@@ -31,6 +31,20 @@ type Props = {
   isConnectionLoading?: boolean;
 };
 
+type ConnectionStatusResponse = {
+  other_user_id?: string;
+  status?: string | null;
+  is_connected?: boolean;
+  request_id?: string | null;
+  request_direction?: string | null;
+  requested_at?: string | null;
+  responded_at?: string | null;
+  connected_at?: string | null;
+};
+
+const normalizeStatus = (value?: string | null) =>
+  value?.trim().toLowerCase().replace(/[ -]+/g, "_") ?? "";
+
 const IdentityCard: React.FC<Props> = ({
   data,
   isOwnProfile,
@@ -40,9 +54,8 @@ const IdentityCard: React.FC<Props> = ({
   const { authDetails, setShowAuthModal } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [openEditProfile, setOpenEditProfile] = useState(false);
-  const { setConnectionModal } = useNotifications();
 
+  const [openEditProfile, setOpenEditProfile] = useState(false);
   const [localConnectStatus, setLocalConnectStatus] = useState<
     "idle" | "loading" | "pending" | "connected"
   >("idle");
@@ -50,16 +63,27 @@ const IdentityCard: React.FC<Props> = ({
     "accept" | "reject" | null
   >(null);
 
-  const { createMatchRequest, useGetMatchRequests, respondToMatchRequest } =
-    useMatch();
-  const { data: appRequests } = useGetMatchRequests({
-    enabled: !isOwnProfile,
-  });
+  const { setConnectionModal } = useNotifications();
+
+  const {
+    createMatchRequest,
+    useGetMatchRequests,
+    respondToMatchRequest,
+    useGetConnectionStatus,
+  } = useMatch();
+
+  const { data: appRequests, isLoading: isLoadingMatchRequests } =
+    useGetMatchRequests({
+      enabled: !isOwnProfile,
+    });
+
+  const connectionStatusQuery = useGetConnectionStatus(data?.id, !isOwnProfile);
+
   const matchRequests = appRequests?.items || [];
 
   if (isLoading) return <IdentityCardSkeleton />;
 
-  const relation = matchRequests?.find((req: any) => {
+  const relation = matchRequests.find((req: any) => {
     return (
       (req.target_user?.id === data.id &&
         req.requester?.id === authDetails?.user?.id) ||
@@ -68,43 +92,147 @@ const IdentityCard: React.FC<Props> = ({
     );
   });
 
-  const status = relation?.status;
+  // GET /matches/connection-status/{other_user_id}
+  const connectionResponse = connectionStatusQuery.data as
+    | ConnectionStatusResponse
+    | null
+    | undefined;
+
+  const apiStatus = normalizeStatus(connectionResponse?.status);
+  const relationStatus = normalizeStatus(relation?.status);
+  const apiRequestDirection = normalizeStatus(
+    connectionResponse?.request_direction,
+  );
 
   const isRequester = relation?.requester_id === authDetails?.user?.id;
 
-  const isPending = status === "pending";
+  const pendingStatuses = new Set([
+    "pending",
+    "requested",
+    "awaiting_response",
+    "awaiting_approval",
+  ]);
 
-  const isIncoming = isPending && !isRequester;
+  const connectedStatuses = new Set(["connected", "accepted", "matched"]);
 
-  const isOutgoing = isPending && isRequester;
+  const terminalRequestStatuses = new Set([
+    "expired",
+    "rejected",
+    "declined",
+    "cancelled",
+    "canceled",
+    "withdrawn",
+  ]);
 
-  const isConnected = status === "accepted";
+  const isTerminalRequestStatus = terminalRequestStatuses.has(apiStatus);
+
+  // The connection-status endpoint is authoritative.
+  // For example, status="expired" and is_connected=false means
+  // the old request is no longer pending and the user can reconnect.
+  const isConnected =
+    typeof connectionResponse?.is_connected === "boolean"
+      ? connectionResponse.is_connected
+      : apiStatus
+        ? connectedStatuses.has(apiStatus)
+        : connectedStatuses.has(relationStatus);
+
+  // Never fall back to a stale pending request when the endpoint returns
+  // an explicit status such as expired, rejected, or connected.
+  const isPending = apiStatus
+    ? pendingStatuses.has(apiStatus)
+    : relationStatus === "pending";
+
+  const hasApiRequestDirection = [
+    "incoming",
+    "outgoing",
+    "inbound",
+    "outbound",
+  ].includes(apiRequestDirection);
+
+  const isIncoming =
+    isPending &&
+    (apiRequestDirection === "incoming" ||
+      apiRequestDirection === "inbound" ||
+      (!hasApiRequestDirection && !isRequester));
+
+  const isOutgoing =
+    isPending &&
+    (apiRequestDirection === "outgoing" ||
+      apiRequestDirection === "outbound" ||
+      (!hasApiRequestDirection && isRequester));
+
+  const requestId = connectionResponse?.request_id ?? relation?.request_id;
+
+  const isCheckingConnection =
+    !isOwnProfile &&
+    !connectionResponse &&
+    (connectionStatusQuery.isLoading || isLoadingMatchRequests);
 
   const handleConnect = () => {
     if (!authDetails?.user) {
       setShowAuthModal(true);
       return;
     }
-    if (relation || createMatchRequest.isPending) return;
+
+    // An expired request must not prevent creating a new request.
+    if (
+      isPending ||
+      isConnected ||
+      createMatchRequest.isPending ||
+      localConnectStatus === "loading"
+    ) {
+      return;
+    }
 
     setLocalConnectStatus("loading");
 
     createMatchRequest.mutate(
       { target_user_id: data.id },
       {
-        onSuccess: () => {
+        onSuccess: (response: any) => {
           setLocalConnectStatus("pending");
+
+          // Update the cached status immediately so a stale "expired"
+          // response does not briefly make the Connect button reappear.
+          queryClient.setQueryData(
+            ["matches", "connection-status", data.id],
+            (previous: ConnectionStatusResponse | undefined) => ({
+              ...previous,
+              other_user_id: data.id,
+              status: "pending",
+              is_connected: false,
+              request_direction: "outgoing",
+              request_id:
+                response?.request_id ??
+                response?.data?.request_id ??
+                previous?.request_id ??
+                null,
+            }),
+          );
+
           setConnectionModal({
             isOpen: true,
-            userId: data?.id,
+            userId: data.id,
             full_name: data.name ?? "user",
             profile_pic: data.profile_pic,
           });
 
-          queryClient.invalidateQueries();
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "requests"],
+          });
+
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "suggest"],
+          });
+
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "connection-status", data.id],
+          });
         },
+
         onError: () => {
           setLocalConnectStatus("idle");
+
           onFailure({
             title: "Failed",
             message: "Could not send request.",
@@ -119,26 +247,43 @@ const IdentityCard: React.FC<Props> = ({
       setShowAuthModal(true);
       return;
     }
+
+    if (!requestId) {
+      onFailure({
+        title: "Failed",
+        message: "Could not find the request.",
+      });
+      return;
+    }
+
     setActionLoading("accept");
 
     respondToMatchRequest.mutate(
       {
-        request_id: relation.request_id,
+        request_id: requestId,
         action: "accept",
       },
       {
         onSuccess: () => {
+          setLocalConnectStatus("connected");
+
           onSuccess({
             title: "Connected",
             message: "You are now connected",
           });
+
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "connection-status", data.id],
+          });
         },
+
         onError: () => {
           onFailure({
             title: "Failed",
             message: "Try again",
           });
         },
+
         onSettled: () => {
           setActionLoading(null);
         },
@@ -151,27 +296,47 @@ const IdentityCard: React.FC<Props> = ({
       setShowAuthModal(true);
       return;
     }
+
+    if (!requestId) {
+      onFailure({
+        title: "Failed",
+        message: "Could not find the request.",
+      });
+      return;
+    }
+
     setActionLoading("reject");
 
     respondToMatchRequest.mutate(
       {
-        request_id: relation.request_id,
+        request_id: requestId,
         action: "reject",
       },
       {
         onSuccess: () => {
+          setLocalConnectStatus("idle");
+
           onSuccess({
             title: "Rejected",
             message: "Request rejected",
           });
-          queryClient.invalidateQueries();
+
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "requests"],
+          });
+
+          queryClient.invalidateQueries({
+            queryKey: ["matches", "connection-status", data.id],
+          });
         },
+
         onError: () => {
           onFailure({
             title: "Failed",
             message: "Try again",
           });
         },
+
         onSettled: () => {
           setActionLoading(null);
         },
@@ -184,13 +349,18 @@ const IdentityCard: React.FC<Props> = ({
       setShowAuthModal(true);
       return;
     }
-    const profileUrl = `${window.location.origin}/app/profile/${slugify(data?.name)}_${data?.id}`;
+
+    const profileUrl = `${window.location.origin}/app/profile/${slugify(
+      data?.name,
+    )}_${data?.id}`;
+
     await shareProfile({
       title: `${data.name}'s Profile`,
       text: `Check out ${data.name}'s profile on Bouwnce`,
       url: profileUrl,
     });
   };
+
   return (
     <div className="bg-[#F7F7F7] p-3.75 w-full h-full">
       {/* PROFILE IMAGE */}
@@ -226,6 +396,7 @@ const IdentityCard: React.FC<Props> = ({
           </button>
         )}
       </div>
+
       {/* ACTIONS */}
       <div className="flex gap-2 mb-5.5 items-center flex-wrap">
         {isOwnProfile ? (
@@ -233,13 +404,16 @@ const IdentityCard: React.FC<Props> = ({
             onClick={handleShareProfile}
             className="cursor-pointer max-w-17.5 h-6.5 flex-1 bg-[#D0D0D0] border border-white outline outline-[#747474] hover:bg-[#dedede] text-[#747474] p-2 rounded-full text-xs flex items-center justify-center transition-all"
           >
-            <Send className="size-3.5 mr-1.75" /> Share
+            <Send className="size-3.5 mr-1.75" />
+            Share
           </button>
         ) : (
           <>
             {/* CONNECT BUTTON */}
-            {!relation &&
-              localConnectStatus !== "pending" &&
+            {!isPending &&
+              !isConnected &&
+              !isCheckingConnection &&
+              (localConnectStatus !== "pending" || isTerminalRequestStatus) &&
               localConnectStatus !== "connected" && (
                 <button
                   onClick={handleConnect}
@@ -263,18 +437,32 @@ const IdentityCard: React.FC<Props> = ({
                 </button>
               )}
 
-            {/* OUTGOING PENDING */}
-            {(isOutgoing || localConnectStatus === "pending") && (
+            {/* CONNECTION STATUS LOADING */}
+            {!isPending && !isConnected && isCheckingConnection && (
               <button
                 disabled
-                className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center"
+                className="max-w-22 h-7.5 flex-1 border border-gray-200 bg-white text-gray-400 rounded-full text-xs flex items-center justify-center"
               >
-                Pending
+                <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                Checking...
               </button>
             )}
 
-            {/* INCOMING */}
-            {isIncoming && (
+            {/* OUTGOING PENDING */}
+            {!isConnected &&
+              (isOutgoing ||
+                (localConnectStatus === "pending" &&
+                  !isTerminalRequestStatus)) && (
+                <button
+                  disabled
+                  className="max-w-22 h-7.5 flex-1 bg-amber-100/40 text-amber-700 border-[0.53px] border-amber-700 rounded-full text-xs flex items-center justify-center"
+                >
+                  Pending
+                </button>
+              )}
+
+            {/* INCOMING REQUEST */}
+            {!isConnected && isIncoming && (
               <>
                 <button
                   onClick={handleAccept}
@@ -317,6 +505,7 @@ const IdentityCard: React.FC<Props> = ({
               </button>
             )}
 
+            {/* MESSAGE */}
             {authDetails?.user && (
               <button
                 onClick={() => router.push(`/app/chat/${data.id}`)}
@@ -345,6 +534,7 @@ const IdentityCard: React.FC<Props> = ({
           )}{" "}
           Connections
         </span>
+
         <span>
           <b className="font-normal">{data.badges}</b> Profile Views
         </span>
@@ -354,9 +544,6 @@ const IdentityCard: React.FC<Props> = ({
       <p className="text-[13px] text-black leading-4.5 w-[90%] border-b-[0.53px] border-[#00000033] pb-2.75 mb-11.5">
         {data.bio}
       </p>
-
-      {/* SWITCH ACCOUNT */}
-      {/* {isOwnProfile && <SwitchAccountCard />} */}
 
       <EditProfileModal
         open={openEditProfile}

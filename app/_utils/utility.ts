@@ -125,8 +125,13 @@ export const buildOptimisticMessage = ({
   currentUser,
   ...rest
 }: any) => {
+  const generatedId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? `temp-${crypto.randomUUID()}`
+      : `temp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
   return {
-    id: `temp-${Date.now()}`,
+    id: generatedId,
     body: body || "",
     media_type: media_type || null,
     media_url: media_url || null,

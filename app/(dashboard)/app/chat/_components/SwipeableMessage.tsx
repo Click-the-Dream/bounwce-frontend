@@ -16,6 +16,7 @@ interface Props {
   isSender?: boolean;
   onReply?: () => void;
   className?: string;
+  animateIn?: boolean;
 }
 
 export default function SwipeableMessage({
@@ -23,6 +24,7 @@ export default function SwipeableMessage({
   isSender,
   onReply,
   className = "",
+  animateIn = false,
 }: Props) {
   const controls = useAnimation();
   const triggeredRef = useRef(false);
@@ -115,7 +117,18 @@ export default function SwipeableMessage({
         animate={controls}
         className="cursor-grab relative z-5 touch-pan-y max-w-full"
       >
-        {children}
+        <motion.div
+          initial={
+            animateIn
+              ? { opacity: 0, y: 7, scale: 0.985 }
+              : false
+          }
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="max-w-full origin-bottom"
+        >
+          {children}
+        </motion.div>
       </motion.div>
     </div>
   );

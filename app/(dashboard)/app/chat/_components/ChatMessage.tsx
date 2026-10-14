@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { getMessageLayout, renderCheck } from "@/app/_utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
 import { LuClock } from "react-icons/lu";
@@ -8,6 +9,8 @@ import SwipeableMessage from "./SwipeableMessage";
 import ReplyPreview from "./ReplyPreview";
 import { AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import MessageLinkPreview from "./MessageLinkPreview";
+import { getMessageUrlSegments, resolveMessageUrl } from "./message-links";
 
 interface ChatMessageProps {
   msg: any;
@@ -38,35 +41,52 @@ const isSingleEmoji = (text: string) => {
 };
 
 // ─── URL RENDERING
-const urlRegex = /((?:https?:\/\/|www\.)[^\s<]+)/gi;
-
 const renderMessageBody = (text: string, isSender: boolean) => {
-  const parts = text.split(urlRegex);
+  const parts = getMessageUrlSegments(text);
 
   return parts.map((part, index) => {
-    if (!part) return null;
-
-    const isUrl = /^(?:https?:\/\/|www\.)/i.test(part);
-
-    if (!isUrl) {
-      return <span key={index}>{part}</span>;
+    if (part.type === "text") {
+      return <span key={`text-${index}`}>{part.value}</span>;
     }
 
-    const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
+    const info = resolveMessageUrl(part.value);
+    if (!info) {
+      return (
+        <span key={`plain-url-${index}`}>
+          {part.value}
+          {part.trailing}
+        </span>
+      );
+    }
 
-    return (
+    const className = `underline underline-offset-2 transition-opacity hover:opacity-70 ${
+      isSender ? "text-slate-900" : "text-green-700"
+    }`;
+    const link = info.isInternal ? (
+      <Link
+        href={info.navigationHref}
+        onClick={(event) => event.stopPropagation()}
+        className={className}
+      >
+        {part.value}
+      </Link>
+    ) : (
       <a
-        key={index}
-        href={href}
+        href={info.href}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()}
-        className={`underline underline-offset-2 transition-opacity hover:opacity-70 ${
-          isSender ? "text-slate-900" : "text-green-700"
-        }`}
+        onClick={(event) => event.stopPropagation()}
+        className={className}
       >
-        {part}
+        {part.value}
       </a>
+    );
+
+    return (
+      <Fragment key={`url-${index}`}>
+        {link}
+        {part.trailing}
+      </Fragment>
     );
   });
 };
@@ -143,10 +163,11 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
       isSender={isSender}
       onReply={() => onReply?.(msg)}
       className={styles.container}
+      animateIn={Boolean(msg.pending || msg.delivery_status === "sending")}
     >
       <div
         // Used by MessageList to find and scroll to this element
-        data-message-id={msg.client_id || msg.id}
+        data-message-id={msg.id}
         className={`
           ${styles.bubble}
           relative rounded-[10px] text-[13px]
@@ -189,7 +210,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
                 scale: 1,
               }}
               viewport={{
-                once: false,
+                once: true,
                 amount: 0.8,
               }}
               transition={{
@@ -203,6 +224,11 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
             renderMessageBody(msg?.body ?? "", isSender)
           )}
         </div>
+
+        {/* WhatsApp-style URL preview. Bouwnce links stay inside the app. */}
+        {!isEmojiOnly && msg?.body && (
+          <MessageLinkPreview text={msg.body} isSender={isSender} />
+        )}
 
         {/* Read more / less toggle */}
         {showReadMore && (

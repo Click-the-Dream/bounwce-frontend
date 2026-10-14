@@ -109,12 +109,48 @@ const MessageList = forwardRef(
 
     // Deduplicate
     const deduped = useMemo(() => {
-      const seen = new Set<string>();
-      return flatMessages.filter((m) => {
-        if (seen.has(m.id)) return false;
-        seen.add(m.id);
-        return true;
-      });
+      const result: FlatMessage[] = [];
+      const keyToIndex = new Map<string, number>();
+
+      for (const message of flatMessages) {
+        const keys = [message.id, message.client_id, message.client_message_id]
+          .filter((value) => value !== null && value !== undefined && value !== "")
+          .map(String);
+        const existingIndex = keys
+          .map((key) => keyToIndex.get(key))
+          .find((index) => index !== undefined);
+
+        if (existingIndex !== undefined) {
+          const existing = result[existingIndex];
+          result[existingIndex] = {
+            ...existing,
+            ...message,
+            // Keep the first local/client identity so server reconciliation
+            // updates the existing React row instead of remounting it.
+            client_id: message.client_id || existing.client_id || existing.id,
+            render_id: existing.render_id || existing.client_id || existing.id,
+          };
+          for (const key of [
+            result[existingIndex].id,
+            result[existingIndex].client_id,
+            result[existingIndex].client_message_id,
+          ]) {
+            if (key !== null && key !== undefined && key !== "") {
+              keyToIndex.set(String(key), existingIndex);
+            }
+          }
+          continue;
+        }
+
+        const identity = message.render_id || message.client_id || message.id;
+        const index = result.push({
+          ...message,
+          render_id: identity,
+        }) - 1;
+        for (const key of keys) keyToIndex.set(key, index);
+      }
+
+      return result;
     }, [flatMessages]);
 
     const sortedMessages = useMemo(
@@ -319,11 +355,14 @@ const MessageList = forwardRef(
 
       if (!lastMessage) return;
 
-      if (lastMessage.id === lastMessageIdRef.current) return;
+      const lastMessageKey = String(
+        lastMessage.render_id || lastMessage.client_id || lastMessage.id,
+      );
+      if (lastMessageKey === lastMessageIdRef.current) return;
 
       const previousLastId = lastMessageIdRef.current;
 
-      lastMessageIdRef.current = lastMessage.id;
+      lastMessageIdRef.current = lastMessageKey;
 
       // Skip hydration/update
       if (!previousLastId) return;
@@ -595,7 +634,7 @@ const MessageList = forwardRef(
                 {group.messages.map((msg) =>
                   isMediaMessage(msg) ? (
                     <ChatMediaMessage
-                      key={`${msg.id}-${msg.created_at}`}
+                      key={String(msg.render_id || msg.client_id || msg.id)}
                       msg={msg}
                       onReply={() => handleSetReply(msg)}
                       onOpen={handleOpenImage}
@@ -604,7 +643,7 @@ const MessageList = forwardRef(
                     />
                   ) : (
                     <ChatMessage
-                      key={`${msg.id}-${msg.created_at}`}
+                      key={String(msg.render_id || msg.client_id || msg.id)}
                       msg={msg}
                       onReply={() => handleSetReply(msg)}
                       onScrollToMessage={scrollToMessage}

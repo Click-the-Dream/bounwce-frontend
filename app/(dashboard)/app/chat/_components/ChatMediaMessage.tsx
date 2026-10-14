@@ -287,6 +287,11 @@ const ChatMediaMessage = ({
       isSender={isSender}
       onReply={() => onReply?.(msg)}
       className={styles.container}
+      animateIn={Boolean(
+        msg.pending ||
+          msg.delivery_status === "sending" ||
+          msg.delivery_status === "uploading"
+      )}
     >
       <div
         data-message-id={msg.id}

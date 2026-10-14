@@ -77,20 +77,31 @@ export const useSocketConnection = ({
     const handleMessage = async (raw: any) => {
       const payload = raw.data ?? raw.payload ?? raw;
       const incoming = payload.message ?? payload;
+      const isMyMessage =
+        String(incoming.sender_id) === String(authUserRef.current);
       const message = {
         ...incoming,
         peer_id:
           incoming.sender_id === authUserRef.current
             ? incoming.recipient_id
             : incoming.sender_id,
+        // A message event is a server-confirmed echo. Keep its client_id only
+        // when the server supplied one; mergeIntoQuery can reconcile older
+        // payloads that omit it without inventing a second bubble.
+        render_id: incoming.render_id || incoming.client_id || incoming.id,
+        pending: false,
+        synced: true,
+        delivery_status: incoming.read_at
+          ? "read"
+          : isMyMessage
+            ? "sent"
+            : "delivered",
       };
 
       const otherUserId =
         message.sender_id === authUserRef.current
           ? message.recipient_id
           : message.sender_id;
-      const isMyMessage =
-        String(message.sender_id) === String(authUserRef.current);
       const isActiveChat =
         !!activeChatRef.current && otherUserId === activeChatRef.current;
 
@@ -99,10 +110,12 @@ export const useSocketConnection = ({
         otherUserId,
       ]);
       const alreadyKnownMessage = Boolean(
-        message?.id &&
         cachedMessages?.pages?.some((page: any) =>
-          (page?.messages?.items ?? []).some(
-            (item: any) => item?.id === message.id,
+          (page?.messages?.items ?? []).some((item: any) =>
+            (message?.id && String(item?.id ?? "") === String(message.id)) ||
+            (message?.client_id &&
+              (String(item?.id ?? "") === String(message.client_id) ||
+                String(item?.client_id ?? "") === String(message.client_id))),
           ),
         ),
       );
@@ -164,7 +177,7 @@ export const useSocketConnection = ({
                   updated_at: message.updated_at || new Date().toISOString(),
                   unread_count: isActiveChat
                     ? 0
-                    : !isMyMessage
+                    : !isMyMessage && !alreadyKnownMessage
                       ? (c.unread_count || 0) + 1
                       : c.unread_count,
                 };
@@ -229,10 +242,11 @@ export const useSocketConnection = ({
               if (c.user?.id === peerId) {
                 updatedConv = {
                   ...c,
-                  last_message: {
-                    ...c.last_message,
-                    body: "New Message",
-                  },
+                  // The optimistic send already updated this preview with the
+                  // real body. Never replace it with a placeholder while the
+                  // server ACK and chat.message event race each other.
+                  last_message: c.last_message,
+                  updated_at: new Date().toISOString(),
                 };
                 return false;
               }

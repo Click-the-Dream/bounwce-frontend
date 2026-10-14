@@ -52,6 +52,9 @@ const useMatch = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", "requests"] });
       queryClient.invalidateQueries({ queryKey: ["matches", "suggest"] });
+      queryClient.invalidateQueries({
+        queryKey: ["matches", "connection-status"],
+      });
     },
   });
 
@@ -97,6 +100,24 @@ const useMatch = () => {
     });
   };
 
+  // GET: Connection status between the signed-in user and a profile being viewed.
+  // Keep the user ID in the query key so profile navigation cannot reuse another
+  // profile's relationship status from cache.
+  const useGetConnectionStatus = (otherUserId?: string, enabled = true) => {
+    return useQuery({
+      queryKey: ["matches", "connection-status", otherUserId],
+      queryFn: async () => {
+        if (!otherUserId) return null;
+        const res = await api.get(
+          `/matches/connection-status/${encodeURIComponent(otherUserId)}`,
+        );
+        return res?.data ?? null;
+      },
+      enabled: !!authDetails?.access_token && !!otherUserId && enabled,
+      staleTime: 30_000,
+    });
+  };
+
   const useBouwnceSearch = (message: string, page_size: number = 10) => {
     return useInfiniteQuery({
       queryKey: ["matches", "search", message, page_size],
@@ -134,6 +155,7 @@ const useMatch = () => {
     createMatchRequest,
     respondToMatchRequest,
     useGetMatchesByUserId,
+    useGetConnectionStatus,
   };
 };
 
