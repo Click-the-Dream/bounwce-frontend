@@ -110,7 +110,7 @@ const AdminSidebar = ({
         stiffness: 300,
         damping: 30,
       }}
-      className={`
+      className={`relative 
         shrink-0 h-screen bg-white flex flex-col
         border-r-[0.53px] border-[#00000033]
 
@@ -143,7 +143,7 @@ const AdminSidebar = ({
       </div>
 
       {/* NAV */}
-      <nav className="relative flex flex-col h-full space-y-2 text-[13px] px-2.5 pt-5.5">
+      <nav className="relative flex flex-col h-full space-y-2 text-[13px] px-2.5 overflow-y-auto">
         {navItems.map((item) => {
           const active = isActive(item.href);
 
@@ -197,19 +197,6 @@ const AdminSidebar = ({
           );
         })}
 
-        {/* COLLAPSE */}
-        <button
-          onClick={onToggleCollapse}
-          className="cursor-pointer absolute -right-3.75 top-10 z-50 hidden md:flex h-7 w-7 items-center justify-center border-[0.53px] border-[#00000022] bg-white transition-all hover:bg-[#F5F5F5] hover:scale-110 active:scale-95"
-        >
-          <motion.div
-            animate={{ rotate: collapsed ? 180 : 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <PiDotsNineBold size={16} />
-          </motion.div>
-        </button>
-
         {/* FOOTER */}
         <button
           onClick={() => logout.mutate()}
@@ -223,6 +210,18 @@ const AdminSidebar = ({
           {!collapsed && <span className="ml-3">Logout</span>}
         </button>
       </nav>
+      {/* COLLAPSE */}
+      <button
+        onClick={onToggleCollapse}
+        className="cursor-pointer absolute -right-3.75 top-20 z-50 hidden md:flex h-7 w-7 items-center justify-center border-[0.53px] border-[#00000022] bg-white transition-all hover:bg-[#F5F5F5] hover:scale-110 active:scale-95"
+      >
+        <motion.div
+          animate={{ rotate: collapsed ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <PiDotsNineBold size={16} />
+        </motion.div>
+      </button>
     </motion.aside>
   );
 };
