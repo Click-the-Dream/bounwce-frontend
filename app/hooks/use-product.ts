@@ -25,8 +25,11 @@ const useProduct = () => {
   };
 
   const createCategory = useMutation({
-    mutationFn: async (categoryData) => {
-      const response = await client.post("/products/categories", categoryData);
+    mutationFn: async (categoryData: { name: string; description: string }) => {
+      const response = await client.post(
+        "/store/products/categories",
+        categoryData,
+      );
       return response.data.data;
     },
     onSuccess: () => {
@@ -40,8 +43,8 @@ const useProduct = () => {
   });
 
   const deleteCategory = useMutation({
-    mutationFn: async (id) => {
-      const response = await client.delete(`/products/categories/${id}`);
+    mutationFn: async (id: string) => {
+      const response = await client.delete(`/store/products/categories/${id}`);
       return response.data.data;
     },
     onSuccess: () => {
@@ -118,7 +121,7 @@ const useProduct = () => {
 
   const useGetProductCategories = () =>
     useQuery({
-      queryKey: ["productCategories"],
+      queryKey: ["product-categories"],
       queryFn: async () => {
         const response = await client.get(`/store/products/categories`);
         return response.data.data;

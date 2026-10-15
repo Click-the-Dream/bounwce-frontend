@@ -373,6 +373,7 @@ export const PAGE_TITLES: Record<Page, string> = {
   settings: "Settings",
   waitlist: "Waitlist",
   newsletter: "Newsletter",
+  "product-categories": "Product Categories",
   messages: "Messaging",
   admin: "Admin",
 };

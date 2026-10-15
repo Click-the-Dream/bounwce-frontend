@@ -684,20 +684,47 @@ const useChat = () => {
     });
 
   const uploadToCloudinary = async (file: File, signature: any) => {
+    const fields = signature?.fields;
+    if (!fields?.cloud_name || !fields?.api_key || !fields?.timestamp || !fields?.signature) {
+      throw new Error("The image upload signature is incomplete. Please try again.");
+    }
+
     const form = new FormData();
     form.append("file", file);
-    form.append("api_key", signature.fields.api_key);
-    form.append("timestamp", String(signature.fields.timestamp));
-    form.append("signature", signature.fields.signature);
-    form.append("upload_preset", signature.fields.upload_preset);
-    form.append("folder", signature.fields.folder);
-    form.append("public_id", signature.fields.public_id);
+    form.append("api_key", String(fields.api_key));
+    form.append("timestamp", String(fields.timestamp));
+    form.append("signature", String(fields.signature));
 
+    // Optional signature fields must only be sent when the server actually
+    // supplied them; appending undefined turns it into the literal string
+    // "undefined", which Cloudinary can interpret as a missing upload preset.
+    const appendOptional = (key: string, value: unknown) => {
+      if (typeof value !== "string" && typeof value !== "number") return;
+      const normalized = String(value).trim();
+      if (!normalized || normalized === "undefined" || normalized === "null") return;
+      form.append(key, normalized);
+    };
+
+    appendOptional("upload_preset", fields.upload_preset);
+    appendOptional("folder", fields.folder);
+    appendOptional("public_id", fields.public_id);
+
+    const resourceType = signature?.constraints?.resource_type || "image";
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${signature.fields.cloud_name}/${signature.constraints.resource_type}/upload`,
+      `https://api.cloudinary.com/v1_1/${fields.cloud_name}/${resourceType}/upload`,
       { method: "POST", body: form },
     );
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) {
+      const responseText = await res.text();
+      let message = responseText;
+      try {
+        const parsed = JSON.parse(responseText);
+        message = parsed?.error?.message || responseText;
+      } catch {
+        // Use the raw response text when Cloudinary does not return JSON.
+      }
+      throw new Error(`Cloudinary upload failed: ${message}`);
+    }
     return res.json();
   };
 

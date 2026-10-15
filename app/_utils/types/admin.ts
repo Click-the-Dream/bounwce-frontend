@@ -7,6 +7,7 @@ export type Page =
   | "settings"
   | "waitlist"
   | "newsletter"
+  | "product-categories"
   | "messages"
   | "admin";
 export type UserStatus = "active" | "pending" | "suspended" | "banned";

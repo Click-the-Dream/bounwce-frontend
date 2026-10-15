@@ -289,7 +289,7 @@ const Sidebar = ({
                     href={item.href}
                     onClick={onClose}
                     data-tour={`${isMobile ? "mobile-" : ""}${item.name.toLowerCase().replace(/\s+/g, "-")}`}
-                    className={`
+                    className={`relative
                   w-full flex items-center p-3 rounded-[7px] transition-colors
                   ${collapsed ? "justify-center" : "justify-start"}
                   ${active ? "bg-[#EFEFEF] text-black font-medium" : "text-[#333D42] hover:bg-[#F5F5F5] font-medium"}
@@ -314,7 +314,9 @@ const Sidebar = ({
                     </AnimatePresence>
 
                     {typeof item.badge === "number" && item.badge > 0 ? (
-                      <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-[10px] text-violet-700">
+                      <span
+                        className={`${collapsed ? "absolute top-1 right-0.5" : "ml-auto"} rounded-full bg-violet-100 px-2 py-0.5 text-[10px] text-violet-700`}
+                      >
                         {item.badge > 99 ? "99+" : item.badge}
                       </span>
                     ) : null}

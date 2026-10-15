@@ -9,6 +9,7 @@ import {
   X,
   LogOut,
   Newspaper,
+  Tags,
   UserRoundSearch,
 } from "lucide-react";
 
@@ -75,6 +76,11 @@ const AdminSidebar = ({
       name: "Newsletter",
       href: "/admin/newsletter",
       icon: Newspaper,
+    },
+    {
+      name: "Product Categories",
+      href: "/admin/product-categories",
+      icon: Tags,
     },
     {
       name: "Messaging",
