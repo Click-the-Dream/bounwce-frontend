@@ -53,10 +53,10 @@ export const BannerUpload: React.FC<BannerUploadProps> = ({
                 : "border-gray-200 bg-gray-50/30"
             }`}
           >
-            {bannerPreview || bannerUrl ? (
+            {bannerPreview ? (
               <div className="relative w-full h-28">
                 <SafeImage
-                  src={bannerPreview || bannerUrl || ""}
+                  src={bannerPreview || ""}
                   alt="Event banner preview"
                   width={600}
                   height={200}
@@ -66,7 +66,7 @@ export const BannerUpload: React.FC<BannerUploadProps> = ({
                 <button
                   type="button"
                   onClick={() => onBannerChange(null)}
-                  className="absolute top-2 right-2 bg-black/60 text-white text-xs px-3 py-1 rounded-md hover:bg-black/80"
+                  className="absolute top-2 right-2 bg-black/60 text-white text-xs px-3 py-1 rounded-md cursor-pointer hover:bg-black/80"
                 >
                   Remove
                 </button>

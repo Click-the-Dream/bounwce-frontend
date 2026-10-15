@@ -1,5 +1,9 @@
 import { useCallback } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -50,10 +54,12 @@ const mergePendingIntoFetchedPage = (fetched: any, pendingMessages: any[]) => {
   const items = [...fetched.messages.items];
   const recentMatch = (serverMessage: any, localMessage: any) => {
     if (
-      String(serverMessage?.sender_id ?? "") !== String(localMessage?.sender_id ?? "") ||
+      String(serverMessage?.sender_id ?? "") !==
+        String(localMessage?.sender_id ?? "") ||
       String(serverMessage?.body ?? serverMessage?.caption ?? "") !==
         String(localMessage?.body ?? localMessage?.caption ?? "") ||
-      String(serverMessage?.media_type ?? "") !== String(localMessage?.media_type ?? "")
+      String(serverMessage?.media_type ?? "") !==
+        String(localMessage?.media_type ?? "")
     ) {
       return false;
     }
@@ -93,7 +99,8 @@ const mergePendingIntoFetchedPage = (fetched: any, pendingMessages: any[]) => {
         ...localMessage,
         ...serverMessage,
         client_id: localMessage.client_id || localMessage.id,
-        render_id: localMessage.render_id || localMessage.client_id || localMessage.id,
+        render_id:
+          localMessage.render_id || localMessage.client_id || localMessage.id,
         pending: false,
         synced: true,
         delivery_status: serverMessage.read_at ? "read" : "sent",
@@ -127,9 +134,9 @@ const sharesMessageIdentity = (left: any, right: any) => {
 const isUnconfirmedMessage = (message: any) =>
   Boolean(
     message?.pending ||
-      message?.delivery_status === "sending" ||
-      message?.delivery_status === "uploading" ||
-      String(message?.id ?? "").startsWith("temp-"),
+    message?.delivery_status === "sending" ||
+    message?.delivery_status === "uploading" ||
+    String(message?.id ?? "").startsWith("temp-"),
   );
 
 // A confirmed optimistic row can still be the only copy in a partial socket
@@ -148,22 +155,34 @@ const isLocallyRenderedMessage = (message: any) =>
  */
 const isLikelyOptimisticEcho = (candidate: any, incoming: any) => {
   if (!isUnconfirmedMessage(candidate)) return false;
-  if (!incoming?.id || incoming?.client_id || candidate?.client_id === incoming.id) {
+  if (
+    !incoming?.id ||
+    incoming?.client_id ||
+    candidate?.client_id === incoming.id
+  ) {
     return false;
   }
-  if (String(candidate?.sender_id ?? "") !== String(incoming?.sender_id ?? "")) {
+  if (
+    String(candidate?.sender_id ?? "") !== String(incoming?.sender_id ?? "")
+  ) {
     return false;
   }
-  if (String(candidate?.body ?? candidate?.caption ?? "") !== String(incoming?.body ?? incoming?.caption ?? "")) {
+  if (
+    String(candidate?.body ?? candidate?.caption ?? "") !==
+    String(incoming?.body ?? incoming?.caption ?? "")
+  ) {
     return false;
   }
-  if (String(candidate?.media_type ?? "") !== String(incoming?.media_type ?? "")) {
+  if (
+    String(candidate?.media_type ?? "") !== String(incoming?.media_type ?? "")
+  ) {
     return false;
   }
 
   const candidateTime = new Date(candidate?.created_at ?? 0).getTime();
   const incomingTime = new Date(incoming?.created_at ?? 0).getTime();
-  if (!Number.isFinite(candidateTime) || !Number.isFinite(incomingTime)) return false;
+  if (!Number.isFinite(candidateTime) || !Number.isFinite(incomingTime))
+    return false;
   return Math.abs(incomingTime - candidateTime) <= 60_000;
 };
 
@@ -187,7 +206,8 @@ export const mergeIntoQuery = (old: any, message: any): any => {
           items: [
             {
               ...message,
-              render_id: message?.render_id || message?.client_id || message?.id,
+              render_id:
+                message?.render_id || message?.client_id || message?.id,
             },
           ],
           page: 1,
@@ -257,7 +277,11 @@ export const mergeIntoQuery = (old: any, message: any): any => {
     const clientId = String(message.client_id);
     const priority = (match: { pageIndex: number; itemIndex: number }) => {
       const item = pages[match.pageIndex].messages.items[match.itemIndex];
-      if (String(item?.id ?? "") === clientId || String(item?.render_id ?? "") === clientId) return 0;
+      if (
+        String(item?.id ?? "") === clientId ||
+        String(item?.render_id ?? "") === clientId
+      )
+        return 0;
       if (String(item?.client_id ?? "") === clientId) return 1;
       return 2;
     };
@@ -265,8 +289,12 @@ export const mergeIntoQuery = (old: any, message: any): any => {
   }
 
   // Remove duplicate match coordinates before merging/removing rows.
-  const uniqueMatches = new Map<string, { pageIndex: number; itemIndex: number }>();
-  for (const match of matches) uniqueMatches.set(`${match.pageIndex}:${match.itemIndex}`, match);
+  const uniqueMatches = new Map<
+    string,
+    { pageIndex: number; itemIndex: number }
+  >();
+  for (const match of matches)
+    uniqueMatches.set(`${match.pageIndex}:${match.itemIndex}`, match);
   matches.length = 0;
   matches.push(...uniqueMatches.values());
 
@@ -281,16 +309,14 @@ export const mergeIntoQuery = (old: any, message: any): any => {
   } else {
     const first = matches[0];
     const current = pages[first.pageIndex].messages.items[first.itemIndex];
-    pages[first.pageIndex].messages.items[first.itemIndex] = normalizeMergedMessage(
-      current,
-      message,
-    );
+    pages[first.pageIndex].messages.items[first.itemIndex] =
+      normalizeMergedMessage(current, message);
 
     // Remove duplicate entries with an overlapping id/client_id alias from all
     // pages, including cases where an ACK and chat.message race one another.
-    const duplicateMatches = matches.slice(1).sort(
-      (a, b) => b.pageIndex - a.pageIndex || b.itemIndex - a.itemIndex,
-    );
+    const duplicateMatches = matches
+      .slice(1)
+      .sort((a, b) => b.pageIndex - a.pageIndex || b.itemIndex - a.itemIndex);
     for (const match of duplicateMatches) {
       pages[match.pageIndex].messages.items.splice(match.itemIndex, 1);
     }
@@ -338,8 +364,10 @@ export const replaceOptimisticMessage = (
       if (
         String(message?.id ?? "") === String(clientId) ||
         String(message?.client_id ?? "") === String(clientId) ||
-        (serverMessage?.id && String(message?.id ?? "") === String(serverMessage.id)) ||
-        (serverMessage?.client_id && String(message?.id ?? "") === String(serverMessage.client_id))
+        (serverMessage?.id &&
+          String(message?.id ?? "") === String(serverMessage.id)) ||
+        (serverMessage?.client_id &&
+          String(message?.id ?? "") === String(serverMessage.client_id))
       ) {
         matches.push({ pageIndex, itemIndex });
       }
@@ -354,7 +382,8 @@ export const replaceOptimisticMessage = (
       if (
         String(message?.id ?? "") === String(clientId) ||
         String(message?.render_id ?? "") === String(clientId)
-      ) return 0;
+      )
+        return 0;
       if (String(message?.client_id ?? "") === String(clientId)) return 1;
       return 2;
     };
@@ -365,14 +394,13 @@ export const replaceOptimisticMessage = (
   const existing = pages[first.pageIndex].messages.items[first.itemIndex];
   pages[first.pageIndex].messages.items[first.itemIndex] = {
     ...normalizeMergedMessage(existing, serverMessage),
-    client_id:
-      serverMessage?.client_id || existing?.client_id || clientId,
+    client_id: serverMessage?.client_id || existing?.client_id || clientId,
     render_id: existing?.render_id || existing?.client_id || clientId,
   };
 
-  const duplicateMatches = matches.slice(1).sort(
-    (a, b) => b.pageIndex - a.pageIndex || b.itemIndex - a.itemIndex,
-  );
+  const duplicateMatches = matches
+    .slice(1)
+    .sort((a, b) => b.pageIndex - a.pageIndex || b.itemIndex - a.itemIndex);
   for (const match of duplicateMatches) {
     pages[match.pageIndex].messages.items.splice(match.itemIndex, 1);
   }
@@ -464,9 +492,13 @@ const useChat = () => {
 
         if (page !== 1) return fetched;
 
-        const cached = queryClient.getQueryData<any>(["messages", options.userId]);
+        const cached = queryClient.getQueryData<any>([
+          "messages",
+          options.userId,
+        ]);
         const localPending =
-          cached?.pages?.flatMap((cachedPage: any) => cachedPage?.messages?.items ?? [])
+          cached?.pages
+            ?.flatMap((cachedPage: any) => cachedPage?.messages?.items ?? [])
             .filter((item: any) => isLocallyRenderedMessage(item)) ?? [];
 
         return mergePendingIntoFetchedPage(fetched, localPending);
@@ -685,8 +717,15 @@ const useChat = () => {
 
   const uploadToCloudinary = async (file: File, signature: any) => {
     const fields = signature?.fields;
-    if (!fields?.cloud_name || !fields?.api_key || !fields?.timestamp || !fields?.signature) {
-      throw new Error("The image upload signature is incomplete. Please try again.");
+    if (
+      !fields?.cloud_name ||
+      !fields?.api_key ||
+      !fields?.timestamp ||
+      !fields?.signature
+    ) {
+      throw new Error(
+        "The image upload signature is incomplete. Please try again.",
+      );
     }
 
     const form = new FormData();
@@ -701,7 +740,8 @@ const useChat = () => {
     const appendOptional = (key: string, value: unknown) => {
       if (typeof value !== "string" && typeof value !== "number") return;
       const normalized = String(value).trim();
-      if (!normalized || normalized === "undefined" || normalized === "null") return;
+      if (!normalized || normalized === "undefined" || normalized === "null")
+        return;
       form.append(key, normalized);
     };
 
