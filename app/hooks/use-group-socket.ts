@@ -300,11 +300,11 @@ export function useGroupSocket(
       void queryClient.invalidateQueries({ queryKey: ["group-conversations"] });
     };
 
-    websocket.on("group_message", onGroupMessage);
-    websocket.on("group_message_sent", onGroupMessageSent);
-    websocket.on("group_message_updated", onGroupUpdated);
-    websocket.on("group_message_deleted", onGroupDeleted);
-    websocket.on("group_typing", onTyping);
+    websocket.on("group.message", onGroupMessage);
+    websocket.on("group.message.sent", onGroupMessageSent);
+    websocket.on("group.message.updated", onGroupUpdated);
+    websocket.on("group.message.deleted", onGroupDeleted);
+    websocket.on("group.typing", onTyping);
     websocket.on("error", onError);
     websocket.on("chat.ready", refreshOnReady);
 
@@ -349,7 +349,7 @@ export function useGroupSocket(
     };
     clientIds.current.set(clientId, optimisticId);
     queryClient.setQueryData<GroupChatMessage[]>(messagesKey(groupId), (old = []) => mergeMessage(old, optimistic));
-    const sent = websocket.emit("group_message", {
+    const sent = websocket.emit("group.message", {
       group_id: groupId,
       body: body.trim(),
       client_id: clientId,
@@ -366,17 +366,17 @@ export function useGroupSocket(
 
   const setTyping = useCallback((isTyping: boolean) => {
     if (!groupId || !enabled) return false;
-    return websocket.emit("group_typing", { group_id: groupId, is_typing: isTyping }, { queueIfDisconnected: false });
+    return websocket.emit("group.typing", { group_id: groupId, is_typing: isTyping }, { queueIfDisconnected: false });
   }, [groupId, enabled]);
 
   const editMessage = useCallback((messageId: string, body: string) => {
     if (!groupId || !body.trim()) return false;
-    return websocket.emit("group_message_edit", { group_id: groupId, message_id: messageId, body: body.trim() }, { queueIfDisconnected: false });
+    return websocket.emit("group.message.edit", { group_id: groupId, message_id: messageId, body: body.trim() }, { queueIfDisconnected: false });
   }, [groupId]);
 
   const deleteMessage = useCallback((messageId: string) => {
     if (!groupId) return false;
-    return websocket.emit("group_message_delete", { group_id: groupId, message_id: messageId }, { queueIfDisconnected: false });
+    return websocket.emit("group.message.delete", { group_id: groupId, message_id: messageId }, { queueIfDisconnected: false });
   }, [groupId]);
 
   return {
