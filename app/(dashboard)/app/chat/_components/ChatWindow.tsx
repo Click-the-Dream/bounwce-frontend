@@ -7,15 +7,23 @@ import { User } from "@/app/_utils/types/buyer";
 import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { ShieldAlert } from "lucide-react";
+import GroupChatWindow from "./GroupChatWindow";
+import type { GroupSocketController } from "@/app/hooks/use-group-socket";
 
 interface ChatWindowProps {
   selectedUser?: User;
+  selectedGroupId?: string;
+  groupChat: GroupSocketController;
+  currentUserId?: string;
   isConversationLoading: boolean;
   role?: "buyer" | "vendor";
 }
 
 const ChatWindow = ({
   selectedUser,
+  selectedGroupId,
+  groupChat,
+  currentUserId,
   isConversationLoading,
   role = "buyer",
 }: ChatWindowProps) => {
@@ -36,6 +44,10 @@ const ChatWindow = ({
 
     resetUnread(chatId);
   }, [chatId]);
+
+  if (selectedGroupId) {
+    return <GroupChatWindow groupId={selectedGroupId} chat={groupChat} currentUserId={currentUserId} />;
+  }
 
   return (
     <div

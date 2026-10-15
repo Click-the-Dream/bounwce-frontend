@@ -25,16 +25,37 @@ self.addEventListener("push", (event) => {
 
   const notificationType =
     notificationData.type || payload.event_type || payload.type || null;
-    const isChatNotification =
+    const isGroupNotification =
+    notificationType === "group_message" ||
+    notificationType === "group_chat_message" ||
+    notificationData.type === "group_message" ||
+    payload.event_type === "group_message" ||
+    payload.type === "group_message" ||
+    payload.category === "group_chat";
+
+  const isChatNotification =
     notificationData.type === "chat_message" ||
     payload.event_type === "chat_message" ||
     payload.type === "chat_message" ||
-    payload.category === "chat";
+    payload.category === "chat" ||
+    isGroupNotification;
+
+  const groupId =
+    notificationData.group_id ||
+    notificationData.groupId ||
+    payload.group_id ||
+    payload.groupId ||
+    notificationData.group?.id ||
+    payload.group?.id ||
+    null;
 
   const senderProfileImage =
     typeof notificationData.sender_profile_image === "string"
       ? notificationData.sender_profile_image
-      : notificationData.sender_profile_image?.url || null;
+      : notificationData.sender_profile_image?.url ||
+        notificationData.sender?.profile_pic?.url ||
+        payload.sender?.profile_pic?.url ||
+        null;
 
   const senderIcon = senderProfileImage || notificationData.icon || null;
   const appIcon = "/icons/icon-192.png";
@@ -42,7 +63,11 @@ self.addEventListener("push", (event) => {
   let targetUrl =
     notificationData.url ||
     payload.url ||
-    (isChatNotification ? "/app/chat" : "/");
+    (isGroupNotification && groupId
+      ? `/app/chat?groupId=${encodeURIComponent(String(groupId))}`
+      : isChatNotification
+        ? "/app/chat"
+        : "/");
 
   if (!/^https?:\/\//i.test(targetUrl)) {
     targetUrl = targetUrl.startsWith("/") ? targetUrl : `/${targetUrl}`;

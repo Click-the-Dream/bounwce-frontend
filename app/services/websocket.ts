@@ -188,14 +188,11 @@ class WebSocketService {
         const parsed = JSON.parse(event.data);
         if (parsed.type === "pong") return;
         const handlers = this.listeners[parsed.type] || [];
-        handlers.forEach((cb) =>
-          cb({
-            type: parsed.type,
-            client_id: parsed.client_id,
-            data: parsed.data,
-            payload: parsed.payload,
-          }),
-        );
+        // Preserve the complete server frame. Group events carry fields such
+        // as `sender` and `group_id` at the top level, not inside `data`.
+        // Dropping those fields breaks sender avatars and event reconciliation.
+        const frame = { ...parsed, type: parsed.type };
+        handlers.forEach((cb) => cb(frame));
       } catch (err) {
         console.error("Socket parse error:", err);
       }
@@ -236,14 +233,19 @@ class WebSocketService {
 
   // ---------------- SEND ----------------
 
-  emit(type: string, payload: any = {}) {
+  emit(
+    type: string,
+    payload: any = {},
+    options: { queueIfDisconnected?: boolean } = {},
+  ): boolean {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      if (type !== "ping") {
+      if (type !== "ping" && options.queueIfDisconnected !== false) {
         this.pendingQueue.push({ type, payload });
       }
-      return;
+      return false;
     }
     this.socket.send(JSON.stringify({ type, ...payload }));
+    return true;
   }
 
   private flushQueue() {
