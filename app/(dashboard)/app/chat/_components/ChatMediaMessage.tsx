@@ -57,7 +57,7 @@ const ChatMediaMessage = ({
 
     if (isUploading) return <LuClock size={10} className="animate-pulse" />;
 
-    if (isFailed) return <AlertCircle size={12} className="text-red-500" />;
+    if (isFailed) return <AlertCircle size={12} />;
 
     if (isSending) return <LuClock size={10} />;
 
@@ -289,8 +289,8 @@ const ChatMediaMessage = ({
       className={styles.container}
       animateIn={Boolean(
         msg.pending ||
-          msg.delivery_status === "sending" ||
-          msg.delivery_status === "uploading"
+        msg.delivery_status === "sending" ||
+        msg.delivery_status === "uploading",
       )}
     >
       <div

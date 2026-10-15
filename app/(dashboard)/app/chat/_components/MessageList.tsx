@@ -67,7 +67,10 @@ const MessageList = forwardRef(
       useGetChatSignature,
       retryEmitMedia,
       uploadAndEmitMedia,
+      setMessageDeliveryStatus,
     } = useChat();
+    // Hooks must be created during render, not inside the retry click handler.
+    const getSignature = useGetChatSignature();
 
     // DATA
 
@@ -114,7 +117,9 @@ const MessageList = forwardRef(
 
       for (const message of flatMessages) {
         const keys = [message.id, message.client_id, message.client_message_id]
-          .filter((value) => value !== null && value !== undefined && value !== "")
+          .filter(
+            (value) => value !== null && value !== undefined && value !== "",
+          )
           .map(String);
         const existingIndex = keys
           .map((key) => keyToIndex.get(key))
@@ -143,10 +148,11 @@ const MessageList = forwardRef(
         }
 
         const identity = message.render_id || message.client_id || message.id;
-        const index = result.push({
-          ...message,
-          render_id: identity,
-        }) - 1;
+        const index =
+          result.push({
+            ...message,
+            render_id: identity,
+          }) - 1;
         for (const key of keys) keyToIndex.set(key, index);
       }
 
@@ -510,15 +516,26 @@ const MessageList = forwardRef(
     };
 
     const handleRetry = async (msg: FlatMessage) => {
-      const isAlreadyUploaded =
-        msg.media_urls?.[0] && !msg.media_urls[0].startsWith("blob:");
+      const isAlreadyUploaded = Boolean(
+        msg.media_urls?.[0] && !msg.media_urls[0].startsWith("blob:"),
+      );
+      const mediaType = msg.media_type as "image" | "video" | "file";
+
+      // Update the cached message immutably so the Retry overlay is replaced
+      // immediately with Uploading... or Sending... while the retry runs.
+      setMessageDeliveryStatus(
+        msg.id,
+        chatId,
+        isAlreadyUploaded ? "sending" : "uploading",
+      );
 
       if (isAlreadyUploaded) {
-        retryEmitMedia({
+        await retryEmitMedia({
           recipient_id: chatId,
           media_urls: msg.media_urls!,
           caption: msg.body || msg.caption || "",
           clientId: [msg.id],
+          media_type: mediaType,
           reply_to: msg.reply_to,
         });
 
@@ -527,20 +544,18 @@ const MessageList = forwardRef(
 
       const files = activeUploadsRef.current.get(msg.id);
 
-      if (!files) {
+      if (!files?.length) {
         console.error(
           "Original files not found in activeUploadsRef for:",
           msg.id,
         );
-
+        setMessageDeliveryStatus(msg.id, chatId, "failed");
         return;
       }
 
       try {
-        const getSignature = useGetChatSignature();
-
         const raw = await getSignature.mutateAsync({
-          upload_type: msg.media_type!,
+          upload_type: mediaType,
           count: files.length,
         });
 
@@ -552,7 +567,7 @@ const MessageList = forwardRef(
         await uploadAndEmitMedia({
           files,
           recipient_id: chatId,
-          type: msg.media_type as "image" | "video" | "file",
+          type: mediaType,
           caption: msg.body || msg.caption || "",
           signatures: signatureItems,
           clientId: [msg.id],
@@ -560,6 +575,7 @@ const MessageList = forwardRef(
         });
       } catch (err) {
         console.error("Retry upload failed:", err);
+        setMessageDeliveryStatus(msg.id, chatId, "failed");
       }
     };
 

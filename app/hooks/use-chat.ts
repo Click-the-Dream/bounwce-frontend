@@ -848,7 +848,12 @@ const useChat = () => {
               ...page.messages,
               items: page.messages.items.map((m: any) =>
                 clientId.includes(m.id)
-                  ? { ...m, media_urls, delivery_status: "sending" }
+                  ? {
+                      ...m,
+                      media_urls,
+                      delivery_status: "sending",
+                      pending: true,
+                    }
                   : m,
               ),
             },
@@ -879,7 +884,7 @@ const useChat = () => {
               ...page.messages,
               items: page.messages.items.map((m: any) =>
                 clientId.includes(m.id)
-                  ? { ...m, delivery_status: "failed" }
+                  ? { ...m, delivery_status: "failed", pending: false }
                   : m,
               ),
             },
@@ -889,44 +894,89 @@ const useChat = () => {
     }
   };
 
+  /**
+   * Update a message status immutably in the React Query cache. Retry UI reads
+   * its status from this cache, so mutating the `msg` prop directly will not
+   * reliably trigger a render.
+   */
+  const setMessageDeliveryStatus = (
+    messageId: string,
+    recipientId: string,
+    deliveryStatus: string,
+  ) => {
+    queryClient.setQueryData(["messages", recipientId], (old: any) => {
+      if (!old?.pages?.length) return old;
+
+      let changed = false;
+      const pages = old.pages.map((page: any) => {
+        const currentItems = page?.messages?.items;
+        if (!Array.isArray(currentItems)) return page;
+
+        let pageChanged = false;
+        const items = currentItems.map((message: any) => {
+          const matches = [
+            message?.id,
+            message?.client_id,
+            message?.client_message_id,
+          ].some(
+            (identity) =>
+              identity !== null &&
+              identity !== undefined &&
+              String(identity) === String(messageId),
+          );
+
+          if (!matches) return message;
+          changed = true;
+          pageChanged = true;
+          return {
+            ...message,
+            delivery_status: deliveryStatus,
+            pending:
+              deliveryStatus === "uploading" || deliveryStatus === "sending",
+          };
+        });
+
+        return pageChanged
+          ? { ...page, messages: { ...page.messages, items } }
+          : page;
+      });
+
+      return changed ? { ...old, pages } : old;
+    });
+  };
+
   const retryEmitMedia = async ({
     recipient_id,
     media_urls,
     caption,
     clientId,
+    media_type,
     reply_to,
   }: {
     recipient_id: string;
     media_urls: string[];
     caption: string;
     clientId: string[];
+    media_type: "image" | "video" | "file";
     reply_to?: ReplyTarget | null;
   }) => {
+    const messageId = clientId[0];
+    if (messageId) {
+      setMessageDeliveryStatus(messageId, recipient_id, "sending");
+    }
+
     websocket.emit("chat.upload_media", {
       recipient_id,
       media_urls,
       body: caption,
-      client_id: clientId[0],
+      client_id: messageId,
+      media_type,
       reply_to_message_id: reply_to?.id,
     });
   };
 
   const markMessageFailed = async (messageId: string, recipientId: string) => {
-    queryClient.setQueryData(["messages", recipientId], (old: any) => {
-      if (!old) return old;
-      return {
-        ...old,
-        pages: old.pages.map((page: any) => ({
-          ...page,
-          messages: {
-            ...page.messages,
-            items: page.messages.items.map((m: any) =>
-              m.id === messageId ? { ...m, delivery_status: "failed" } : m,
-            ),
-          },
-        })),
-      };
-    });
+    setMessageDeliveryStatus(messageId, recipientId, "failed");
   };
 
   return {
@@ -940,6 +990,7 @@ const useChat = () => {
     useGetChatSignature,
     uploadToCloudinary,
     retryEmitMedia,
+    setMessageDeliveryStatus,
     markMessageFailed,
   };
 };
