@@ -15,6 +15,7 @@ type Props = SuggestedCandidate & {
 const ExploreCard = ({
   full_name,
   user_id,
+  username,
   bio,
   shared_interests,
   score,
@@ -114,9 +115,9 @@ const ExploreCard = ({
           <h3 className="font-medium text-black text-[13px] leading-tight line-clamp-2">
             {full_name}
           </h3>
-          <p className="text-[#888888] text-[13px]"> @{user_id?.slice(0, 8)}</p>
+          <p className="text-[#888888] text-[13px]"> @{username}</p>
 
-          <p className="text-[#888888] text-xs mb-[8.73px] line-clamp-2">
+          <p className="text-[#888888] text-xs mt-2 mb-[5.73px] line-clamp-2">
             {bio || ""}
           </p>
         </div>
