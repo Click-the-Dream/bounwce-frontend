@@ -10,10 +10,15 @@ import { useNotifications } from "@/app/context/NotificationContext";
 
 const ExplorePage = () => {
   const queryClient = useQueryClient();
-  const { useGetSuggestedCandidates, createMatchRequest, useGetMatchRequests } =
-    useMatch();
+  const {
+    useGetSuggestedCandidates,
+    createMatchRequest,
+    useGetMatchRequests,
+    useGetSentMatchRequests,
+  } = useMatch();
   const { setConnectionModal } = useNotifications();
   const { data: requestData } = useGetMatchRequests();
+  const { data: sentRequestData } = useGetSentMatchRequests(100);
   const [connectState, setConnectState] = useState<
     Record<string, ConnectStatus>
   >({});
@@ -35,14 +40,28 @@ const ExplorePage = () => {
   const requestMap = useMemo(() => {
     const map: Record<string, any> = {};
 
-    if (!requestData?.items) return map;
+    const incoming = (requestData?.pages ?? []).flatMap((page: any) => {
+      if (Array.isArray(page?.items)) return page.items;
+      if (Array.isArray(page?.requests)) return page.requests;
+      if (Array.isArray(page?.data?.items)) return page.data.items;
+      if (Array.isArray(page?.data)) return page.data;
+      return [];
+    });
+    const outgoing = (sentRequestData?.pages ?? []).flatMap((page: any) => {
+      if (Array.isArray(page?.items)) return page.items;
+      if (Array.isArray(page?.requests)) return page.requests;
+      if (Array.isArray(page?.data?.items)) return page.data.items;
+      if (Array.isArray(page?.data)) return page.data;
+      return [];
+    });
 
-    for (const req of requestData.items) {
-      map[req.target_user_id] = req;
+    for (const req of [...incoming, ...outgoing]) {
+      const targetId = req?.target_user?.id ?? req?.target_user_id;
+      if (targetId) map[targetId] = req;
     }
 
     return map;
-  }, [requestData]);
+  }, [requestData, sentRequestData]);
 
   const getStatus = (userId: string): ConnectStatus => {
     const req = requestMap[userId];

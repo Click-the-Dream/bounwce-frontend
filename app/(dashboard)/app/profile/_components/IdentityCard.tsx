@@ -68,18 +68,30 @@ const IdentityCard: React.FC<Props> = ({
   const {
     createMatchRequest,
     useGetMatchRequests,
+    useGetSentMatchRequests,
     respondToMatchRequest,
     useGetConnectionStatus,
   } = useMatch();
 
   const { data: appRequests, isLoading: isLoadingMatchRequests } =
-    useGetMatchRequests({
-      enabled: !isOwnProfile,
-    });
+    useGetMatchRequests({ enabled: !isOwnProfile, pageSize: 100 });
+  const { data: sentRequests, isLoading: isLoadingSentRequests } =
+    useGetSentMatchRequests(100, !isOwnProfile);
 
   const connectionStatusQuery = useGetConnectionStatus(data?.id, !isOwnProfile);
 
-  const matchRequests = appRequests?.items || [];
+  const readRequestItems = (payload: any): any[] => {
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.requests)) return payload.requests;
+    if (Array.isArray(payload?.data?.items)) return payload.data.items;
+    if (Array.isArray(payload?.data?.requests)) return payload.data.requests;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+  };
+  const matchRequests = [
+    ...(appRequests?.pages ?? []).flatMap((page: any) => readRequestItems(page)),
+    ...(sentRequests?.pages ?? []).flatMap((page: any) => readRequestItems(page)),
+  ];
 
   if (isLoading) return <IdentityCardSkeleton />;
 
@@ -166,7 +178,7 @@ const IdentityCard: React.FC<Props> = ({
   const isCheckingConnection =
     !isOwnProfile &&
     !connectionResponse &&
-    (connectionStatusQuery.isLoading || isLoadingMatchRequests);
+    (connectionStatusQuery.isLoading || isLoadingMatchRequests || isLoadingSentRequests);
 
   const handleConnect = () => {
     if (!authDetails?.user) {

@@ -20,7 +20,6 @@ import { PiDotsNineBold } from "react-icons/pi";
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/context/AuthContext";
-import useAuthServices from "@/app/hooks/use-authservices";
 import useMatch from "@/app/hooks/use-match";
 import LogoutModal from "./LogoutModal";
 
@@ -95,26 +94,15 @@ const Sidebar = ({
   }, [pathname]);
 
   const { useGetMatchRequests } = useMatch();
-  const { data: requestData } = useGetMatchRequests();
-  const pendingRequestCount = Array.isArray(requestData?.items)
-    ? requestData.items.filter(
-        (request: any) =>
-          String(request?.status).toLowerCase() === "pending" &&
-          request?.target_user?.id === authDetails?.user?.id,
-      ).length
-    : 0;
+  const incomingRequestsQuery = useGetMatchRequests({ pageSize: 10 });
+  const pendingRequestCount = incomingRequestsQuery.data?.pages?.[0]?.total;
 
   const isActive = (path: string) => pathname === path;
   const eventsActive = pathname.startsWith("/app/events");
   const onToggleCollapse = () => setCollapsed(!collapsed);
 
   const navItems = useMemo(() => {
-    const items: Array<{
-      name: string;
-      href: string;
-      icon: React.ElementType;
-      badge?: number;
-    }> = [
+    const items = [
       { name: "Home", href: "/app", icon: Home },
       // { name: "Feeds", href: "/app/feeds", icon: MessageSquareText },
       { name: "Explore", href: "/app/explore", icon: Compass },
@@ -144,7 +132,7 @@ const Sidebar = ({
     }
 
     return items;
-  }, [authDetails?.user?.role, authDetails?.user?.id, pendingRequestCount]);
+  }, [authDetails?.user?.role, pendingRequestCount]);
 
   return (
     <>
@@ -302,7 +290,7 @@ const Sidebar = ({
                     onClick={onClose}
                     data-tour={`${isMobile ? "mobile-" : ""}${item.name.toLowerCase().replace(/\s+/g, "-")}`}
                     className={`
-                  relative w-full flex items-center p-3 rounded-[7px] transition-colors
+                  w-full flex items-center p-3 rounded-[7px] transition-colors
                   ${collapsed ? "justify-center" : "justify-start"}
                   ${active ? "bg-[#EFEFEF] text-black font-medium" : "text-[#333D42] hover:bg-[#F5F5F5] font-medium"}
                 `}
@@ -326,11 +314,7 @@ const Sidebar = ({
                     </AnimatePresence>
 
                     {typeof item.badge === "number" && item.badge > 0 ? (
-                      <span
-                        aria-label={`${item.badge} pending connection ${item.badge === 1 ? "request" : "requests"}`}
-                        title={`${item.badge} pending ${item.badge === 1 ? "request" : "requests"}`}
-                        className={`${collapsed ? "absolute right-2 top-1.5" : "ml-auto"} inline-flex min-w-5 items-center justify-center rounded-full bg-orange-600 px-1.5 py-0.5 text-[10px] font-semibold leading-4 text-white shadow-sm`}
-                      >
+                      <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-[10px] text-violet-700">
                         {item.badge > 99 ? "99+" : item.badge}
                       </span>
                     ) : null}

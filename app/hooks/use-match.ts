@@ -8,6 +8,83 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+const readRequestPageItems = (payload: any): any[] => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.requests)) return payload.requests;
+  if (Array.isArray(payload?.results)) return payload.results;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data?.requests)) return payload.data.requests;
+  if (Array.isArray(payload?.data?.results)) return payload.data.results;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
+const getNextRequestPage = (
+  lastPage: any,
+  allPages: any[],
+  pageSize: number,
+): number | undefined => {
+  const currentPage = Number(
+    lastPage?.page ??
+      lastPage?.current_page ??
+      lastPage?.pagination?.page ??
+      lastPage?.pagination?.current_page ??
+      lastPage?.meta?.page ??
+      lastPage?.meta?.current_page ??
+      lastPage?.data?.page ??
+      lastPage?.data?.current_page ??
+      lastPage?.data?.pagination?.page ??
+      lastPage?.data?.meta?.current_page ??
+      allPages.length,
+  );
+
+  const hasNext =
+    lastPage?.has_next ??
+    lastPage?.hasNext ??
+    lastPage?.has_more ??
+    lastPage?.pagination?.has_next ??
+    lastPage?.pagination?.hasNext ??
+    lastPage?.meta?.has_next ??
+    lastPage?.data?.has_next ??
+    lastPage?.data?.pagination?.has_next;
+
+  if (typeof hasNext === "boolean") return hasNext ? currentPage + 1 : undefined;
+
+  const totalPages =
+    lastPage?.total_pages ??
+    lastPage?.pagination?.total_pages ??
+    lastPage?.meta?.total_pages ??
+    lastPage?.data?.total_pages ??
+    lastPage?.data?.pagination?.total_pages;
+  if (typeof totalPages === "number") {
+    return currentPage < totalPages ? currentPage + 1 : undefined;
+  }
+
+  const totalItems =
+    lastPage?.total ??
+    lastPage?.total_count ??
+    lastPage?.pagination?.total ??
+    lastPage?.pagination?.total_count ??
+    lastPage?.meta?.total ??
+    lastPage?.meta?.total_count ??
+    lastPage?.data?.total ??
+    lastPage?.data?.total_count ??
+    lastPage?.data?.pagination?.total ??
+    lastPage?.data?.pagination?.total_count;
+
+  if (typeof totalItems === "number") {
+    const loadedItems = allPages.reduce(
+      (count, page) => count + readRequestPageItems(page).length,
+      0,
+    );
+    return loadedItems < totalItems ? currentPage + 1 : undefined;
+  }
+
+  const items = readRequestPageItems(lastPage);
+  return items.length >= pageSize ? currentPage + 1 : undefined;
+};
+
 const useMatch = () => {
   const { authDetails } = useAuth();
   const queryClient = useQueryClient();
@@ -27,16 +104,45 @@ const useMatch = () => {
     });
   };
 
-  const useGetMatchRequests = ({
-    enabled = true,
-  }: { enabled?: boolean } = {}) => {
-    return useQuery({
-      queryKey: ["matches", "requests"],
-      queryFn: async () => {
-        const res = await api.get("/matches/requests");
+  const useGetMatchRequests = (
+    { enabled = true, pageSize = 100 }: { enabled?: boolean; pageSize?: number } = {},
+  ) => {
+    const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
+
+    return useInfiniteQuery({
+      queryKey: ["matches", "requests", "received", safePageSize],
+      queryFn: async ({ pageParam = 1 }) => {
+        const res = await api.get("/matches/requests", {
+          params: { page: pageParam, page_size: safePageSize },
+        });
         return res?.data;
       },
       enabled: !!authDetails?.access_token && enabled,
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, allPages) =>
+        getNextRequestPage(lastPage, allPages, safePageSize),
+      staleTime: 15_000,
+    });
+  };
+
+  // GET: Outgoing match requests created by the signed-in user.
+  // The endpoint is paginated, so callers can load older requests on demand.
+  const useGetSentMatchRequests = (pageSize = 100, enabled = true) => {
+    const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
+
+    return useInfiniteQuery({
+      queryKey: ["matches", "requests", "sent", safePageSize],
+      queryFn: async ({ pageParam = 1 }) => {
+        const res = await api.get("/matches/requests/me", {
+          params: { page: pageParam, page_size: safePageSize },
+        });
+        return res?.data;
+      },
+      enabled: !!authDetails?.access_token && enabled,
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, allPages) =>
+        getNextRequestPage(lastPage, allPages, safePageSize),
+      staleTime: 15_000,
     });
   };
 
@@ -51,6 +157,7 @@ const useMatch = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["matches", "requests", "sent"] });
       queryClient.invalidateQueries({ queryKey: ["matches", "suggest"] });
       queryClient.invalidateQueries({
         queryKey: ["matches", "connection-status"],
@@ -74,6 +181,8 @@ const useMatch = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["matches", "requests", "sent"] });
+      queryClient.invalidateQueries({ queryKey: ["matches", "connection-status"] });
       queryClient.invalidateQueries({ queryKey: ["matches"] });
     },
   });
@@ -150,6 +259,7 @@ const useMatch = () => {
   return {
     useGetSuggestedCandidates,
     useGetMatchRequests,
+    useGetSentMatchRequests,
     useGetMatches,
     useBouwnceSearch,
     createMatchRequest,
