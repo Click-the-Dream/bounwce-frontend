@@ -135,8 +135,8 @@ export default function GroupInvitePreview({
   };
 
   const shellClass = inApp
-    ? "flex min-h-0 flex-1 flex-col items-center justify-start overflow-y-auto bg-[#fafafa] px-4 py-6 sm:px-6 sm:py-8"
-    : "min-h-[calc(100vh-2rem)] bg-gradient-to-b from-orange/[0.07] via-white to-white px-4 py-10 sm:py-16";
+    ? "flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto bg-[#fafafa] px-4 py-6 sm:px-6 sm:py-8"
+    : "flex min-h-[calc(100vh-2rem)] bg-gradient-to-b from-orange/[0.07] via-white to-white px-4 py-10 sm:py-16";
 
   if (loading) {
     return (
