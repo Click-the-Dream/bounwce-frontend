@@ -556,8 +556,8 @@ export default function GroupChatWindow({
               <Users size={20} />
             )}
           </div>
-          <div className="flex-1">
-            <h2 className="flex min-w-0 items-center gap-1.5 truncate text-sm font-medium leading-tight text-black">
+          <div className="">
+            <h2 className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-black">
               <span className="line-clamp-1">
                 {group?.name ?? "Group chat"}
               </span>
