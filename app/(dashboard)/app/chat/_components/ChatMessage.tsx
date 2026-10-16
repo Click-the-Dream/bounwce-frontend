@@ -11,7 +11,6 @@ import { AlertCircle, Check, Pencil, Trash2, X } from "lucide-react";
 import { motion } from "framer-motion";
 import MessageLinkPreview from "./MessageLinkPreview";
 import { getMessageUrlSegments, resolveMessageUrl } from "./message-links";
-import SafeImage from "@/app/_components/SafeImage";
 import UserImage from "../../_components/UserImage";
 
 interface ChatMessageProps {
@@ -138,13 +137,9 @@ const ChatMessage = ({
   const isUploading = msg.delivery_status === "uploading";
 
   const isSending = msg.delivery_status === "sending" || msg.pending;
-
   const isFailed = msg.delivery_status === "failed";
-
   const isSent = msg.delivery_status === "sent" || !msg.read_at;
-
   const isDelivered = msg.delivery_status === "delivered";
-
   const isRead = Boolean(msg.read_at);
 
   const renderStatus = () => {
