@@ -53,8 +53,11 @@ const ChatHeader = ({
         </>
       )}
       {chatId && !selectedChat && isLoading && (
-        <div className="flex items-center gap-3" aria-label="Loading contact details">
-          <div className="size-[37px] animate-pulse rounded-lg bg-gray-200" />
+        <div
+          className="flex items-center gap-3"
+          aria-label="Loading contact details"
+        >
+          <div className="size-9.25 animate-pulse rounded-lg bg-gray-200" />
           <div className="flex flex-col gap-2">
             <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
             <div className="h-2 w-20 animate-pulse rounded bg-gray-100" />

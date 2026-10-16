@@ -33,7 +33,9 @@ import ReplyPreview from "./ReplyPreview";
 import ImageViewer from "./ImageViewer";
 import ChatComposer from "./ChatComposer";
 import { isWithinMessageManagementWindow } from "./use-message-management-window";
-import GroupMentionPicker, { type GroupMentionOption } from "./GroupMentionPicker";
+import GroupMentionPicker, {
+  type GroupMentionOption,
+} from "./GroupMentionPicker";
 
 const avatarFrom = (user: any) => {
   const pic = user?.profile_pic;
@@ -91,20 +93,41 @@ export default function GroupChatWindow({
     return members
       .filter((member: any) => member.is_active !== false)
       .map((member: any) => {
-        const user = member.user && typeof member.user === "object" ? member.user : member;
-        const id = String(member.user_id ?? user.id ?? (!member.user ? member.id : "") ?? "");
-        const fullName = String(user.full_name ?? member.full_name ?? user.username ?? member.username ?? "Group member").trim();
-        const username = String(user.username ?? member.username ?? fullName.replace(/\s+/g, "_")).trim().replace(/^@/, "");
+        const user =
+          member.user && typeof member.user === "object" ? member.user : member;
+        const id = String(
+          member.user_id ?? user.id ?? (!member.user ? member.id : "") ?? "",
+        );
+        const fullName = String(
+          user.full_name ??
+            member.full_name ??
+            user.username ??
+            member.username ??
+            "Group member",
+        ).trim();
+        const username = String(
+          user.username ?? member.username ?? fullName.replace(/\s+/g, "_"),
+        )
+          .trim()
+          .replace(/^@/, "");
         return { id, username, fullName, avatar: avatarFrom(user) };
       })
-      .filter((member) => member.id && member.username && member.id !== String(resolvedCurrentUserId ?? ""));
+      .filter(
+        (member) =>
+          member.id &&
+          member.username &&
+          member.id !== String(resolvedCurrentUserId ?? ""),
+      );
   }, [members, resolvedCurrentUserId]);
   const mentionQueryMatch = /(?:^|\s)@([A-Za-z0-9_.-]*)$/.exec(draft);
   const mentionQuery = mentionQueryMatch ? mentionQueryMatch[1] : null;
   const mentionedUserIds = useMemo(() => {
     return mentionOptions
       .filter((member) => {
-        const pattern = new RegExp(`(^|\\s)@${escapeRegExp(member.username)}(?=$|[\\s,.!?])`, "i");
+        const pattern = new RegExp(
+          `(^|\\s)@${escapeRegExp(member.username)}(?=$|[\\s,.!?])`,
+          "i",
+        );
         return pattern.test(draft);
       })
       .map((member) => member.id);
@@ -348,7 +371,9 @@ export default function GroupChatWindow({
 
   const handleEditMessage = (message: any, body: string) => {
     if (!isWithinMessageManagementWindow(message)) {
-      setSendError("Messages can only be edited or deleted within 15 minutes of sending.");
+      setSendError(
+        "Messages can only be edited or deleted within 15 minutes of sending.",
+      );
       return false;
     }
     const accepted = chat.editMessage(String(message.id), body);
@@ -365,7 +390,9 @@ export default function GroupChatWindow({
   const handleDeleteMessage = (message: GroupChatMessage) => {
     if (!message?.id) return false;
     if (!isWithinMessageManagementWindow(message)) {
-      setSendError("Messages can only be edited or deleted within 15 minutes of sending.");
+      setSendError(
+        "Messages can only be edited or deleted within 15 minutes of sending.",
+      );
       return false;
     }
     setSendError("");
@@ -400,7 +427,9 @@ export default function GroupChatWindow({
     const nextDraft = `${prefix}${separator}@${member.username} `;
     setDraft(nextDraft);
     requestAnimationFrame(() => {
-      const input = document.getElementById("group-chat-composer") as HTMLTextAreaElement | null;
+      const input = document.getElementById(
+        "group-chat-composer",
+      ) as HTMLTextAreaElement | null;
       if (!input) return;
       input.focus();
       input.setSelectionRange(nextDraft.length, nextDraft.length);
@@ -408,7 +437,10 @@ export default function GroupChatWindow({
   };
 
   const shareGroup = async () => {
-    const url = new URL(`/group-invite/${encodeURIComponent(groupId)}`, window.location.origin);
+    const url = new URL(
+      `/group-invite/${encodeURIComponent(groupId)}`,
+      window.location.origin,
+    );
     const shareUrl = url.toString();
     const shareTitle = `${group?.name ?? "Group chat"} · Bouwnce`;
     try {
@@ -421,13 +453,17 @@ export default function GroupChatWindow({
         return;
       }
       await navigator.clipboard.writeText(shareUrl);
-      setShareNotice("Group invitation link copied. People can view group details and request to join.");
+      setShareNotice(
+        "Group invitation link copied. People can view group details and request to join.",
+      );
       window.setTimeout(() => setShareNotice(""), 4500);
     } catch (error: any) {
       if (error?.name === "AbortError") return;
       try {
         await navigator.clipboard.writeText(shareUrl);
-        setShareNotice("Group invitation link copied. People can view group details and request to join.");
+        setShareNotice(
+          "Group invitation link copied. People can view group details and request to join.",
+        );
         window.setTimeout(() => setShareNotice(""), 4500);
       } catch {
         setSendError("Unable to share the group link from this browser.");
@@ -505,9 +541,9 @@ export default function GroupChatWindow({
             type="button"
             onClick={() => router.push("/app/chat")}
             aria-label="Back to chats"
-            className="-ml-2 rounded-full p-1 transition hover:bg-gray-100 md:hidden"
+            className="-ml-1.5 rounded-full p-1 transition hover:bg-gray-100 md:hidden"
           >
-            <ArrowLeft className="size-6 text-black" />
+            <ArrowLeft className="size-4 text-black" />
           </button>
           <div className="flex size-9.25 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-orange/10 text-orange">
             {group?.avatar_url || group?.icon_url ? (
@@ -520,10 +556,11 @@ export default function GroupChatWindow({
               <Users size={20} />
             )}
           </div>
-          <div className="min-w-0">
+          <div className="flex-1">
             <h2 className="flex min-w-0 items-center gap-1.5 truncate text-sm font-medium leading-tight text-black">
-              <span className="truncate">{group?.name ?? "Group chat"}</span>
-              <span className="shrink-0 rounded-full bg-violet-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-700">Group</span>
+              <span className="line-clamp-1">
+                {group?.name ?? "Group chat"}
+              </span>
             </h2>
             <p className="mt-0.5 truncate text-[10px] font-medium text-green-600">
               {typingText || membersText}
@@ -559,7 +596,10 @@ export default function GroupChatWindow({
       </header>
 
       {shareNotice ? (
-        <p role="status" className="border-b border-violet-100 bg-violet-50 px-4 py-2 text-xs text-violet-700">
+        <p
+          role="status"
+          className="border-b border-violet-100 bg-violet-50 px-4 py-2 text-xs text-violet-700"
+        >
           {shareNotice}
         </p>
       ) : null}
@@ -773,7 +813,9 @@ export default function GroupChatWindow({
           canSend={Boolean(draft.trim())}
           disabled={!chat.isConnected || isSendingMedia}
           isSending={isSendingMedia}
-          sendButtonVisible={Boolean(isComposerFocused || draft || isSendingMedia)}
+          sendButtonVisible={Boolean(
+            isComposerFocused || draft || isSendingMedia,
+          )}
           onFocus={() => setIsComposerFocused(true)}
           onBlur={() => setIsComposerFocused(false)}
           onKeyDown={(event) => {
@@ -786,7 +828,7 @@ export default function GroupChatWindow({
             if (event.nativeEvent.isComposing) return;
             send();
           }}
-          leading={(
+          leading={
             <div className="relative shrink-0">
               <button
                 type="button"
@@ -810,7 +852,8 @@ export default function GroupChatWindow({
                     { label: "Video", accept: "video/*", Icon: Video },
                     {
                       label: "Document or file",
-                      accept: ".pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv",
+                      accept:
+                        ".pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv",
                       Icon: FileText,
                     },
                   ].map(({ label, accept, Icon }) => (
@@ -820,7 +863,10 @@ export default function GroupChatWindow({
                       onClick={() => {
                         setAttachmentAccept(accept);
                         setShowAttachmentMenu(false);
-                        window.setTimeout(() => fileInputRef.current?.click(), 0);
+                        window.setTimeout(
+                          () => fileInputRef.current?.click(),
+                          0,
+                        );
                       }}
                       className="flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 transition hover:bg-orange/5 hover:text-orange"
                     >
@@ -831,7 +877,7 @@ export default function GroupChatWindow({
                 </div>
               )}
             </div>
-          )}
+          }
         >
           {mentionQuery !== null ? (
             <GroupMentionPicker
