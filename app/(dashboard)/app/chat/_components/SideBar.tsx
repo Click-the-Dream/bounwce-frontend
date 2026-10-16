@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, PlusCircle, Users, MessageCircle } from "lucide-react";
+import {
+  Search,
+  PlusCircle,
+  Users,
+  MessageCircle,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import ChatCard from "./ChatCard";
 import { useParams } from "next/navigation";
 import NewChatModal from "./NewChatModal";
@@ -10,7 +17,7 @@ import { User } from "@/app/_utils/types/buyer";
 import { ChatUser } from "@/app/_utils/types/chat";
 import { useRouter } from "next/navigation";
 import { useGroups } from "@/app/hooks/use-groups";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CreateGroupModal from "./CreateGroupModal";
 
 interface ChatSidebarProps {
@@ -19,12 +26,36 @@ interface ChatSidebarProps {
   role?: "buyer" | "vendor";
 }
 
-const ChatSidebar = ({ selectedUser, selectedGroupId, role = "buyer" }: ChatSidebarProps) => {
+const ChatSidebar = ({
+  selectedUser,
+  selectedGroupId,
+  role = "buyer",
+}: ChatSidebarProps) => {
   const { useGetConversations, prefetchMessages } = useChat();
   const { chatId } = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { groups, isLoading: areGroupsLoading } = useGroups();
+  const { groups: rawGroups, isLoading: areGroupsLoading } = useGroups();
+  const [groupsExpanded, setGroupsExpanded] = useState(true);
+  const { data: groupTypingById = {} } = useQuery<
+    Record<string, Array<{ user_id: string; username: string | null }>>
+  >({
+    queryKey: ["group-typing-status"],
+    queryFn: async () => ({}),
+    initialData: {},
+    staleTime: Infinity,
+  });
+  // API/cache updates and reconnect merges can briefly contain the same group twice.
+  const groups = useMemo(() => {
+    const unique = new Map<string, (typeof rawGroups)[number]>();
+    for (const group of rawGroups ?? []) {
+      const id = String(group?.id ?? "");
+      if (!id) continue;
+      const previous = unique.get(id);
+      unique.set(id, previous ? { ...previous, ...group } : group);
+    }
+    return [...unique.values()];
+  }, [rawGroups]);
 
   useEffect(() => {
     if (!selectedGroupId) return;
@@ -32,7 +63,11 @@ const ChatSidebar = ({ selectedUser, selectedGroupId, role = "buyer" }: ChatSide
       if (!old) return old;
       let changed = false;
       const next = old.map((group) => {
-        if (String(group.id) !== String(selectedGroupId) || !(group.unread_count > 0)) return group;
+        if (
+          String(group.id) !== String(selectedGroupId) ||
+          !(group.unread_count > 0)
+        )
+          return group;
         changed = true;
         return { ...group, unread_count: 0 };
       });
@@ -54,11 +89,24 @@ const ChatSidebar = ({ selectedUser, selectedGroupId, role = "buyer" }: ChatSide
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useGetConversations(params);
 
-  const conversations = useMemo(
-    () =>
-      data?.pages?.flatMap((page: any) => page?.items || []) || [],
-    [data?.pages],
-  );
+  const conversations = useMemo(() => {
+    const items = data?.pages?.flatMap((page: any) => page?.items || []) || [];
+    const unique = new Map<string, any>();
+    for (const item of items) {
+      const userId = String(item?.user?.id ?? item?.user_id ?? item?.id ?? "");
+      if (!userId) continue;
+      const previous = unique.get(userId);
+      // Prefer the most recently hydrated record while preserving any fields
+      // that only appeared in the earlier page.
+      unique.set(
+        userId,
+        previous
+          ? { ...previous, ...item, user: { ...previous.user, ...item.user } }
+          : item,
+      );
+    }
+    return [...unique.values()];
+  }, [data?.pages]);
 
   // Warm the first five conversations as soon as the conversation list arrives.
   // ChatCard continues warming later conversations as they enter the viewport.
@@ -82,7 +130,7 @@ const ChatSidebar = ({ selectedUser, selectedGroupId, role = "buyer" }: ChatSide
     if (!selectedUser) return null;
 
     const existing = conversations?.find(
-      (c: any) => c.user?.id === selectedUser.id,
+      (c: any) => String(c.user?.id ?? "") === String(selectedUser.id),
     );
 
     if (existing) return null;
@@ -129,9 +177,14 @@ const ChatSidebar = ({ selectedUser, selectedGroupId, role = "buyer" }: ChatSide
   const filteredGroups = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return groups;
-    return groups.filter((group) =>
-      String(group.name ?? "").toLowerCase().includes(query) ||
-      String(group.description ?? "").toLowerCase().includes(query),
+    return groups.filter(
+      (group) =>
+        String(group.name ?? "")
+          .toLowerCase()
+          .includes(query) ||
+        String(group.description ?? "")
+          .toLowerCase()
+          .includes(query),
     );
   }, [groups, searchQuery]);
 
@@ -207,37 +260,115 @@ const ChatSidebar = ({ selectedUser, selectedGroupId, role = "buyer" }: ChatSide
         {/* GROUP CONVERSATIONS */}
         {filteredGroups.length > 0 ? (
           <section className="mb-3">
-            <div className="flex items-center justify-between px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400">
-              <span>Groups</span><span>{filteredGroups.length}</span>
-            </div>
-            {filteredGroups.map((group) => {
-              const last = group.last_message;
-              const isActive = String(selectedGroupId ?? "") === String(group.id);
-              return (
-                <button key={group.id} type="button" onClick={() => router.push(`/app/chat?groupId=${encodeURIComponent(String(group.id))}`)} className={`flex w-full items-center gap-3 rounded-xl border-b border-black/5 px-2 py-3 text-left transition hover:bg-gray-50 ${isActive ? "bg-orange/5" : ""}`}>
-                  <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange/10 text-orange">
-                    {group.avatar_url || group.icon_url ? <img src={String(group.avatar_url ?? group.icon_url)} alt="" className="size-full object-cover" /> : <Users size={17} />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between gap-2"><span className="truncate text-sm font-medium text-gray-800">{group.name || "Group chat"}</span><span className="shrink-0 text-[10px] text-gray-400">{last?.created_at ? new Date(last.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span></span>
-                    <span className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-gray-400"><MessageCircle size={12} className="shrink-0"/><span className="truncate">{last?.body || (last?.media_type ? `Sent ${last.media_type}` : group.description || `${group.member_count ?? 0} members`)}</span></span>
-                  </span>
-                  {(group.unread_count ?? 0) > 0 ? <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-orange text-[10px] font-semibold text-white">{group.unread_count}</span> : null}
-                </button>
-              );
-            })}
+            <button
+              type="button"
+              aria-expanded={groupsExpanded}
+              onClick={() => setGroupsExpanded((expanded) => !expanded)}
+              className="flex w-full items-center justify-between rounded-[10px] px-2 py-2 text-xs font-medium tracking-[1.5] uppercase text-gray-400 transition hover:bg-gray-50"
+            >
+              <span className="flex items-center gap-1.5">
+                {groupsExpanded ? (
+                  <ChevronDown size={14} />
+                ) : (
+                  <ChevronRight size={14} />
+                )}
+                <span>Groups</span>
+              </span>
+              <span>{filteredGroups.length}</span>
+            </button>
+            {groupsExpanded &&
+              filteredGroups.map((group) => {
+                const last = group.last_message;
+                const groupId = String(group.id);
+                const isActive = String(selectedGroupId ?? "") === groupId;
+                const typingUsers = groupTypingById[groupId] ?? [];
+                const typingPreview =
+                  typingUsers.length === 1
+                    ? `${typingUsers[0].username?.trim() || "Someone"} is typing…`
+                    : typingUsers.length > 1
+                      ? `${typingUsers.length} people are typing…`
+                      : "";
+                return (
+                  <button
+                    key={`group:${groupId}`}
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/app/chat?groupId=${encodeURIComponent(groupId)}`,
+                      )
+                    }
+                    className={`flex w-full items-center gap-3 rounded-xl border-b border-black/5 px-2 py-3 text-left transition hover:bg-gray-50 ${isActive ? "bg-orange/5" : ""}`}
+                  >
+                    <span className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange/10 text-orange">
+                      {group.avatar_url || group.icon_url ? (
+                        <img
+                          src={String(group.avatar_url ?? group.icon_url)}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <Users size={17} />
+                      )}
+                      {typingUsers.length > 0 ? (
+                        <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-emerald-500" />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium text-gray-800">
+                          {group.name || "Group chat"}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-gray-400">
+                          {last?.created_at
+                            ? new Date(last.created_at).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : ""}
+                        </span>
+                      </span>
+                      <span
+                        className={`mt-0.5 flex min-w-0 items-center gap-1 text-xs ${typingPreview ? "font-medium text-emerald-600" : "text-gray-400"}`}
+                      >
+                        <MessageCircle size={12} className="shrink-0" />
+                        <span className="truncate">
+                          {typingPreview ||
+                            last?.body ||
+                            (last?.media_type
+                              ? `Sent ${last.media_type}`
+                              : group.description ||
+                                `${group.member_count ?? 0} members`)}
+                        </span>
+                      </span>
+                    </span>
+                    {(group.unread_count ?? 0) > 0 ? (
+                      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-orange text-[10px] font-semibold text-white">
+                        {group.unread_count}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
           </section>
         ) : null}
 
         {isLoading ? (
-          <div className="mt-6 text-center text-sm text-gray-400">Loading chats...</div>
+          <div className="mt-6 text-center text-sm text-gray-400">
+            Loading chats...
+          </div>
         ) : filteredConversations.length > 0 ? (
           <>
-            <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400">Direct messages</div>
-            {filteredConversations.map((chat: ChatUser) => <ChatCard key={chat?.user?.id} chat={chat} />)}
+            <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+              Direct messages
+            </div>
+            {filteredConversations.map((chat: ChatUser) => (
+              <ChatCard key={chat?.user?.id} chat={chat} />
+            ))}
           </>
         ) : filteredGroups.length === 0 ? (
-          <div className="mt-6 text-center text-sm text-gray-400">{areGroupsLoading ? "Loading groups…" : "No chats found"}</div>
+          <div className="mt-6 text-center text-sm text-gray-400">
+            {areGroupsLoading ? "Loading groups…" : "No chats found"}
+          </div>
         ) : null}
 
         {/* LOADING MORE INDICATOR */}

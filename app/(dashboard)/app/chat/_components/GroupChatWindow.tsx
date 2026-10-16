@@ -4,15 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
   ArrowLeft,
+  ArrowUp,
   Info,
   MessageCircle,
-  Paperclip,
-  Send,
   Users,
   Wifi,
   WifiOff,
   Loader2,
   X,
+  Video,
+  Image as ImageIcon,
+  Plus,
+  FileText,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
@@ -86,6 +89,10 @@ export default function GroupChatWindow({
   const [pendingDeleteMessage, setPendingDeleteMessage] =
     useState<GroupChatMessage | null>(null);
   const [isSendingMedia, setIsSendingMedia] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [attachmentAccept, setAttachmentAccept] = useState(
+    "image/*,video/*,.pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv",
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -209,8 +216,14 @@ export default function GroupChatWindow({
         : `${chat.typingUsers.length} people are typing…`
       : "";
 
-  const handleDraft = (value: string) => {
+  const autoResizeComposer = (element: HTMLTextAreaElement) => {
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 112)}px`;
+  };
+
+  const handleDraft = (value: string, element?: HTMLTextAreaElement) => {
     setDraft(value);
+    if (element) autoResizeComposer(element);
     const typing = Boolean(value.trim());
     const now = Date.now();
 
@@ -241,6 +254,10 @@ export default function GroupChatWindow({
 
   const clearComposer = () => {
     setDraft("");
+    const composer = document.getElementById(
+      "group-chat-composer",
+    ) as HTMLTextAreaElement | null;
+    if (composer) composer.style.height = "auto";
     setReplyTarget(null);
     chat.setTyping(false);
     isTypingRef.current = false;
@@ -644,7 +661,7 @@ export default function GroupChatWindow({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,video/*,.pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+          accept={attachmentAccept}
           className="hidden"
           disabled={isSendingMedia}
           onChange={(event) => {
@@ -652,23 +669,56 @@ export default function GroupChatWindow({
             if (file) void uploadAndSendFile(file);
           }}
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={!chat.isConnected || isSendingMedia}
-          aria-label="Attach a file"
-          title="Attach a photo, video, or file"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-orange disabled:opacity-50"
-        >
-          {isSendingMedia ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <Paperclip size={18} />
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowAttachmentMenu((open) => !open)}
+            disabled={!chat.isConnected || isSendingMedia}
+            aria-label="Add attachment"
+            title="Attach a photo, video, or file"
+            className="flex size-10 items-center justify-center rounded-full text-gray-500 transition hover:bg-orange/10 hover:text-orange disabled:opacity-50"
+          >
+            {isSendingMedia ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Plus size={20} />
+            )}
+          </button>
+          {showAttachmentMenu && (
+            <div className="absolute bottom-12 left-0 z-30 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl">
+              {[
+                { label: "Photo", accept: "image/*", Icon: ImageIcon },
+                { label: "Video", accept: "video/*", Icon: Video },
+                {
+                  label: "Document or file",
+                  accept:
+                    ".pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv",
+                  Icon: FileText,
+                },
+              ].map(({ label, accept, Icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    setAttachmentAccept(accept);
+                    setShowAttachmentMenu(false);
+                    window.setTimeout(() => fileInputRef.current?.click(), 0);
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 transition hover:bg-orange/5 hover:text-orange"
+                >
+                  <Icon size={17} className="text-orange" />
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
-        </button>
+        </div>
         <textarea
+          id="group-chat-composer"
           value={draft}
-          onChange={(event) => handleDraft(event.target.value)}
+          onChange={(event) =>
+            handleDraft(event.target.value, event.currentTarget)
+          }
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -678,7 +728,7 @@ export default function GroupChatWindow({
           rows={1}
           maxLength={4000}
           placeholder="Message the group…"
-          className="max-h-32 min-h-10 flex-1 resize-y rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none transition focus:border-orange focus:bg-white"
+          className="max-h-28 min-h-10 flex-1 resize-none rounded-2xl border border-[#00000014] bg-[#F5F6F7] px-4 py-2.5 text-sm leading-5 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-orange/50 focus:bg-white focus:ring-2 focus:ring-orange/10"
         />
         <button
           type="submit"
@@ -686,7 +736,7 @@ export default function GroupChatWindow({
           aria-label="Send message"
           className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange text-white transition hover:bg-[#ea4325] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Send size={17} />
+          <ArrowUp size={19} strokeWidth={2.4} />
         </button>
       </form>
       <ImageViewer

@@ -32,14 +32,8 @@ const ProfileDropdown = ({ fullMode = false }) => {
               : user?.full_name) || "User"}
           </p>
         )}
-        <div className="flex items-center rounded-full bg-gray-200/50 w-max p-1">
-          {user?.profile?.profileImage ? (
-            <img
-              src={`${process.env.NEXT_PUBLIC_BASE_URL}${user?.profile?.profileImage}`}
-              alt="User Avatar"
-              className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover"
-            />
-          ) : (
+        <div className="flex items-center rounded-[15px] bg-gray-200/50 w-max p-1">
+          {user && (
             <UserImage
               user={{
                 id: user?.id,
@@ -47,12 +41,12 @@ const ProfileDropdown = ({ fullMode = false }) => {
                 profile_pic: user?.profile_pic,
               }}
               size={26}
-              rounded="rounded-full bg-gray-100"
+              rounded="rounded-[15px] bg-gray-100"
               clickable={false}
             />
           )}
 
-          <span className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center">
+          <span className="w-6 h-6 md:w-8 md:h-8 rounded-[15px] flex items-center justify-center">
             <IoIosArrowDown
               size={18}
               className={`transition-transform duration-200 ${isOpen ? "-rotate-180" : ""}`}

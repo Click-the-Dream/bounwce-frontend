@@ -293,10 +293,10 @@ export function useGroupSocket(
   }, [historyQuery.data, liveQuery.data]);
 
   useEffect(() => {
+    // Active-panel typing is reset when switching groups, but the shared
+    // timers stay alive so sidebar typing previews for other groups can expire.
     setTypingUsers([]);
     setActionError("");
-    Object.values(typingTimers.current).forEach(clearTimeout);
-    typingTimers.current = {};
   }, [groupId]);
 
   useEffect(() => {
@@ -407,38 +407,52 @@ export function useGroupSocket(
 
     const onTyping = (frame: GroupFrame) => {
       const data = getFrameData(frame);
-      const selectedGroupId = activeGroupRef.current;
-      if (
-        !selectedGroupId ||
-        String(data?.group_id ?? frame.group_id) !== String(selectedGroupId) ||
-        !data?.user_id
-      )
-        return;
+      const eventGroupId = String(data?.group_id ?? frame.group_id ?? "");
+      if (!eventGroupId || !data?.user_id) return;
       const userId = String(data.user_id);
       if (userId === String(userIdRef.current ?? "")) return;
-      if (data.is_typing) {
-        setTypingUsers((old) =>
-          old.some((user) => user.user_id === userId)
-            ? old.map((user) =>
-                user.user_id === userId
-                  ? { user_id: userId, username: data.username ?? null }
-                  : user,
-              )
-            : [...old, { user_id: userId, username: data.username ?? null }],
+      const timerKey = `${eventGroupId}:${userId}`;
+      const username = typeof data.username === "string" ? data.username.trim() || null : null;
+      const updateGlobalTyping = (isTyping: boolean) => {
+        queryClient.setQueryData<Record<string, GroupTypingUser[]>>(
+          ["group-typing-status"],
+          (old = {}) => {
+            const current = old[eventGroupId] ?? [];
+            const nextUsers = isTyping
+              ? current.some((user) => user.user_id === userId)
+                ? current.map((user) => user.user_id === userId ? { user_id: userId, username } : user)
+                : [...current, { user_id: userId, username }]
+              : current.filter((user) => user.user_id !== userId);
+            const next = { ...old };
+            if (nextUsers.length) next[eventGroupId] = nextUsers;
+            else delete next[eventGroupId];
+            return next;
+          },
         );
-        if (typingTimers.current[userId])
-          clearTimeout(typingTimers.current[userId]);
-        typingTimers.current[userId] = setTimeout(() => {
-          setTypingUsers((old) =>
-            old.filter((user) => user.user_id !== userId),
-          );
-          delete typingTimers.current[userId];
+      };
+      const isActiveGroup = String(activeGroupRef.current ?? "") === eventGroupId;
+      const updateActiveTyping = (isTyping: boolean) => {
+        if (!isActiveGroup) return;
+        setTypingUsers((old) => isTyping
+          ? old.some((user) => user.user_id === userId)
+            ? old.map((user) => user.user_id === userId ? { user_id: userId, username } : user)
+            : [...old, { user_id: userId, username }]
+          : old.filter((user) => user.user_id !== userId));
+      };
+      if (data.is_typing) {
+        updateGlobalTyping(true);
+        updateActiveTyping(true);
+        if (typingTimers.current[timerKey]) clearTimeout(typingTimers.current[timerKey]);
+        typingTimers.current[timerKey] = setTimeout(() => {
+          updateGlobalTyping(false);
+          updateActiveTyping(false);
+          delete typingTimers.current[timerKey];
         }, 3_500);
       } else {
-        if (typingTimers.current[userId])
-          clearTimeout(typingTimers.current[userId]);
-        delete typingTimers.current[userId];
-        setTypingUsers((old) => old.filter((user) => user.user_id !== userId));
+        if (typingTimers.current[timerKey]) clearTimeout(typingTimers.current[timerKey]);
+        delete typingTimers.current[timerKey];
+        updateGlobalTyping(false);
+        updateActiveTyping(false);
       }
     };
 
@@ -534,7 +548,23 @@ export function useGroupSocket(
       websocket.off("group.typing", onTyping);
       websocket.off("error", onError);
       websocket.off("chat.ready", refreshOnReady);
-      Object.values(typingTimers.current).forEach(clearTimeout);
+      Object.entries(typingTimers.current).forEach(([timerKey, timer]) => {
+        clearTimeout(timer);
+        const separator = timerKey.lastIndexOf(":");
+        if (separator < 0) return;
+        const eventGroupId = timerKey.slice(0, separator);
+        const userId = timerKey.slice(separator + 1);
+        queryClient.setQueryData<Record<string, GroupTypingUser[]>>(
+          ["group-typing-status"],
+          (old = {}) => {
+            const next = { ...old };
+            const remaining = (next[eventGroupId] ?? []).filter((user) => user.user_id !== userId);
+            if (remaining.length) next[eventGroupId] = remaining;
+            else delete next[eventGroupId];
+            return next;
+          },
+        );
+      });
       typingTimers.current = {};
       setTypingUsers([]);
     };
