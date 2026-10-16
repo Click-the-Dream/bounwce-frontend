@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw, AlertCircle } from "lucide-react";
+import { Download, RefreshCw, AlertCircle, Check, Pencil, Trash2, X } from "lucide-react";
 import { LuClock } from "react-icons/lu";
 
 import { useAuth } from "@/app/context/AuthContext";
@@ -17,6 +17,10 @@ interface ChatMediaMessageProps {
   onReply?: (msg: any) => void;
   onRetry?: (msg: any) => void;
   onScrollToMessage?: (messageId: string) => void;
+  senderName?: string;
+  senderAvatar?: string | null;
+  onEdit?: (msg: any, body: string) => boolean | void;
+  onDelete?: (msg: any) => boolean | void;
 }
 
 const ChatMediaMessage = ({
@@ -25,13 +29,19 @@ const ChatMediaMessage = ({
   onReply,
   onRetry,
   onScrollToMessage,
+  senderName,
+  senderAvatar,
+  onEdit,
+  onDelete,
 }: ChatMediaMessageProps) => {
   const { authDetails } = useAuth();
-  const isSender = msg.sender_id === authDetails?.user?.id;
+  const isSender = String(msg?.sender_id ?? "") === String(authDetails?.user?.id ?? "");
   const styles = getMessageLayout(isSender);
   const caption = msg.body || msg.caption || "";
 
   const [isHighlighted, setIsHighlighted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState(String(caption));
 
   useEffect(() => {
     const handler = (e: CustomEvent) => {
@@ -51,6 +61,16 @@ const ChatMediaMessage = ({
   const isSent = msg.delivery_status === "sent" || !msg.read_at;
   const isRead = !!msg.read_at;
   const mediaUrls = useMemo(() => msg.media_urls || [], [msg.media_urls]);
+  const canManageMessage = Boolean(
+    isSender && (onEdit || onDelete) && !msg.pending &&
+    msg.delivery_status !== "sending" && msg.delivery_status !== "uploading" &&
+    msg.delivery_status !== "failed" && !String(msg.id ?? "").startsWith("optimistic:")
+  );
+  const saveEdit = () => {
+    if (!onEdit || !editDraft.trim()) return;
+    const accepted = onEdit(msg, editDraft.trim());
+    if (accepted !== false) setIsEditing(false);
+  };
 
   const renderStatus = () => {
     if (!isSender) return null;
@@ -302,6 +322,13 @@ const ChatMediaMessage = ({
           ${isHighlighted ? "ring-2 ring-orange/60" : ""}
         `}
       >
+        {senderName && !isSender && (
+          <div className="flex items-center gap-1.5 px-2.5 pt-2">
+            {senderAvatar && <img src={senderAvatar} alt="" className="size-4 shrink-0 rounded-full object-cover" />}
+            <p className="text-[11px] font-semibold text-orange">{senderName}</p>
+          </div>
+        )}
+
         {/* Reply preview */}
         {msg.reply_to_message && (
           <div className="px-1.5 pt-1.5 pb-0">
@@ -320,11 +347,30 @@ const ChatMediaMessage = ({
             ? renderVideo()
             : renderFile()}
 
-        {/* Caption */}
-        {caption && <div className="px-2.5 py-2 text-[13px]">{caption}</div>}
+        {/* Caption / inline caption edit */}
+        {isEditing ? (
+          <div className="space-y-2 px-2.5 py-2">
+            <textarea
+              autoFocus
+              rows={2}
+              maxLength={4000}
+              value={editDraft}
+              onChange={(event) => setEditDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setIsEditing(false);
+                if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); saveEdit(); }
+              }}
+              className="w-full resize-y rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[13px] text-gray-900 outline-none focus:border-orange"
+            />
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setIsEditing(false)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100"><X size={12}/> Cancel</button>
+              <button type="button" disabled={!editDraft.trim()} onClick={saveEdit} className="inline-flex items-center gap-1 rounded-md bg-orange px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-50"><Check size={12}/> Save</button>
+            </div>
+          </div>
+        ) : caption ? <div className="px-2.5 py-2 text-[13px]">{caption}</div> : null}
 
         {/* ONLY show overlay if no caption */}
-        {!caption && (
+        {!caption && !isEditing && (
           <div
             className={`absolute bottom-0 left-0 right-0 h-20 pointer-events-none ${
               isSender
@@ -337,6 +383,7 @@ const ChatMediaMessage = ({
         <span
           className={`absolute bottom-1 right-2 text-[10px] flex items-center gap-1 ${styles.time} drop-shadow-md`}
         >
+          {msg?.is_edited && <span className="text-[9px]">edited · </span>}
           {msg?.created_at &&
             new Date(msg.created_at).toLocaleTimeString([], {
               hour: "2-digit",
@@ -347,6 +394,12 @@ const ChatMediaMessage = ({
           )}
         </span>
       </div>
+      {canManageMessage && !isEditing && (
+        <div className="mt-1 flex w-full justify-end gap-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+          {onEdit && caption && <button type="button" onClick={() => { setEditDraft(String(caption)); setIsEditing(true); }} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"><Pencil size={11}/> Edit caption</button>}
+          {onDelete && <button type="button" onClick={() => onDelete(msg)} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-red-600/80 transition hover:bg-red-500/10 hover:text-red-700"><Trash2 size={11}/> Delete</button>}
+        </div>
+      )}
     </SwipeableMessage>
   );
 };

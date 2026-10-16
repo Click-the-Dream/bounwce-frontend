@@ -7,7 +7,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { LuClock } from "react-icons/lu";
 import SwipeableMessage from "./SwipeableMessage";
 import ReplyPreview from "./ReplyPreview";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Check, Pencil, Trash2, X } from "lucide-react";
 import { motion } from "framer-motion";
 import MessageLinkPreview from "./MessageLinkPreview";
 import { getMessageUrlSegments, resolveMessageUrl } from "./message-links";
@@ -16,6 +16,10 @@ interface ChatMessageProps {
   msg: any;
   onReply?: (msg: any) => void;
   onScrollToMessage?: (messageId: string) => void;
+  senderName?: string;
+  senderAvatar?: string | null;
+  onEdit?: (msg: any, body: string) => boolean | void;
+  onDelete?: (msg: any) => boolean | void;
 }
 
 const isSingleEmoji = (text: string) => {
@@ -92,13 +96,15 @@ const renderMessageBody = (text: string, isSender: boolean) => {
 };
 // COMPONENT
 
-const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
+const ChatMessage = ({ msg, onReply, onScrollToMessage, senderName, senderAvatar, onEdit, onDelete }: ChatMessageProps) => {
   const { authDetails } = useAuth();
-  const isSender = msg.sender_id === authDetails?.user?.id;
+  const isSender = String(msg?.sender_id ?? "") === String(authDetails?.user?.id ?? "");
   const styles = getMessageLayout(isSender);
   const [expanded, setExpanded] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
   const [isHighlighted, setIsHighlighted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState(String(msg?.body ?? ""));
   const textRef = useRef<HTMLDivElement>(null);
 
   const isEmojiOnly = isSingleEmoji(msg?.body);
@@ -138,6 +144,19 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
     if (isSent) return renderCheck("sent");
 
     return <LuClock size={10} />;
+  };
+
+  const canManageMessage = Boolean(
+    isSender && (onEdit || onDelete) && !msg.pending &&
+    msg.delivery_status !== "sending" && msg.delivery_status !== "uploading" &&
+    msg.delivery_status !== "failed" && !String(msg.id ?? "").startsWith("optimistic:")
+  );
+
+  const saveEdit = () => {
+    const body = editDraft.trim();
+    if (!body || !onEdit) return;
+    const accepted = onEdit(msg, body);
+    if (accepted !== false) setIsEditing(false);
   };
 
   // Called when this message is scrolled to as a reply target
@@ -193,8 +212,37 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
           />
         )}
 
-        {/* Message body */}
-        <div
+        {senderName && !isSender && (
+          <div className="mb-1 flex items-center gap-1.5">
+            {senderAvatar && <img src={senderAvatar} alt="" className="size-4 shrink-0 rounded-full object-cover" />}
+            <p className="text-[11px] font-semibold text-orange">{senderName}</p>
+          </div>
+        )}
+
+        {/* Message body / inline edit */}
+        {isEditing ? (
+          <div className="min-w-[190px] space-y-2">
+            <textarea
+              autoFocus
+              rows={Math.min(5, Math.max(2, editDraft.split("\n").length))}
+              maxLength={4000}
+              value={editDraft}
+              onChange={(event) => setEditDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setIsEditing(false);
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  saveEdit();
+                }
+              }}
+              className="w-full resize-y rounded-lg border border-black/10 bg-white/90 px-2 py-1.5 text-[13px] text-gray-900 outline-none focus:border-orange"
+            />
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setIsEditing(false)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-current/70 hover:bg-black/5"><X size={12}/> Cancel</button>
+              <button type="button" disabled={!editDraft.trim()} onClick={saveEdit} className="inline-flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-[11px] font-semibold text-orange disabled:opacity-50"><Check size={12}/> Save</button>
+            </div>
+          </div>
+        ) : <div
           ref={textRef}
           className={`pr-2 ${!expanded && !isEmojiOnly ? "line-clamp-4" : ""}`}
         >
@@ -223,15 +271,15 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
           ) : (
             renderMessageBody(msg?.body ?? "", isSender)
           )}
-        </div>
+        </div>}
 
         {/* WhatsApp-style URL preview. Bouwnce links stay inside the app. */}
-        {!isEmojiOnly && msg?.body && (
+        {!isEditing && !isEmojiOnly && msg?.body && (
           <MessageLinkPreview text={msg.body} isSender={isSender} />
         )}
 
         {/* Read more / less toggle */}
-        {showReadMore && (
+        {!isEditing && showReadMore && (
           <button
             onClick={() => setExpanded(!expanded)}
             className={`block text-[11px] mt-1 font-semibold opacity-60 hover:opacity-100 transition-opacity active:scale-95 ${
@@ -247,6 +295,7 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
           <div
             className={`flex items-center gap-1 text-[10px] opacity-70 ${styles.time}`}
           >
+            {msg?.is_edited && <span className="text-[9px]">edited · </span>}
             {msg?.created_at &&
               new Date(msg.created_at).toLocaleTimeString([], {
                 hour: "2-digit",
@@ -256,6 +305,12 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage }: ChatMessageProps) => {
             {isSender && <span className="text-[10px]">{renderStatus()}</span>}
           </div>
         </div>
+        {canManageMessage && !isEditing && (
+          <div className="mt-1 flex justify-end gap-2 border-t border-current/10 pt-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+            {onEdit && <button type="button" onClick={() => { setEditDraft(String(msg?.body ?? "")); setIsEditing(true); }} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] opacity-70 transition hover:bg-black/5 hover:opacity-100"><Pencil size={11}/> Edit</button>}
+            {onDelete && <button type="button" onClick={() => onDelete(msg)} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-red-600/80 transition hover:bg-red-500/10 hover:text-red-700"><Trash2 size={11}/> Delete</button>}
+          </div>
+        )}
       </div>
     </SwipeableMessage>
   );

@@ -131,6 +131,7 @@ export function useGroupSocket(
 ) {
   const queryClient = useQueryClient();
   const [typingUsers, setTypingUsers] = useState<GroupTypingUser[]>([]);
+  const [actionError, setActionError] = useState("");
   const [connectionState, setConnectionState] = useState(websocket.getState());
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const clientIds = useRef(new Map<string, string>());
@@ -168,6 +169,7 @@ export function useGroupSocket(
 
   useEffect(() => {
     setTypingUsers([]);
+    setActionError("");
     Object.values(typingTimers.current).forEach(clearTimeout);
     typingTimers.current = {};
   }, [groupId]);
@@ -269,13 +271,23 @@ export function useGroupSocket(
     const onError = (frame: GroupFrame) => {
       const data = getFrameData(frame);
       const errorName = String(data?.error ?? frame.error ?? "").toLowerCase();
-      const messageText = String(data?.message ?? frame.message ?? "").toLowerCase();
+      const messageText = String(data?.message ?? frame.message ?? "");
+      const lowerMessageText = messageText.toLowerCase();
       const isGroupError = Boolean(
         data?.client_id || frame.client_id || errorName.startsWith("group") ||
         errorName === "invalid_group_id" || errorName === "group.access.denied" ||
-        messageText.includes("group") || messageText.includes("message body cannot be empty")
+        lowerMessageText.includes("group") || lowerMessageText.includes("message body cannot be empty")
       );
       if (!isGroupError) return;
+      const isEditOrDeleteError = /group[._]message[._](edit|delete)([._]failed)?/.test(errorName);
+      if (isEditOrDeleteError) {
+        setActionError(messageText || "The group message could not be changed.");
+        const activeId = activeGroupRef.current;
+        if (activeId) void queryClient.invalidateQueries({ queryKey: messagesKey(activeId), exact: true });
+        void queryClient.invalidateQueries({ queryKey: ["group-conversations"] });
+        return;
+      }
+      setActionError(messageText || "The group message could not be sent.");
       const id = data?.client_id ?? frame.client_id;
       const localMessageId = id ? clientIds.current.get(String(id)) : undefined;
       const activeId = activeGroupRef.current;
@@ -300,20 +312,32 @@ export function useGroupSocket(
       void queryClient.invalidateQueries({ queryKey: ["group-conversations"] });
     };
 
+    // The backend contract emits underscore event names. Register the dotted
+    // aliases too so older staging builds remain compatible.
+    websocket.on("group_message", onGroupMessage);
     websocket.on("group.message", onGroupMessage);
+    websocket.on("group_message_sent", onGroupMessageSent);
     websocket.on("group.message.sent", onGroupMessageSent);
+    websocket.on("group_message_updated", onGroupUpdated);
     websocket.on("group.message.updated", onGroupUpdated);
+    websocket.on("group_message_deleted", onGroupDeleted);
     websocket.on("group.message.deleted", onGroupDeleted);
+    websocket.on("group_typing", onTyping);
     websocket.on("group.typing", onTyping);
     websocket.on("error", onError);
     websocket.on("chat.ready", refreshOnReady);
 
     return () => {
       websocket.off("group_message", onGroupMessage);
+      websocket.off("group.message", onGroupMessage);
       websocket.off("group_message_sent", onGroupMessageSent);
+      websocket.off("group.message.sent", onGroupMessageSent);
       websocket.off("group_message_updated", onGroupUpdated);
+      websocket.off("group.message.updated", onGroupUpdated);
       websocket.off("group_message_deleted", onGroupDeleted);
+      websocket.off("group.message.deleted", onGroupDeleted);
       websocket.off("group_typing", onTyping);
+      websocket.off("group.typing", onTyping);
       websocket.off("error", onError);
       websocket.off("chat.ready", refreshOnReady);
       Object.values(typingTimers.current).forEach(clearTimeout);
@@ -329,6 +353,7 @@ export function useGroupSocket(
     reply_to_message_id?: string | null;
     mentioned_user_ids?: string[] | null;
   } = {}) => {
+    setActionError("");
     if (!groupId) throw new Error("Select a group before sending a message.");
     if (!body.trim() && !options.media_urls?.length) throw new Error("Message cannot be empty.");
     const clientId = typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -349,7 +374,7 @@ export function useGroupSocket(
     };
     clientIds.current.set(clientId, optimisticId);
     queryClient.setQueryData<GroupChatMessage[]>(messagesKey(groupId), (old = []) => mergeMessage(old, optimistic));
-    const sent = websocket.emit("group.message", {
+    const sent = websocket.emit("group_message", {
       group_id: groupId,
       body: body.trim(),
       client_id: clientId,
@@ -366,17 +391,23 @@ export function useGroupSocket(
 
   const setTyping = useCallback((isTyping: boolean) => {
     if (!groupId || !enabled) return false;
-    return websocket.emit("group.typing", { group_id: groupId, is_typing: isTyping }, { queueIfDisconnected: false });
+    return websocket.emit("group_typing", { group_id: groupId, is_typing: isTyping }, { queueIfDisconnected: false });
   }, [groupId, enabled]);
 
   const editMessage = useCallback((messageId: string, body: string) => {
+    setActionError("");
     if (!groupId || !body.trim()) return false;
-    return websocket.emit("group.message.edit", { group_id: groupId, message_id: messageId, body: body.trim() }, { queueIfDisconnected: false });
+    const sent = websocket.emit("group_message_edit", { group_id: groupId, message_id: messageId, body: body.trim() }, { queueIfDisconnected: false });
+    if (!sent) setActionError("You are offline. Reconnect before editing this message.");
+    return sent;
   }, [groupId]);
 
   const deleteMessage = useCallback((messageId: string) => {
+    setActionError("");
     if (!groupId) return false;
-    return websocket.emit("group.message.delete", { group_id: groupId, message_id: messageId }, { queueIfDisconnected: false });
+    const sent = websocket.emit("group_message_delete", { group_id: groupId, message_id: messageId }, { queueIfDisconnected: false });
+    if (!sent) setActionError("You are offline. Reconnect before deleting this message.");
+    return sent;
   }, [groupId]);
 
   return {
@@ -386,6 +417,7 @@ export function useGroupSocket(
     error: historyQuery.error,
     refetch: historyQuery.refetch,
     typingUsers,
+    actionError,
     connectionState,
     isConnected: connectionState === "connected",
     sendMessage,

@@ -381,6 +381,86 @@ export const useSocketConnection = ({
       setOnlineUsersRef.current(() => onlineMap);
     };
 
+    // Server-confirmed edits are broadcast to both participants and all their
+    // active devices. Keep the exact message identity and pagination structure.
+    const handleMessageUpdated = (raw: any) => {
+      const updated = raw?.data?.message ?? raw?.data ?? raw?.payload?.message ?? raw?.payload ?? raw;
+      if (!updated?.id) return;
+      const peerId = String(updated.sender_id) === String(authUserRef.current)
+        ? updated.recipient_id
+        : updated.sender_id;
+      if (!peerId) return;
+
+      queryClient.setQueryData(["messages", String(peerId)], (old: any) => {
+        if (!old?.pages) return old;
+        const pages = old.pages.map((page: any) => ({
+          ...page,
+          messages: {
+            ...page.messages,
+            items: (page.messages?.items ?? []).map((message: any) => {
+              if (String(message.id) !== String(updated.id)) return message;
+              return { ...message, ...updated, pending: false, synced: true };
+            }),
+          },
+        }));
+        return { ...old, pages };
+      });
+
+      queryClient.setQueriesData({ queryKey: ["conversations"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            items: (page.items ?? []).map((conversation: any) => {
+              if (String(conversation.user?.id ?? conversation.peer_id ?? "") !== String(peerId)) return conversation;
+              const last = conversation.last_message;
+              if (String(last?.id ?? "") !== String(updated.id)) return conversation;
+              return {
+                ...conversation,
+                last_message: { ...last, ...updated },
+                updated_at: updated.updated_at ?? conversation.updated_at,
+              };
+            }),
+          })),
+        };
+      });
+
+      void queryClient.invalidateQueries({ queryKey: ["messages", String(peerId)], exact: true });
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    };
+
+    // Deletion frames contain ids rather than the removed message body. Remove
+    // it immediately from the matching DM cache, then refresh history/sidebar
+    // metadata so a deleted last message is replaced by the real previous one.
+    const handleMessageDeleted = (raw: any) => {
+      const data = raw?.data ?? raw?.payload ?? raw;
+      if (!data?.message_id) return;
+      const peerId = String(data.sender_id) === String(authUserRef.current)
+        ? data.recipient_id
+        : data.sender_id;
+      if (!peerId) return;
+
+      queryClient.setQueryData(["messages", String(peerId)], (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            messages: {
+              ...page.messages,
+              items: (page.messages?.items ?? []).filter(
+                (message: any) => String(message.id) !== String(data.message_id),
+              ),
+            },
+          })),
+        };
+      });
+
+      void queryClient.invalidateQueries({ queryKey: ["messages", String(peerId)], exact: true });
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    };
+
     websocket.on("chat.message", handleMessage);
     websocket.on("chat.sent", handleDeliveredAck);
     websocket.on("chat.send.ack", handleSentAck);
@@ -389,6 +469,8 @@ export const useSocketConnection = ({
     websocket.on("user.online.snapshot", handleOnlineSnapshot);
     websocket.on("chat.read.updated", handleReadUpdated);
     websocket.on("chat.read.ack", handleReadUpdated);
+    websocket.on("chat.message.updated", handleMessageUpdated);
+    websocket.on("chat.message.deleted", handleMessageDeleted);
 
     return () => {
       websocket.off("chat.message", handleMessage);
@@ -399,6 +481,8 @@ export const useSocketConnection = ({
       websocket.off("user.online.snapshot", handleOnlineSnapshot);
       websocket.off("chat.read.updated", handleReadUpdated);
       websocket.off("chat.read.ack", handleReadUpdated);
+      websocket.off("chat.message.updated", handleMessageUpdated);
+      websocket.off("chat.message.deleted", handleMessageDeleted);
     };
   }, [queryClient, decrementUnread, pushNotification]);
 };

@@ -102,6 +102,24 @@ const MessageList = forwardRef(
 
     const [viewerOpen, setViewerOpen] = useState(false);
     const [viewerIndex, setViewerIndex] = useState(0);
+    const [messageActionError, setMessageActionError] = useState("");
+
+    useEffect(() => {
+      setMessageActionError("");
+    }, [chatId]);
+
+    useEffect(() => {
+      const handleActionError = (frame: any) => {
+        const data = frame?.data ?? frame?.payload ?? frame ?? {};
+        const errorCode = String(data?.error ?? frame?.error ?? "").toLowerCase();
+        if (!errorCode.includes("chat.edit.failed") && !errorCode.includes("chat.delete.failed")) return;
+        setMessageActionError(data?.message ?? frame?.message ?? "The message could not be updated.");
+        if (chatId) void queryClient.invalidateQueries({ queryKey: ["messages", chatId], exact: true });
+        void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      };
+      websocket.on("error", handleActionError);
+      return () => websocket.off("error", handleActionError);
+    }, [chatId, queryClient]);
 
     // DERIVED DATA
 
@@ -505,6 +523,37 @@ const MessageList = forwardRef(
         sender: m.sender,
       });
 
+    const handleEditMessage = (message: FlatMessage, body: string) => {
+      if (!chatId || !message?.id || !body.trim()) return false;
+      const sent = websocket.emit(
+        "chat.edit",
+        { message_id: message.id, body: body.trim() },
+        { queueIfDisconnected: false },
+      );
+      if (!sent) {
+        setMessageActionError("You are offline. Reconnect before editing this message.");
+        return false;
+      }
+      setMessageActionError("");
+      return true;
+    };
+
+    const handleDeleteMessage = (message: FlatMessage) => {
+      if (!chatId || !message?.id) return false;
+      if (!window.confirm("Delete this message for everyone?")) return false;
+      const sent = websocket.emit(
+        "chat.delete",
+        { message_id: message.id },
+        { queueIfDisconnected: false },
+      );
+      if (!sent) {
+        setMessageActionError("You are offline. Reconnect before deleting this message.");
+        return false;
+      }
+      setMessageActionError("");
+      return true;
+    };
+
     const handleOpenImage = (url: string) => {
       const index = mediaIndexMap.get(url);
 
@@ -613,6 +662,12 @@ const MessageList = forwardRef(
 
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
+        {messageActionError && (
+          <div role="alert" className="flex items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">
+            <span>{messageActionError}</span>
+            <button type="button" onClick={() => setMessageActionError("")} aria-label="Dismiss message action error" className="rounded px-1 text-red-700 hover:bg-red-100">×</button>
+          </div>
+        )}
         <div
           ref={containerRef}
           onScroll={() => {
@@ -656,6 +711,8 @@ const MessageList = forwardRef(
                       onOpen={handleOpenImage}
                       onRetry={() => handleRetry(msg)}
                       onScrollToMessage={scrollToMessage}
+                      onEdit={handleEditMessage}
+                      onDelete={handleDeleteMessage}
                     />
                   ) : (
                     <ChatMessage
@@ -663,6 +720,8 @@ const MessageList = forwardRef(
                       msg={msg}
                       onReply={() => handleSetReply(msg)}
                       onScrollToMessage={scrollToMessage}
+                      onEdit={handleEditMessage}
+                      onDelete={handleDeleteMessage}
                     />
                   ),
                 )}
