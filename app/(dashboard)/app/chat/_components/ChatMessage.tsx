@@ -242,7 +242,7 @@ const ChatMessage = ({
 
         {/* Message body / inline edit */}
         {isEditing ? (
-          <div className="min-w-[190px] space-y-2">
+          <div className="min-w-47.5 space-y-2">
             <textarea
               autoFocus
               rows={Math.min(5, Math.max(2, editDraft.split("\n").length))}
