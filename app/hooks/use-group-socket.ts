@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { websocket } from "@/app/services/websocket";
 import {
   GroupMessageRecord,
+  GroupMessagesPage,
   GroupRecord,
   groupChatApi,
 } from "@/app/services/group-chat";
@@ -39,6 +40,20 @@ type GroupFrame = Record<string, any> & {
 };
 
 const messagesKey = (groupId: string) => ["group-messages", groupId] as const;
+const historyKey = (groupId: string) => ["group-message-pages", groupId] as const;
+const GROUP_MESSAGE_PAGE_SIZE = 20;
+const getNextGroupMessagePageParam = (lastPage: GroupMessagesPage) => {
+  if (lastPage.next_page != null) return Number(lastPage.next_page);
+  if (lastPage.has_more !== undefined) {
+    return lastPage.has_more ? Number(lastPage.page) + 1 : undefined;
+  }
+  if (lastPage.total_pages != null) {
+    return lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined;
+  }
+  return lastPage.page * lastPage.page_size < lastPage.total
+    ? lastPage.page + 1
+    : undefined;
+};
 const getFrameData = (frame: GroupFrame) => frame?.data ?? frame?.payload ?? frame;
 const getFrameMessage = (frame: GroupFrame): GroupChatMessage => {
   const raw = getFrameData(frame);
@@ -83,10 +98,63 @@ function mergeMessage(current: GroupChatMessage[], incoming: GroupChatMessage) {
     {
       ...incoming,
       render_id: incoming.render_id ?? incoming.client_id ?? incoming.id,
-      pending: false,
-      delivery_status: "sent",
+      pending: incoming.pending ?? false,
+      delivery_status: incoming.delivery_status ?? "sent",
     },
   ]);
+}
+
+function combineDisplayMessages(
+  history: GroupChatMessage[],
+  live: GroupChatMessage[],
+): GroupChatMessage[] {
+  const result = [...history];
+  const identities = (message: GroupChatMessage) =>
+    [message.id, message.client_id, message.render_id]
+      .filter((value) => value !== undefined && value !== null && value !== "")
+      .map(String);
+
+  for (const incoming of live) {
+    const keys = new Set(identities(incoming));
+    const index = result.findIndex((message) =>
+      identities(message).some((key) => keys.has(key)),
+    );
+    if (index === -1) {
+      result.push(incoming);
+      continue;
+    }
+    const existing = result[index];
+    result[index] = {
+      ...existing,
+      ...incoming,
+      render_id: existing.render_id ?? incoming.render_id ?? incoming.client_id ?? incoming.id,
+    };
+  }
+
+  const byId = new Map<string, GroupChatMessage>();
+  for (const message of result) {
+    const identity = String(message.render_id ?? message.client_id ?? message.id);
+    const existing = byId.get(identity);
+    byId.set(identity, existing ? { ...existing, ...message, render_id: identity } : message);
+  }
+  return sortMessages([...byId.values()]);
+}
+
+function updateHistoryPageCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  groupId: string,
+  update: (items: GroupChatMessage[]) => GroupChatMessage[],
+) {
+  queryClient.setQueryData<any>(historyKey(groupId), (old) => {
+    if (!old?.pages?.length) return old;
+    return {
+      ...old,
+      pages: old.pages.map((page: GroupMessagesPage) => ({
+        ...page,
+        items: update((page.items ?? []) as GroupChatMessage[]),
+      })),
+    };
+  });
 }
 
 function upsertGroupPreview(
@@ -150,22 +218,39 @@ export function useGroupSocket(
   }, [groupId, currentUserId, queryClient]);
 
   const active = Boolean(enabled && groupId);
-  const queryKey = useMemo(() => messagesKey(groupId || "__none__"), [groupId]);
+  const activeGroupId = groupId || "__none__";
+  const historyQueryKey = useMemo(() => historyKey(activeGroupId), [activeGroupId]);
+  const liveQuery = useQuery<GroupChatMessage[]>({
+    queryKey: messagesKey(activeGroupId),
+    queryFn: async () => [],
+    enabled: false,
+    initialData: [],
+    staleTime: Infinity,
+  });
 
-  const historyQuery = useQuery({
-    queryKey,
-    queryFn: async () => {
-      const fetched = sortMessages((await groupChatApi.listMessages(groupId as string)) as GroupChatMessage[]);
-      // Socket events and optimistic sends may arrive while history is loading.
-      // Merge the latest cache back into the REST response so the fetch cannot
-      // erase a message received during that race.
-      const latest = queryClient.getQueryData<GroupChatMessage[]>(queryKey) ?? [];
-      return latest.reduce((merged, message) => mergeMessage(merged, message), fetched);
-    },
+  const historyQuery = useInfiniteQuery({
+    queryKey: historyQueryKey,
+    queryFn: async ({ pageParam = 1 }) =>
+      groupChatApi.listMessages(
+        groupId as string,
+        Number(pageParam),
+        GROUP_MESSAGE_PAGE_SIZE,
+      ),
+    getNextPageParam: (lastPage) => getNextGroupMessagePageParam(lastPage),
+    initialPageParam: 1,
     enabled: active,
     staleTime: 15_000,
+    gcTime: 30 * 60_000,
     refetchOnWindowFocus: true,
+    refetchOnReconnect: false,
   });
+
+  const messages = useMemo(() => {
+    const history = (historyQuery.data?.pages ?? []).flatMap((page: GroupMessagesPage) =>
+      (page.items ?? []) as GroupChatMessage[],
+    );
+    return combineDisplayMessages(history, liveQuery.data ?? []);
+  }, [historyQuery.data, liveQuery.data]);
 
   useEffect(() => {
     setTypingUsers([]);
@@ -180,7 +265,7 @@ export function useGroupSocket(
       previousConnectionState.current = state;
       setConnectionState(state);
       if (state === "connected" && previous !== "connected" && activeGroupRef.current) {
-        void queryClient.invalidateQueries({ queryKey: messagesKey(activeGroupRef.current), exact: true });
+        void queryClient.invalidateQueries({ queryKey: historyKey(activeGroupRef.current), exact: true });
       }
     };
     websocket.onStateChange(listener);
@@ -211,7 +296,7 @@ export function useGroupSocket(
       // cache rows (not history). Mark it stale so selecting it always fetches
       // the full REST history instead of showing only the new live messages.
       if (String(frameGroupId) !== String(activeGroupRef.current ?? "")) {
-        void queryClient.invalidateQueries({ queryKey: messagesKey(String(frameGroupId)), exact: true, refetchType: "none" });
+        void queryClient.invalidateQueries({ queryKey: historyKey(String(frameGroupId)), exact: true, refetchType: "none" });
       }
       if (clientId) clientIds.current.delete(String(clientId));
       queryClient.setQueryData<GroupRecord[]>(["group-conversations"], (old) =>
@@ -227,11 +312,14 @@ export function useGroupSocket(
       const message = (raw?.message ?? raw) as GroupChatMessage;
       const id = message?.group_id ?? frame.group_id;
       if (!message?.id || !id) return;
-      queryClient.setQueryData<GroupChatMessage[]>(messagesKey(String(id)), (old = []) =>
-        sortMessages(old.map((item) => String(item.id) === String(message.id)
+      const updateMatchingMessage = (items: GroupChatMessage[]) =>
+        sortMessages(items.map((item) => String(item.id) === String(message.id)
           ? { ...item, ...message, sender: message.sender ?? frame.sender, pending: false }
-          : item)),
+          : item));
+      queryClient.setQueryData<GroupChatMessage[]>(messagesKey(String(id)), (old = []) =>
+        updateMatchingMessage(old),
       );
+      updateHistoryPageCache(queryClient, String(id), updateMatchingMessage);
       void queryClient.invalidateQueries({ queryKey: ["group-conversations"] });
     };
 
@@ -240,9 +328,12 @@ export function useGroupSocket(
       const id = data?.group_id ?? frame.group_id;
       const messageId = data?.message_id;
       if (!id || !messageId) return;
+      const removeMessage = (items: GroupChatMessage[]) =>
+        items.filter((item) => String(item.id) !== String(messageId));
       queryClient.setQueryData<GroupChatMessage[]>(messagesKey(String(id)), (old = []) =>
-        old.filter((item) => String(item.id) !== String(messageId)),
+        removeMessage(old),
       );
+      updateHistoryPageCache(queryClient, String(id), removeMessage);
       void queryClient.invalidateQueries({ queryKey: ["group-conversations"] });
     };
 
@@ -283,7 +374,7 @@ export function useGroupSocket(
       if (isEditOrDeleteError) {
         setActionError(messageText || "The group message could not be changed.");
         const activeId = activeGroupRef.current;
-        if (activeId) void queryClient.invalidateQueries({ queryKey: messagesKey(activeId), exact: true });
+        if (activeId) void queryClient.invalidateQueries({ queryKey: historyKey(activeId), exact: true });
         void queryClient.invalidateQueries({ queryKey: ["group-conversations"] });
         return;
       }
@@ -308,7 +399,7 @@ export function useGroupSocket(
 
     const refreshOnReady = () => {
       const selectedGroupId = activeGroupRef.current;
-      if (selectedGroupId) void queryClient.invalidateQueries({ queryKey: messagesKey(selectedGroupId), exact: true });
+      if (selectedGroupId) void queryClient.invalidateQueries({ queryKey: historyKey(selectedGroupId), exact: true });
       void queryClient.invalidateQueries({ queryKey: ["group-conversations"] });
     };
 
@@ -379,6 +470,9 @@ export function useGroupSocket(
       body: body.trim(),
       client_id: clientId,
       ...options,
+      // Keep the reply relationship explicit in the group frame. The backend
+      // contract uses this exact field for group replies.
+      reply_to_message_id: options.reply_to_message_id ? String(options.reply_to_message_id) : null,
     }, { queueIfDisconnected: false });
     if (!sent) {
       clientIds.current.delete(clientId);
@@ -411,11 +505,15 @@ export function useGroupSocket(
   }, [groupId]);
 
   return {
-    messages: historyQuery.data ?? [],
+    messages,
     isLoading: historyQuery.isLoading,
+    isFetching: historyQuery.isFetching,
     isError: historyQuery.isError,
     error: historyQuery.error,
     refetch: historyQuery.refetch,
+    fetchNextPage: historyQuery.fetchNextPage,
+    hasNextPage: Boolean(historyQuery.hasNextPage),
+    isFetchingNextPage: historyQuery.isFetchingNextPage,
     typingUsers,
     actionError,
     connectionState,

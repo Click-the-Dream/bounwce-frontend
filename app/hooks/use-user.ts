@@ -75,7 +75,10 @@ const useUser = () => {
       staleTime: 1000 * 60 * 5,
     });
 
-  const useGetUsers = (params: { page_size?: number; name?: string } = {}) =>
+  const useGetUsers = (
+    params: { page_size?: number; name?: string } = {},
+    enabled: boolean = true,
+  ) =>
     useInfiniteQuery({
       queryKey: ["users", params],
       queryFn: async ({ pageParam = 1 }) => {
@@ -93,6 +96,7 @@ const useUser = () => {
         return page * page_size < total ? page + 1 : undefined;
       },
       initialPageParam: 1,
+      enabled,
     });
 
   const useGetVendorVerification = () =>

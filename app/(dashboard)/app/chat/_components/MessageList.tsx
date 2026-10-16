@@ -19,6 +19,7 @@ import { formatMessageDate } from "@/app/_utils/formatters";
 
 import ChatMessage from "./ChatMessage";
 import ChatMediaMessage from "./ChatMediaMessage";
+import DeleteMessageDialog from "./DeleteMessageDialog";
 import ImageViewer from "./ImageViewer";
 import TypingDots from "./TypingDots";
 import { useQueryClient } from "@tanstack/react-query";
@@ -103,6 +104,7 @@ const MessageList = forwardRef(
     const [viewerOpen, setViewerOpen] = useState(false);
     const [viewerIndex, setViewerIndex] = useState(0);
     const [messageActionError, setMessageActionError] = useState("");
+    const [pendingDeleteMessage, setPendingDeleteMessage] = useState<FlatMessage | null>(null);
 
     useEffect(() => {
       setMessageActionError("");
@@ -540,10 +542,16 @@ const MessageList = forwardRef(
 
     const handleDeleteMessage = (message: FlatMessage) => {
       if (!chatId || !message?.id) return false;
-      if (!window.confirm("Delete this message for everyone?")) return false;
+      setMessageActionError("");
+      setPendingDeleteMessage(message);
+      return true;
+    };
+
+    const confirmDeleteMessage = () => {
+      if (!chatId || !pendingDeleteMessage?.id) return false;
       const sent = websocket.emit(
         "chat.delete",
-        { message_id: message.id },
+        { message_id: pendingDeleteMessage.id },
         { queueIfDisconnected: false },
       );
       if (!sent) {
@@ -742,6 +750,13 @@ const MessageList = forwardRef(
           startIndex={viewerIndex}
           onClose={() => setViewerOpen(false)}
           viewerOpen={viewerOpen}
+        />
+        <DeleteMessageDialog
+          open={Boolean(pendingDeleteMessage)}
+          scope="conversation"
+          preview={pendingDeleteMessage?.body ?? pendingDeleteMessage?.caption ?? (pendingDeleteMessage?.media_type ? "Attachment" : null)}
+          onCancel={() => setPendingDeleteMessage(null)}
+          onConfirm={confirmDeleteMessage}
         />
       </div>
     );

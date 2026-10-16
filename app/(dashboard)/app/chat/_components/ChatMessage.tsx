@@ -96,9 +96,18 @@ const renderMessageBody = (text: string, isSender: boolean) => {
 };
 // COMPONENT
 
-const ChatMessage = ({ msg, onReply, onScrollToMessage, senderName, senderAvatar, onEdit, onDelete }: ChatMessageProps) => {
+const ChatMessage = ({
+  msg,
+  onReply,
+  onScrollToMessage,
+  senderName,
+  senderAvatar,
+  onEdit,
+  onDelete,
+}: ChatMessageProps) => {
   const { authDetails } = useAuth();
-  const isSender = String(msg?.sender_id ?? "") === String(authDetails?.user?.id ?? "");
+  const isSender =
+    String(msg?.sender_id ?? "") === String(authDetails?.user?.id ?? "");
   const styles = getMessageLayout(isSender);
   const [expanded, setExpanded] = useState(false);
   const [showReadMore, setShowReadMore] = useState(false);
@@ -147,9 +156,13 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage, senderName, senderAvatar
   };
 
   const canManageMessage = Boolean(
-    isSender && (onEdit || onDelete) && !msg.pending &&
-    msg.delivery_status !== "sending" && msg.delivery_status !== "uploading" &&
-    msg.delivery_status !== "failed" && !String(msg.id ?? "").startsWith("optimistic:")
+    isSender &&
+    (onEdit || onDelete) &&
+    !msg.pending &&
+    msg.delivery_status !== "sending" &&
+    msg.delivery_status !== "uploading" &&
+    msg.delivery_status !== "failed" &&
+    !String(msg.id ?? "").startsWith("optimistic:"),
   );
 
   const saveEdit = () => {
@@ -214,8 +227,16 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage, senderName, senderAvatar
 
         {senderName && !isSender && (
           <div className="mb-1 flex items-center gap-1.5">
-            {senderAvatar && <img src={senderAvatar} alt="" className="size-4 shrink-0 rounded-full object-cover" />}
-            <p className="text-[11px] font-semibold text-orange">{senderName}</p>
+            {senderAvatar && (
+              <img
+                src={senderAvatar}
+                alt=""
+                className="size-4 shrink-0 rounded-full object-cover"
+              />
+            )}
+            <p className="text-[11px] font-semibold text-orange">
+              {senderName}
+            </p>
           </div>
         )}
 
@@ -238,40 +259,55 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage, senderName, senderAvatar
               className="w-full resize-y rounded-lg border border-black/10 bg-white/90 px-2 py-1.5 text-[13px] text-gray-900 outline-none focus:border-orange"
             />
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setIsEditing(false)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-current/70 hover:bg-black/5"><X size={12}/> Cancel</button>
-              <button type="button" disabled={!editDraft.trim()} onClick={saveEdit} className="inline-flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-[11px] font-semibold text-orange disabled:opacity-50"><Check size={12}/> Save</button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-current/70 hover:bg-black/5"
+              >
+                <X size={12} /> Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!editDraft.trim()}
+                onClick={saveEdit}
+                className="inline-flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-[11px] font-semibold text-orange disabled:opacity-50"
+              >
+                <Check size={12} /> Save
+              </button>
             </div>
           </div>
-        ) : <div
-          ref={textRef}
-          className={`pr-2 ${!expanded && !isEmojiOnly ? "line-clamp-4" : ""}`}
-        >
-          {isEmojiOnly ? (
-            <motion.span
-              className="inline-block text-[50px] leading-none origin-center"
-              initial={{
-                opacity: 0,
-                scale: 0.5,
-              }}
-              whileInView={{
-                opacity: 1,
-                scale: 1,
-              }}
-              viewport={{
-                once: true,
-                amount: 0.8,
-              }}
-              transition={{
-                duration: 0.45,
-                ease: [0.34, 1.56, 0.64, 1],
-              }}
-            >
-              {msg.body.trim()}
-            </motion.span>
-          ) : (
-            renderMessageBody(msg?.body ?? "", isSender)
-          )}
-        </div>}
+        ) : (
+          <div
+            ref={textRef}
+            className={`pr-2 ${!expanded && !isEmojiOnly ? "line-clamp-4" : ""}`}
+          >
+            {isEmojiOnly ? (
+              <motion.span
+                className="inline-block text-[50px] leading-none origin-center"
+                initial={{
+                  opacity: 0,
+                  scale: 0.5,
+                }}
+                whileInView={{
+                  opacity: 1,
+                  scale: 1,
+                }}
+                viewport={{
+                  once: true,
+                  amount: 0.8,
+                }}
+                transition={{
+                  duration: 0.45,
+                  ease: [0.34, 1.56, 0.64, 1],
+                }}
+              >
+                {msg.body.trim()}
+              </motion.span>
+            ) : (
+              renderMessageBody(msg?.body ?? "", isSender)
+            )}
+          </div>
+        )}
 
         {/* WhatsApp-style URL preview. Bouwnce links stay inside the app. */}
         {!isEditing && !isEmojiOnly && msg?.body && (
@@ -307,8 +343,27 @@ const ChatMessage = ({ msg, onReply, onScrollToMessage, senderName, senderAvatar
         </div>
         {canManageMessage && !isEditing && (
           <div className="mt-1 flex justify-end gap-2 border-t border-current/10 pt-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-            {onEdit && <button type="button" onClick={() => { setEditDraft(String(msg?.body ?? "")); setIsEditing(true); }} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] opacity-70 transition hover:bg-black/5 hover:opacity-100"><Pencil size={11}/> Edit</button>}
-            {onDelete && <button type="button" onClick={() => onDelete(msg)} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-red-600/80 transition hover:bg-red-500/10 hover:text-red-700"><Trash2 size={11}/> Delete</button>}
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditDraft(String(msg?.body ?? ""));
+                  setIsEditing(true);
+                }}
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] opacity-70 transition hover:bg-black/5 hover:opacity-100"
+              >
+                <Pencil size={11} /> Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(msg)}
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] opacity-70 transition hover:bg-black/5 hover:opacity-100"
+              >
+                <Trash2 size={11} /> Delete
+              </button>
+            )}
           </div>
         )}
       </div>

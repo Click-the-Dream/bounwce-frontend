@@ -23,6 +23,7 @@ import { formatMessageDate } from "@/app/_utils/formatters";
 import GroupMembersModal from "./GroupMembersModal";
 import ChatMessage from "./ChatMessage";
 import ChatMediaMessage from "./ChatMediaMessage";
+import DeleteMessageDialog from "./DeleteMessageDialog";
 import ReplyPreview from "./ReplyPreview";
 import ImageViewer from "./ImageViewer";
 
@@ -55,7 +56,10 @@ export default function GroupChatWindow({
     [groups, groupId],
   );
   const memberById = useMemo(
-    () => new Map(members.map((member: any) => [String(member.user_id ?? member.id ?? member.user?.id ?? ""), member])),
+    () => new Map(members.map((member: any) => [
+      String(member.user_id ?? member.user?.id ?? (!member.user ? member.id : "") ?? ""),
+      member,
+    ])),
     [members],
   );
   const [draft, setDraft] = useState("");
@@ -64,13 +68,17 @@ export default function GroupChatWindow({
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [sendError, setSendError] = useState("");
+  const [pendingDeleteMessage, setPendingDeleteMessage] = useState<GroupChatMessage | null>(null);
   const [isSendingMedia, setIsSendingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
+  const lastTypingSentAtRef = useRef(0);
   const nearBottomRef = useRef(true);
   const initialScrollDoneRef = useRef(false);
+  const loadingOlderRef = useRef(false);
+  const priorScrollMetricsRef = useRef({ height: 0, top: 0 });
   const { useGetChatSignature, uploadToCloudinary } = useChat();
   const { mutateAsync: getChatSignature } = useGetChatSignature();
 
@@ -95,6 +103,18 @@ export default function GroupChatWindow({
     mediaMessages.forEach((media, index) => map.set(media.src, index));
     return map;
   }, [mediaMessages]);
+
+  // Keep an index of the messages currently loaded so replies can render even
+  // when the REST response only includes reply_to_message_id (the documented
+  // group-message shape). The nested reply object, when supplied by the API,
+  // is merged with the locally loaded original for the best preview possible.
+  const messageById = useMemo(() => {
+    const index = new Map<string, GroupChatMessage>();
+    for (const message of chat.messages) {
+      if (message?.id) index.set(String(message.id), message);
+    }
+    return index;
+  }, [chat.messages]);
 
   const groupedMessages = useMemo(() => {
     const sorted = [...chat.messages].sort(
@@ -127,6 +147,7 @@ export default function GroupChatWindow({
 
   useEffect(() => {
     initialScrollDoneRef.current = false;
+    loadingOlderRef.current = false;
     setReplyTarget(null);
     setDraft("");
     setSendError("");
@@ -139,6 +160,7 @@ export default function GroupChatWindow({
   useEffect(() => () => {
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     isTypingRef.current = false;
+    lastTypingSentAtRef.current = 0;
     chat.setTyping(false);
   // `chat.setTyping` is stable for a given group.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,19 +177,27 @@ export default function GroupChatWindow({
   const handleDraft = (value: string) => {
     setDraft(value);
     const typing = Boolean(value.trim());
-    if (typing && !isTypingRef.current) {
+    const now = Date.now();
+
+    // The receiving hook expires typing state after 3.5s. Refresh the signal
+    // during sustained typing, without emitting one frame for every keystroke.
+    if (typing && (!isTypingRef.current || now - lastTypingSentAtRef.current >= 1200)) {
       chat.setTyping(true);
       isTypingRef.current = true;
+      lastTypingSentAtRef.current = now;
     }
+
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     if (typing) {
       typingTimeout.current = setTimeout(() => {
         chat.setTyping(false);
         isTypingRef.current = false;
+        lastTypingSentAtRef.current = 0;
       }, 1800);
     } else if (isTypingRef.current) {
       chat.setTyping(false);
       isTypingRef.current = false;
+      lastTypingSentAtRef.current = 0;
     }
   };
 
@@ -176,6 +206,7 @@ export default function GroupChatWindow({
     setReplyTarget(null);
     chat.setTyping(false);
     isTypingRef.current = false;
+    lastTypingSentAtRef.current = 0;
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
   };
 
@@ -184,7 +215,9 @@ export default function GroupChatWindow({
     if (!draft.trim()) return;
     try {
       setSendError("");
-      chat.sendMessage(draft.trim(), { reply_to_message_id: replyTarget?.id ?? null });
+      chat.sendMessage(draft.trim(), {
+        reply_to_message_id: replyTarget?.id ? String(replyTarget.id) : null,
+      });
       clearComposer();
     } catch (error: any) {
       setSendError(error?.message ?? "Unable to send message.");
@@ -205,7 +238,7 @@ export default function GroupChatWindow({
         media_type: mediaType,
         media_urls: [uploaded.secure_url],
         media_names: [file.name],
-        reply_to_message_id: replyTarget?.id ?? null,
+        reply_to_message_id: replyTarget?.id ? String(replyTarget.id) : null,
       });
       clearComposer();
     } catch (error: any) {
@@ -223,19 +256,61 @@ export default function GroupChatWindow({
     return accepted;
   };
 
-  const handleDeleteMessage = (message: any) => {
-    if (!window.confirm("Delete this message for everyone?")) return false;
-    const accepted = chat.deleteMessage(String(message.id));
-    if (!accepted) setSendError(chat.isConnected ? "Unable to delete this message." : "You are offline. Reconnect before deleting this message.");
-    else setSendError("");
+  const handleDeleteMessage = (message: GroupChatMessage) => {
+    if (!message?.id) return false;
+    setSendError("");
+    setPendingDeleteMessage(message);
+    return true;
+  };
+
+  const confirmDeleteMessage = () => {
+    if (!pendingDeleteMessage?.id) return false;
+    const accepted = chat.deleteMessage(String(pendingDeleteMessage.id));
+    if (!accepted) {
+      setSendError(chat.isConnected ? "Unable to delete this message." : "You are offline. Reconnect before deleting this message.");
+    } else {
+      setSendError("");
+    }
     return accepted;
   };
 
-  const scrollToMessage = (messageId: string) => {
-    const target = listRef.current?.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement | null;
-    if (!target) return;
+  const scrollToMessage = async (messageId: string) => {
+    const findTarget = () => listRef.current?.querySelector(
+      `[data-message-id="${CSS.escape(messageId)}"]`,
+    ) as HTMLElement | null;
+
+    let target = findTarget();
+    let canLoadMore = chat.hasNextPage;
+    let pagesLoaded = 0;
+
+    // The original may be older than the currently loaded history. Load earlier
+    // pages until it appears, then scroll to and highlight the original. Always
+    // inspect the newly fetched page before stopping at the final page.
+    while (!target && canLoadMore && pagesLoaded < 25) {
+      const result = await chat.fetchNextPage();
+      pagesLoaded += 1;
+      canLoadMore = Boolean(result.hasNextPage);
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+      target = findTarget();
+    }
+
+    if (!target) {
+      setSendError("The original message is no longer available in the loaded conversation.");
+      return;
+    }
     target.scrollIntoView({ behavior: "smooth", block: "center" });
     window.dispatchEvent(new CustomEvent("highlight-message", { detail: { messageId } }));
+  };
+
+  const handleReply = (message: GroupChatMessage) => {
+    if (!message?.id || String(message.id).startsWith("optimistic:")) {
+      setSendError("Wait for the message to finish sending before replying.");
+      return;
+    }
+    setSendError("");
+    setReplyTarget(message);
   };
 
   const handleOpenImage = (url: string) => {
@@ -286,9 +361,38 @@ export default function GroupChatWindow({
         onScroll={(event) => {
           const node = event.currentTarget;
           nearBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 100;
+          if (
+            node.scrollTop <= 72 &&
+            chat.hasNextPage &&
+            !chat.isFetchingNextPage &&
+            !loadingOlderRef.current
+          ) {
+            loadingOlderRef.current = true;
+            priorScrollMetricsRef.current = { height: node.scrollHeight, top: node.scrollTop };
+            void chat.fetchNextPage().finally(() => {
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  const currentNode = listRef.current;
+                  if (currentNode) {
+                    const { height, top } = priorScrollMetricsRef.current;
+                    currentNode.scrollTop = top + (currentNode.scrollHeight - height);
+                  }
+                  loadingOlderRef.current = false;
+                });
+              });
+            });
+          }
         }}
         className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-none bg-white px-6 pb-14 pt-2 md:pb-6"
       >
+        {chat.isFetchingNextPage ? (
+          <div className="flex items-center justify-center gap-2 py-3 text-[11px] text-gray-400">
+            <Loader2 size={14} className="animate-spin text-orange" />
+            Loading older messages…
+          </div>
+        ) : chat.hasNextPage ? (
+          <div className="py-1 text-center text-[10px] text-gray-300">Scroll up to load older messages</div>
+        ) : null}
         {chat.isLoading ? (
           <div className="space-y-3 py-4">
             {[1, 2, 3].map((index) => <div key={index} className={`h-14 max-w-[70%] animate-pulse rounded-xl bg-gray-100 ${index % 2 ? "mr-auto" : "ml-auto"}`} />)}
@@ -309,13 +413,27 @@ export default function GroupChatWindow({
                 const member = memberById.get(String(message.sender_id));
                 const sender = (message as any).sender ?? (message as any).user ?? member?.user ?? member;
                 const senderName = sender?.full_name ?? sender?.username ?? (String(message.sender_id) === String(resolvedCurrentUserId) ? "You" : "Group member");
-                const displayMessage = { ...message, sender };
+                const replyId = message.reply_to_message_id ?? (message as any).reply_to?.id ?? (message as any).reply_to_message?.id ?? null;
+                const nestedReply = (message as any).reply_to_message;
+                const locallyLoadedReply = replyId ? messageById.get(String(replyId)) : undefined;
+                const replyMessage = nestedReply && typeof nestedReply === "object"
+                  ? { ...(locallyLoadedReply ?? {}), ...nestedReply, sender: nestedReply.sender ?? locallyLoadedReply?.sender }
+                  : locallyLoadedReply ?? (replyId ? {
+                      id: String(replyId),
+                      sender_id: "",
+                      body: "Original message is not loaded yet",
+                    } : undefined);
+                const displayMessage = {
+                  ...message,
+                  sender,
+                  ...(replyId ? { reply_to: { id: String(replyId) }, reply_to_message: replyMessage } : {}),
+                };
                 const key = String(message.render_id ?? message.client_id ?? message.id);
                 const commonProps = {
                   msg: displayMessage,
                   senderName,
                   senderAvatar: avatarFrom(sender),
-                  onReply: (value: any) => setReplyTarget(value),
+                  onReply: (value: GroupChatMessage) => handleReply(value),
                   onScrollToMessage: scrollToMessage,
                   onEdit: handleEditMessage,
                   onDelete: handleDeleteMessage,
@@ -388,7 +506,14 @@ export default function GroupChatWindow({
         onClose={() => setViewerOpen(false)}
         viewerOpen={viewerOpen}
       />
-      <GroupMembersModal groupId={groupId} groupName={group?.name ?? "Group chat"} isOpen={showMembers} onClose={() => setShowMembers(false)} currentUserId={resolvedCurrentUserId} />
+      <GroupMembersModal groupId={groupId} groupName={group?.name ?? "Group chat"} groupDescription={group?.description ?? ""} isOpen={showMembers} onClose={() => setShowMembers(false)} currentUserId={resolvedCurrentUserId} />
+      <DeleteMessageDialog
+        open={Boolean(pendingDeleteMessage)}
+        scope="group"
+        preview={pendingDeleteMessage?.body ?? (pendingDeleteMessage?.media_type ? "Attachment" : null)}
+        onCancel={() => setPendingDeleteMessage(null)}
+        onConfirm={confirmDeleteMessage}
+      />
     </div>
   );
 }

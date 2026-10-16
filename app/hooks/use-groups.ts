@@ -41,6 +41,11 @@ export function useGroups(enabled = true) {
       groupChatApi.updateGroup(groupId, input),
     onSuccess: async (group, variables) => {
       queryClient.setQueryData(groupKeys.detail(variables.groupId), group);
+      queryClient.setQueryData<GroupRecord[]>(groupKeys.all, (old = []) =>
+        old.map((item) => String(item.id) === String(variables.groupId)
+          ? { ...item, ...group, id: String(group.id || item.id) }
+          : item),
+      );
       await queryClient.invalidateQueries({ queryKey: groupKeys.all });
     },
   });
@@ -51,6 +56,7 @@ export function useGroups(enabled = true) {
       queryClient.setQueryData<GroupRecord[]>(groupKeys.all, (old = []) => old.filter((group) => String(group.id) !== String(groupId)));
       queryClient.removeQueries({ queryKey: groupKeys.detail(groupId) });
       queryClient.removeQueries({ queryKey: ["group-messages", groupId] });
+      queryClient.removeQueries({ queryKey: ["group-message-pages", groupId] });
       await queryClient.invalidateQueries({ queryKey: groupKeys.all });
     },
   });
@@ -98,7 +104,7 @@ export function useGroupMembers(groupId?: string, enabled = true) {
     },
     onSuccess: async (_result, variables) => {
       if (!groupId) return;
-      queryClient.setQueryData<GroupMember[]>(groupKeys.members(groupId), (old = []) => old.filter((member) => String(member.user_id ?? member.id) !== String(variables.userId)));
+      queryClient.setQueryData<GroupMember[]>(groupKeys.members(groupId), (old = []) => old.filter((member) => String(member.user_id ?? member.user?.id ?? (!member.user ? member.id : "")) !== String(variables.userId)));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: groupKeys.members(groupId) }),
         queryClient.invalidateQueries({ queryKey: groupKeys.all }),
