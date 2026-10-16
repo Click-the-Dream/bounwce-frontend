@@ -5,8 +5,11 @@ import {
   useInfiniteQuery,
   useQuery,
   useQueryClient,
+  type QueryClient,
 } from "@tanstack/react-query";
 import { websocket } from "@/app/services/websocket";
+import { useNotifications } from "@/app/context/NotificationContext";
+import { onGroupMessageToast } from "@/app/_utils/group-message-toast";
 import {
   GroupMessageRecord,
   GroupMessagesPage,
@@ -59,6 +62,27 @@ const getNextGroupMessagePageParam = (lastPage: GroupMessagesPage) => {
     ? lastPage.page + 1
     : undefined;
 };
+
+/** Prefetch the newest page before a group is opened, mirroring direct chats. */
+export function prefetchGroupMessageHistory(
+  queryClient: QueryClient,
+  groupId: string,
+) {
+  if (!groupId) return Promise.resolve();
+  return queryClient.prefetchInfiniteQuery({
+    queryKey: historyKey(groupId),
+    queryFn: ({ pageParam = 1 }) =>
+      groupChatApi.listMessages(
+        groupId,
+        Number(pageParam),
+        GROUP_MESSAGE_PAGE_SIZE,
+      ),
+    getNextPageParam: getNextGroupMessagePageParam,
+    initialPageParam: 1,
+    staleTime: 15_000,
+    gcTime: 30 * 60_000,
+  });
+}
 const getFrameData = (frame: GroupFrame) =>
   frame?.data ?? frame?.payload ?? frame;
 const getFrameMessage = (frame: GroupFrame): GroupChatMessage => {
@@ -183,6 +207,7 @@ function upsertGroupPreview(
   message: GroupChatMessage,
   currentUserId?: string,
   activeGroupId?: string,
+  incrementUnread = true,
 ) {
   if (!current) return current;
   return current
@@ -197,7 +222,7 @@ function upsertGroupPreview(
           ? isActive
             ? 0
             : (group.unread_count ?? 0)
-          : (group.unread_count ?? 0) + 1;
+          : (group.unread_count ?? 0) + (incrementUnread ? 1 : 0);
       return {
         ...group,
         last_message: {
@@ -229,6 +254,7 @@ export function useGroupSocket(
   currentUserId?: string,
 ) {
   const queryClient = useQueryClient();
+  const { pushNotification } = useNotifications();
   const [typingUsers, setTypingUsers] = useState<GroupTypingUser[]>([]);
   const [actionError, setActionError] = useState("");
   const [connectionState, setConnectionState] = useState(websocket.getState());
@@ -336,8 +362,24 @@ export function useGroupSocket(
         pending: false,
         delivery_status: "sent",
       };
+      const groupId = String(frameGroupId);
+      const identities = (message: GroupChatMessage) =>
+        [message?.id, message?.client_id, message?.render_id]
+          .filter((value) => value !== null && value !== undefined && value !== "")
+          .map(String);
+      const incomingIdentities = new Set(identities(normalized));
+      const liveCached = queryClient.getQueryData<GroupChatMessage[]>(messagesKey(groupId)) ?? [];
+      const historyCached = queryClient.getQueryData<any>(historyKey(groupId));
+      const cachedHistory = (historyCached?.pages ?? []).flatMap(
+        (page: GroupMessagesPage) => (page.items ?? []) as GroupChatMessage[],
+      );
+      const alreadyKnown = [...liveCached, ...cachedHistory].some((message) =>
+        identities(message).some((id) => incomingIdentities.has(id)),
+      );
+      const isMine = String(normalized.sender_id ?? "") === String(userIdRef.current ?? "");
+      const isActiveGroup = String(activeGroupRef.current ?? "") === groupId;
       queryClient.setQueryData<GroupChatMessage[]>(
-        messagesKey(String(frameGroupId)),
+        messagesKey(groupId),
         (old = []) => mergeMessage(old, normalized),
       );
       // If this group is not currently open, it may only have socket-arrival
@@ -357,8 +399,57 @@ export function useGroupSocket(
           normalized,
           userIdRef.current,
           activeGroupRef.current,
+          !alreadyKnown,
         ),
       );
+
+      if (!alreadyKnown && !isMine && !isActiveGroup && normalized.id) {
+        const group = queryClient
+          .getQueryData<GroupRecord[]>(["group-conversations"])
+          ?.find((item) => String(item.id) === groupId);
+        const groupName = group?.name || "Group chat";
+        const senderName = String(
+          normalized.sender?.full_name ?? normalized.sender?.username ?? "Group member",
+        );
+        const isMentioned = Boolean(
+          userIdRef.current &&
+            normalized.mentioned_user_ids?.some(
+              (id) => String(id) === String(userIdRef.current),
+            ),
+        );
+        const body = String(
+          normalized.body ?? (normalized.media_type ? `Sent a ${normalized.media_type}` : "Sent an attachment"),
+        );
+        pushNotification({
+          id: `group-chat:${groupId}:${normalized.id}`,
+          user_id: String(userIdRef.current ?? ""),
+          title: isMentioned ? `Mentioned in ${groupName}` : `${groupName} · Group chat`,
+          body: isMentioned ? `${senderName} mentioned you: ${body}` : `${senderName}: ${body}`,
+          event_type: "group_chat_message",
+          payload: {
+            route: "chat.group",
+            group_id: groupId,
+            group_name: groupName,
+            message_id: String(normalized.id),
+            sender: normalized.sender,
+            sender_id: String(normalized.sender_id ?? ""),
+            mentioned: isMentioned,
+            mentioned_user_ids: normalized.mentioned_user_ids ?? [],
+          },
+          read_at: null,
+          created_at: normalized.created_at || new Date().toISOString(),
+          updated_at: normalized.created_at || new Date().toISOString(),
+        });
+        onGroupMessageToast({
+          groupId,
+          groupName,
+          messageId: String(normalized.id),
+          senderName,
+          message: body,
+          profilePic: normalized.sender?.profile_pic as any,
+          mentioned: isMentioned,
+        });
+      }
     };
 
     const onGroupMessage = (frame: GroupFrame) => applyMessage(frame);
@@ -568,7 +659,7 @@ export function useGroupSocket(
       typingTimers.current = {};
       setTypingUsers([]);
     };
-  }, [enabled, queryClient]);
+  }, [enabled, queryClient, pushNotification]);
 
   const sendMessage = useCallback(
     (

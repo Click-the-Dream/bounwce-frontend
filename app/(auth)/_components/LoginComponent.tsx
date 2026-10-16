@@ -4,7 +4,7 @@ import Input from "@/app/_components/common/Input";
 import useAuthServices from "@/app/hooks/use-authservices";
 import { motion } from "framer-motion";
 import { Mail } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 const LoginComponents = ({
@@ -15,6 +15,8 @@ const LoginComponents = ({
   onSuccess?: (data: any) => void;
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get("redirect");
   const { requestOtp } = useAuthServices();
 
   const {
@@ -34,7 +36,10 @@ const LoginComponents = ({
         if (isModal && handleSuccess) {
           handleSuccess(data);
         } else {
-          router.push("/email_verification");
+          const verificationPath = redirectTarget
+            ? `/email_verification?redirect=${encodeURIComponent(redirectTarget)}`
+            : "/email_verification";
+          router.push(verificationPath);
         }
       },
     });

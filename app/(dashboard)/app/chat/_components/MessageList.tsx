@@ -26,6 +26,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { syncMessageRead } from "@/app/helpers/db-sync";
 
 // TYPES
+import { isWithinMessageManagementWindow } from "./use-message-management-window";
+
 interface Props {
   onScrollNearBottomChange?: (isNearBottom: boolean) => void;
   onUnreadChange?: (count: number) => void;
@@ -527,6 +529,10 @@ const MessageList = forwardRef(
 
     const handleEditMessage = (message: FlatMessage, body: string) => {
       if (!chatId || !message?.id || !body.trim()) return false;
+      if (!isWithinMessageManagementWindow(message)) {
+        setMessageActionError("Messages can only be edited or deleted within 15 minutes of sending.");
+        return false;
+      }
       const sent = websocket.emit(
         "chat.edit",
         { message_id: message.id, body: body.trim() },
@@ -542,6 +548,10 @@ const MessageList = forwardRef(
 
     const handleDeleteMessage = (message: FlatMessage) => {
       if (!chatId || !message?.id) return false;
+      if (!isWithinMessageManagementWindow(message)) {
+        setMessageActionError("Messages can only be edited or deleted within 15 minutes of sending.");
+        return false;
+      }
       setMessageActionError("");
       setPendingDeleteMessage(message);
       return true;
@@ -549,6 +559,11 @@ const MessageList = forwardRef(
 
     const confirmDeleteMessage = () => {
       if (!chatId || !pendingDeleteMessage?.id) return false;
+      if (!isWithinMessageManagementWindow(pendingDeleteMessage)) {
+        setPendingDeleteMessage(null);
+        setMessageActionError("The 15-minute message-management window has expired.");
+        return false;
+      }
       const sent = websocket.emit(
         "chat.delete",
         { message_id: pendingDeleteMessage.id },

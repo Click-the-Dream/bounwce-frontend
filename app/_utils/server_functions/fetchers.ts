@@ -39,10 +39,10 @@ export const allStoresFetcher = async () => {
 
       // Matches your infinite query response structure: response.data.data
       const result = data?.data || data;
-      const stores = Array.isArray(result) 
-        ? result 
+      const stores = Array.isArray(result)
+        ? result
         : result?.stores || result?.items || result?.data || [];
-        
+
       allStores = [...allStores, ...stores];
 
       const currentPage = result?.page || page;
@@ -62,7 +62,6 @@ export const allStoresFetcher = async () => {
   }
 };
 
-
 export const storeFetcher = async (userId: string) => {
   if (!userId) return null;
 
@@ -74,7 +73,9 @@ export const storeFetcher = async (userId: string) => {
 
     // The current public endpoint returns data as an array; tolerate a single
     // object as well so metadata does not break if the API response is normalized.
-    return Array.isArray(storeData) ? storeData[0] ?? null : storeData ?? null;
+    return Array.isArray(storeData)
+      ? (storeData[0] ?? null)
+      : (storeData ?? null);
   } catch (error) {
     console.error("Failed to fetch store:", error);
     return null;
@@ -130,3 +131,15 @@ export const allUsersFetcher = async () => {
     return [];
   }
 };
+
+export async function getGroupForMetadata(groupId: string) {
+  try {
+    const { data } = await api.get(`/groups/${encodeURIComponent(groupId)}`, {
+      timeout: 10000,
+    });
+    return data?.data || null;
+  } catch (error) {
+    console.error("Failed to fetch group for metadata:", error);
+    return null;
+  }
+}

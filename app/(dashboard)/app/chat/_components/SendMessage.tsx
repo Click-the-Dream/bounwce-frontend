@@ -1,13 +1,11 @@
 "use client";
 
 import {
-  ArrowUp,
   Plus,
   Image,
   Camera,
   Video,
   File,
-  Loader2,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +20,7 @@ import { useChatUtils } from "@/app/context/ChatContext";
 import ScrollToBottomBtn from "./ScrollToBottomBtn";
 import MessageLinkPreview from "./MessageLinkPreview";
 import { extractMessageUrls } from "./message-links";
+import ChatComposer from "./ChatComposer";
 // TYPES
 interface SendMessageProps {
   selectedChat?: User;
@@ -49,6 +48,7 @@ const SendMessage = ({
   const { authDetails } = useAuth();
   const searchParams = useSearchParams();
   const productPrefillHandledRef = useRef<string | null>(null);
+  const groupRequestPrefillHandledRef = useRef<string | null>(null);
   const { replyTo, setReplyTo, activeUploadsRef } = useChatUtils();
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -84,6 +84,18 @@ const SendMessage = ({
       textareaRef.current?.focus();
     }
   }, [replyTo]);
+
+  // Group-join requests arrive as a precomposed draft. The user reviews it
+  // and explicitly presses Send; it is never sent automatically.
+  useEffect(() => {
+    const groupRequest = searchParams.get("groupRequestMessage");
+    const groupRequestKey = searchParams.get("groupRequestId") || groupRequest;
+    if (!groupRequest || !selectedChat?.id || !groupRequestKey) return;
+    if (groupRequestPrefillHandledRef.current === groupRequestKey) return;
+    setMessage(groupRequest);
+    groupRequestPrefillHandledRef.current = groupRequestKey;
+    window.setTimeout(() => textareaRef.current?.focus(), 100);
+  }, [searchParams, selectedChat?.id]);
 
   // Storefront product enquiries arrive as a draft. We never send it
   // automatically; the buyer reviews it and presses Send.
@@ -122,11 +134,6 @@ const SendMessage = ({
   }, []);
 
   // HELPERS
-
-  const autoResize = (el: HTMLTextAreaElement) => {
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 112) + "px";
-  };
 
   const openFilePicker = (type: FileAcceptType) => {
     setFileAcceptType(type);
@@ -394,70 +401,53 @@ const SendMessage = ({
           </div>
         )}
 
-      {/* Input row */}
-      <div className="flex items-end gap-3 bg-[#EFF3F4] border-[0.5px] border-orange rounded-[30px] px-2.5 py-2 shadow-sm">
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className={`cursor-pointer w-7.5 h-7.5 flex items-center justify-center border rounded-full transition-all ${
-            showMenu ? "bg-black text-white" : "text-black border-black"
-          }`}
-        >
-          <Plus
-            size={18}
-            strokeWidth={1}
-            className={`${showMenu ? "rotate-45" : "rotate-0"} transition-transform`}
-          />
-        </button>
-
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={message}
-          onChange={(e) => {
-            const nextMessage = e.target.value;
-            const nextUrl = extractMessageUrls(nextMessage)[0]?.info?.href ?? null;
-            if (nextUrl !== draftLinkUrl) setDismissedPreviewUrl(null);
-            handleTyping(nextMessage);
-            autoResize(e.target);
-          }}
-          placeholder="Message"
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => {
-            setIsFocused(false);
-            stopTyping();
-          }}
-          onKeyDown={(e) => {
-            if (e.shiftKey) return;
-
-            if (e.key === "Enter") {
-              const isMobile = /iPhone|iPad|iPod|Android/i.test(
-                navigator.userAgent,
-              );
-
-              if (!isMobile) {
-                e.preventDefault();
-                if (e.nativeEvent.isComposing) return;
-                handleSend();
-              }
+      {/* Shared composer row — used by direct and group chats. */}
+      <ChatComposer
+        value={message}
+        onChange={(nextMessage) => {
+          const nextUrl = extractMessageUrls(nextMessage)[0]?.info?.href ?? null;
+          if (nextUrl !== draftLinkUrl) setDismissedPreviewUrl(null);
+          handleTyping(nextMessage);
+        }}
+        onSend={() => { void handleSend(); }}
+        inputRef={textareaRef}
+        placeholder="Message"
+        canSend={canSend}
+        disabled={isSendingMedia}
+        isSending={isSendingMedia}
+        sendButtonVisible={Boolean(isFocused || message || pendingFiles.length)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => {
+          setIsFocused(false);
+          stopTyping();
+        }}
+        onKeyDown={(event) => {
+          if (event.shiftKey) return;
+          if (event.key === "Enter") {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(
+              navigator.userAgent,
+            );
+            if (!isMobile) {
+              event.preventDefault();
+              if (event.nativeEvent.isComposing) return;
+              void handleSend();
             }
-          }}
-          className="flex-1 bg-transparent text-sm focus:outline-none max-h-28 resize-none overflow-hidden overflow-y-auto leading-5 py-1"
-        />
-
-        {(isFocused || message) && (
+          }
+        }}
+        leading={(
           <button
-            onClick={handleSend}
-            disabled={!canSend || isSendingMedia}
-            className="w-7.5 h-7.5 flex items-center justify-center bg-orange text-white rounded-full transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            onClick={() => setShowMenu((visible) => !visible)}
+            aria-label="Add attachment"
+            aria-expanded={showMenu}
+            className={`flex size-8 shrink-0 items-center justify-center rounded-full border transition-all ${
+              showMenu ? "rotate-45 bg-black text-white" : "border-black text-black hover:bg-white/70"
+            }`}
           >
-            {isSendingMedia ? (
-              <Loader2 size={18} strokeWidth={1} className="animate-spin" />
-            ) : (
-              <ArrowUp size={18} strokeWidth={1} />
-            )}
+            <Plus size={18} strokeWidth={1.5} />
           </button>
         )}
-      </div>
+      />
 
       {/*
         Single hidden file input — remounts via key when accept type changes.

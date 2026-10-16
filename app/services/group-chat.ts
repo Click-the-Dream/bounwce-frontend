@@ -201,9 +201,12 @@ export const groupChatApi = {
     const response = await api.get("/groups");
     return normalizeGroups(response.data);
   },
+  /** Load basic group metadata for the selected group route. */
   async getGroup(groupId: string): Promise<GroupRecord> {
     const response = await api.get(`/groups/${encodeURIComponent(groupId)}`);
-    return normalizeGroupRecord(unwrap(response.data));
+    const group = normalizeGroupRecord(unwrap(response.data));
+    if (!group.id) throw new Error("This group could not be found or is no longer available.");
+    return group;
   },
   async createGroup(input: CreateGroupInput): Promise<GroupRecord> {
     const response = await api.post("/groups", {
@@ -254,6 +257,14 @@ export const groupChatApi = {
   },
   async removeMember(groupId: string, userId: string): Promise<void> {
     await api.delete(`/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`);
+  },
+  /** Requires backend support and owner-only authorization. */
+  async transferOwnership(groupId: string, userId: string): Promise<unknown> {
+    const response = await api.post(
+      `/groups/${encodeURIComponent(groupId)}/transfer-ownership`,
+      { user_id: userId },
+    );
+    return unwrap(response.data);
   },
   async listMessages(
     groupId: string,

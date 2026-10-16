@@ -4,7 +4,7 @@ import { motion, Variants } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { MdOutlineMail } from "react-icons/md";
 import { CiKeyboard } from "react-icons/ci";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useAuthServices from "@/app/hooks/use-authservices";
 import { storedUserEmail } from "@/app/_utils/formatters";
 import { onSuccess } from "@/app/_utils/notification";
@@ -30,6 +30,8 @@ const VerifyAccount = ({
   email?: string;
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get("redirect");
   const { verifyOtp, requestOtp } = useAuthServices();
 
   const [userEmail, setUserEmail] = useState<string | undefined>(email);
@@ -104,24 +106,32 @@ const VerifyAccount = ({
               message: successMessage,
             });
 
-            // Handle Redirection Logic
+            // Preserve safe internal redirects (e.g. a group access-request
+            // draft) through the email OTP verification step. Never allow an
+            // absolute/external URL to become a post-login redirect.
+            const safeRedirect = redirectTarget &&
+              redirectTarget.startsWith("/") &&
+              !redirectTarget.startsWith("//")
+              ? redirectTarget
+              : null;
+
             if (isModal) {
-  if (user?.role === "admin") {
-    router.replace("/admin/newsletter");
-  } else {
-    router.replace("/app");
-  }
+              if (user?.role === "admin") {
+                router.replace("/admin/newsletter");
+              } else {
+                router.replace(safeRedirect ?? "/app");
+              }
+              if (onFinalSuccess) onFinalSuccess();
+              return;
+            }
 
-  if (onFinalSuccess) onFinalSuccess();
-  return;
-}
-
-
-            if (user?.role === "admin") {
-  router.replace("/admin/newsletter");
-} else {
-  router.replace("/app");
-}
+            if (safeRedirect) {
+              router.replace(safeRedirect);
+            } else if (user?.role === "admin") {
+              router.replace("/admin/newsletter");
+            } else {
+              router.replace("/app");
+            }
           },
         },
       );

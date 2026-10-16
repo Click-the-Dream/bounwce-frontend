@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw, AlertCircle, Check, Pencil, Trash2, X } from "lucide-react";
+import {
+  Download,
+  RefreshCw,
+  AlertCircle,
+  AtSign,
+  Check,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
 import { LuClock } from "react-icons/lu";
 
 import { useAuth } from "@/app/context/AuthContext";
@@ -9,10 +18,12 @@ import { getMessageLayout, renderCheck } from "@/app/_utils/formatters";
 import { getFileIcon, getRadius } from "@/app/_utils/utility";
 import SafeImage from "@/app/_components/SafeImage";
 import SwipeableMessage from "./SwipeableMessage";
+import { useMessageManagementWindow } from "./use-message-management-window";
 import ReplyPreview from "./ReplyPreview";
 
 interface ChatMediaMessageProps {
   msg: any;
+  mentionUsers?: Array<{ id: string; username: string; fullName: string }>;
   onOpen?: (url: string) => void;
   onReply?: (msg: any) => void;
   onRetry?: (msg: any) => void;
@@ -25,6 +36,7 @@ interface ChatMediaMessageProps {
 
 const ChatMediaMessage = ({
   msg,
+  mentionUsers,
   onOpen,
   onReply,
   onRetry,
@@ -35,7 +47,8 @@ const ChatMediaMessage = ({
   onDelete,
 }: ChatMediaMessageProps) => {
   const { authDetails } = useAuth();
-  const isSender = String(msg?.sender_id ?? "") === String(authDetails?.user?.id ?? "");
+  const isSender =
+    String(msg?.sender_id ?? "") === String(authDetails?.user?.id ?? "");
   const styles = getMessageLayout(isSender);
   const caption = msg.body || msg.caption || "";
 
@@ -61,11 +74,20 @@ const ChatMediaMessage = ({
   const isSent = msg.delivery_status === "sent" || !msg.read_at;
   const isRead = !!msg.read_at;
   const mediaUrls = useMemo(() => msg.media_urls || [], [msg.media_urls]);
-  const canManageMessage = Boolean(
-    isSender && (onEdit || onDelete) && !msg.pending &&
-    msg.delivery_status !== "sending" && msg.delivery_status !== "uploading" &&
-    msg.delivery_status !== "failed" && !String(msg.id ?? "").startsWith("optimistic:")
+  const canManageEligible = Boolean(
+    isSender &&
+    (onEdit || onDelete) &&
+    !msg.pending &&
+    msg.delivery_status !== "sending" &&
+    msg.delivery_status !== "uploading" &&
+    msg.delivery_status !== "failed" &&
+    !String(msg.id ?? "").startsWith("optimistic:"),
   );
+  const canManageMessage = useMessageManagementWindow(msg, canManageEligible);
+
+  useEffect(() => {
+    if (!canManageMessage && isEditing) setIsEditing(false);
+  }, [canManageMessage, isEditing]);
   const saveEdit = () => {
     if (!onEdit || !editDraft.trim()) return;
     const accepted = onEdit(msg, editDraft.trim());
@@ -324,8 +346,16 @@ const ChatMediaMessage = ({
       >
         {senderName && !isSender && (
           <div className="flex items-center gap-1.5 px-2.5 pt-2">
-            {senderAvatar && <img src={senderAvatar} alt="" className="size-4 shrink-0 rounded-full object-cover" />}
-            <p className="text-[11px] font-semibold text-orange">{senderName}</p>
+            {senderAvatar && (
+              <img
+                src={senderAvatar}
+                alt=""
+                className="size-4 shrink-0 rounded-full object-cover"
+              />
+            )}
+            <p className="text-[11px] font-semibold text-orange">
+              {senderName}
+            </p>
           </div>
         )}
 
@@ -347,6 +377,16 @@ const ChatMediaMessage = ({
             ? renderVideo()
             : renderFile()}
 
+        {!isSender &&
+          Array.isArray(msg?.mentioned_user_ids) &&
+          msg.mentioned_user_ids.some(
+            (id: unknown) => String(id) === String(authDetails?.user?.id ?? ""),
+          ) && (
+            <span className="mx-2.5 mt-2 inline-flex items-center gap-1 rounded-full bg-orange/10 px-2 py-0.5 text-[10px] font-semibold text-orange">
+              <AtSign size={11} /> Mentioned you
+            </span>
+          )}
+
         {/* Caption / inline caption edit */}
         {isEditing ? (
           <div className="space-y-2 px-2.5 py-2">
@@ -358,16 +398,62 @@ const ChatMediaMessage = ({
               onChange={(event) => setEditDraft(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Escape") setIsEditing(false);
-                if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); saveEdit(); }
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  saveEdit();
+                }
               }}
               className="w-full resize-y rounded-lg border border-black/10 bg-white px-2 py-1.5 text-[13px] text-gray-900 outline-none focus:border-orange"
             />
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setIsEditing(false)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100"><X size={12}/> Cancel</button>
-              <button type="button" disabled={!editDraft.trim()} onClick={saveEdit} className="inline-flex items-center gap-1 rounded-md bg-orange px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-50"><Check size={12}/> Save</button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-100"
+              >
+                <X size={12} /> Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!editDraft.trim()}
+                onClick={saveEdit}
+                className="inline-flex items-center gap-1 rounded-md bg-orange px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+              >
+                <Check size={12} /> Save
+              </button>
             </div>
           </div>
-        ) : caption ? <div className="px-2.5 py-2 text-[13px]">{caption}</div> : null}
+        ) : caption ? (
+          <div className="px-2.5 py-2 text-[13px] whitespace-pre-wrap wrap-break-word">
+            {String(caption)
+              .split(/(@[A-Za-z0-9_.-]+)/g)
+              .map((token, index) => {
+                if (!token.startsWith("@"))
+                  return <span key={`caption-text-${index}`}>{token}</span>;
+                const person = mentionUsers?.find(
+                  (member) =>
+                    `@${member.username}`.toLowerCase() === token.toLowerCase(),
+                );
+                if (!person)
+                  return <span key={`caption-text-${index}`}>{token}</span>;
+                const slug = person.fullName
+                  .toLowerCase()
+                  .trim()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/(^-|-$)/g, "");
+                return (
+                  <a
+                    key={`caption-mention-${index}`}
+                    href={`/app/profile/${slug}_${person.id}`}
+                    title={`View ${person.fullName}'s profile`}
+                    className="mx-0.5 inline-flex items-center rounded-md bg-sky-500/15 px-1.5 py-0.5 align-baseline font-semibold text-sky-700 transition-colors hover:bg-sky-500/25 hover:underline"
+                  >
+                    {token}
+                  </a>
+                );
+              })}
+          </div>
+        ) : null}
 
         {/* ONLY show overlay if no caption */}
         {!caption && !isEditing && (
@@ -395,9 +481,32 @@ const ChatMediaMessage = ({
         </span>
       </div>
       {canManageMessage && !isEditing && (
-        <div className="mt-1 flex w-full justify-end gap-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-          {onEdit && caption && <button type="button" onClick={() => { setEditDraft(String(caption)); setIsEditing(true); }} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"><Pencil size={11}/> Edit caption</button>}
-          {onDelete && <button type="button" onClick={() => onDelete(msg)} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-red-600/80 transition hover:bg-red-500/10 hover:text-red-700"><Trash2 size={11}/> Delete</button>}
+        <div className="mt-1 grid w-full grid-rows-[1fr] opacity-100 sm:mt-0 sm:grid-rows-[0fr] sm:opacity-0 sm:transition-[grid-template-rows,opacity,margin] sm:duration-200 sm:ease-out sm:group-hover:mt-1 sm:group-hover:grid-rows-[1fr] sm:group-hover:opacity-100 sm:group-focus-within:mt-1 sm:group-focus-within:grid-rows-[1fr] sm:group-focus-within:opacity-100 motion-reduce:transition-none">
+          <div className="min-h-0 overflow-hidden">
+            <div className="flex justify-end gap-1.5 border-t border-current/10 pt-1">
+              {onEdit && caption && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditDraft(String(caption));
+                    setIsEditing(true);
+                  }}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:min-h-9 sm:min-w-0 sm:px-2 sm:py-1 sm:text-[11px]"
+                >
+                  <Pencil size={14} /> Edit caption
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(msg)}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs text-red-600/80 transition hover:bg-red-500/10 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:min-h-9 sm:min-w-0 sm:px-2 sm:py-1 sm:text-[11px]"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </SwipeableMessage>

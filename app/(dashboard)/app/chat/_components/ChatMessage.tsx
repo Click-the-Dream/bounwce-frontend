@@ -6,8 +6,9 @@ import { getMessageLayout, renderCheck } from "@/app/_utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
 import { LuClock } from "react-icons/lu";
 import SwipeableMessage from "./SwipeableMessage";
+import { useMessageManagementWindow } from "./use-message-management-window";
 import ReplyPreview from "./ReplyPreview";
-import { AlertCircle, Check, Pencil, Trash2, X } from "lucide-react";
+import { AlertCircle, AtSign, Check, Pencil, Trash2, X } from "lucide-react";
 import { motion } from "framer-motion";
 import MessageLinkPreview from "./MessageLinkPreview";
 import { getMessageUrlSegments, resolveMessageUrl } from "./message-links";
@@ -15,6 +16,7 @@ import UserImage from "../../_components/UserImage";
 
 interface ChatMessageProps {
   msg: any;
+  mentionUsers?: Array<{ id: string; username: string; fullName: string }>;
   onReply?: (msg: any) => void;
   onScrollToMessage?: (messageId: string) => void;
   senderName?: string;
@@ -45,12 +47,37 @@ const isSingleEmoji = (text: string) => {
 };
 
 // Render text and URLs while keeping internal links inside the app.
-const renderMessageBody = (text: string, isSender: boolean) => {
+const renderMessageBody = (text: string, isSender: boolean, mentionUsers: ChatMessageProps["mentionUsers"] = []) => {
+  // Render recognized @mentions as profile links with a distinct WhatsApp-style pill.
+  const renderTextWithMentions = (value: string, keyPrefix: string) => {
+    if (!mentionUsers?.length) return value;
+    const tokens = value.split(/(@[A-Za-z0-9_.-]+)/g);
+    return tokens.map((token, tokenIndex) => {
+      if (!token.startsWith("@")) return token;
+      const person = mentionUsers.find(
+        (member) => `@${member.username}`.toLowerCase() === token.toLowerCase(),
+      );
+      if (!person) return token;
+      const slug = person.fullName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const href = `/app/profile/${slug}_${person.id}`;
+      return (
+        <Link
+          key={`${keyPrefix}-mention-${tokenIndex}`}
+          href={href}
+          title={`View ${person.fullName}'s profile`}
+          onClick={(event) => event.stopPropagation()}
+          className="mx-0.5 inline-flex items-center rounded-md bg-sky-500/15 px-1.5 py-0.5 align-baseline font-semibold text-sky-700 decoration-sky-500/40 underline-offset-2 transition-colors hover:bg-sky-500/25 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+        >
+          {token}
+        </Link>
+      );
+    });
+  };
   const parts = getMessageUrlSegments(text);
 
   return parts.map((part, index) => {
     if (part.type === "text") {
-      return <span key={`text-${index}`}>{part.value}</span>;
+      return <span key={`text-${index}`}>{renderTextWithMentions(part.value, `text-${index}`)}</span>;
     }
 
     const info = resolveMessageUrl(part.value);
@@ -99,6 +126,7 @@ const renderMessageBody = (text: string, isSender: boolean) => {
 
 const ChatMessage = ({
   msg,
+  mentionUsers,
   onReply,
   onScrollToMessage,
   senderName,
@@ -172,7 +200,7 @@ const ChatMessage = ({
     return <LuClock size={10} />;
   };
 
-  const canManageMessage = Boolean(
+  const canManageEligible = Boolean(
     isSender &&
     (onEdit || onDelete) &&
     !msg.pending &&
@@ -181,6 +209,11 @@ const ChatMessage = ({
     msg.delivery_status !== "failed" &&
     !String(msg.id ?? "").startsWith("optimistic:"),
   );
+  const canManageMessage = useMessageManagementWindow(msg, canManageEligible);
+
+  useEffect(() => {
+    if (!canManageMessage && isEditing) setIsEditing(false);
+  }, [canManageMessage, isEditing]);
 
   const saveEdit = () => {
     const body = editDraft.trim();
@@ -280,6 +313,16 @@ const ChatMessage = ({
             </p>
           </div>
         )}
+
+        {!isSender &&
+          Array.isArray(msg?.mentioned_user_ids) &&
+          msg.mentioned_user_ids.some(
+            (id: unknown) => String(id) === String(authDetails?.user?.id ?? ""),
+          ) && (
+            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-orange/10 px-2 py-0.5 text-[10px] font-semibold text-orange">
+              <AtSign size={11} /> Mentioned you
+            </span>
+          )}
 
         {/* Message body / inline edit */}
         {isEditing ? (
@@ -381,7 +424,7 @@ const ChatMessage = ({
                 {String(msg.body ?? "").trim()}
               </motion.span>
             ) : (
-              renderMessageBody(msg?.body ?? "", isSender)
+              renderMessageBody(msg?.body ?? "", isSender, mentionUsers)
             )}
           </div>
         )}
@@ -442,7 +485,7 @@ const ChatMessage = ({
                       setIsEditing(true);
                     }}
                     aria-label="Edit message"
-                    className=" inline-flex min-h-4 min-w-8 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium text-current/75 transition-colors duration-150 hover:bg-black/5 hover:text-current active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:min-h-9 sm:min-w-0 sm:px-2 sm:py-1 sm:text-[11px]"
+                    className=" inline-flex min-h-5 min-w-8 items-center justify-center gap-1.5 rounded-md p-2 text-xs font-medium text-current/75 transition-colors duration-150 hover:bg-black/5 hover:text-current active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:min-h-9 sm:min-w-0 sm:px-2 sm:py-1 sm:text-[11px]"
                   >
                     <Pencil size={14} />
                     Edit
@@ -454,7 +497,7 @@ const ChatMessage = ({
                     type="button"
                     onClick={() => onDelete(msg)}
                     aria-label="Delete message"
-                    className="inline-flex min-h-4 min-w-8 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium text-current/75 transition-colors duration-150 hover:bg-red-500/10 hover:text-red-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:min-h-9 sm:min-w-0 sm:px-2 sm:py-1 sm:text-[11px]"
+                    className="inline-flex min-h-5 min-w-8 items-center justify-center gap-1 rounded-md p-2 text-xs font-medium text-current/75 transition-colors duration-150 hover:bg-red-500/10 hover:text-red-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:min-h-9 sm:min-w-0 sm:px-2 sm:py-1 sm:text-[11px]"
                   >
                     <Trash2 size={14} />
                     Delete

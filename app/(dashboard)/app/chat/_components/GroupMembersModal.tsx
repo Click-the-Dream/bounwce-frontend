@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowRightLeft,
   Check,
+  Crown,
   Loader2,
   Pencil,
   Search,
@@ -13,8 +15,9 @@ import {
   X,
 } from "lucide-react";
 import useUser from "@/app/hooks/use-user";
-import { useGroupMembers, useGroups } from "@/app/hooks/use-groups";
-import type { GroupMember } from "@/app/services/group-chat";
+import { useGroupMembers, useGroups, groupKeys } from "@/app/hooks/use-groups";
+import { groupChatApi, type GroupMember } from "@/app/services/group-chat";
+import { useQueryClient } from "@tanstack/react-query";
 import UserImage from "../../_components/UserImage";
 import { useChatUtils } from "@/app/context/ChatContext";
 
@@ -71,6 +74,10 @@ export default function GroupMembersModal({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [transferTarget, setTransferTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isTransferringOwnership, setIsTransferringOwnership] = useState(false);
+  const queryClient = useQueryClient();
   const [editingDetails, setEditingDetails] = useState(false);
   const [draftName, setDraftName] = useState(groupName);
   const [draftDescription, setDraftDescription] = useState(
@@ -103,6 +110,8 @@ export default function GroupMembersModal({
     setSearch("");
     setDebouncedSearch("");
     setError("");
+    setSuccess("");
+    setTransferTarget(null);
     setEditingDetails(false);
     setDraftName(groupName);
     setDraftDescription(groupDescription ?? "");
@@ -118,10 +127,12 @@ export default function GroupMembersModal({
     return resolvedCurrentUserId && user.id === resolvedCurrentUserId;
   });
   const currentRole = String(currentMembership?.role ?? "").toLowerCase();
-  const canManageMembers =
-    !resolvedCurrentUserId ||
-    ["owner", "admin", "manager"].includes(currentRole);
+  const canManageMembers = Boolean(
+    resolvedCurrentUserId &&
+      ["owner", "admin", "manager"].includes(currentRole),
+  );
   const canEditDetails = ["owner", "admin"].includes(currentRole);
+  const canTransferOwnership = currentRole === "owner";
 
   const params = useMemo(
     () => ({
@@ -232,6 +243,32 @@ export default function GroupMembersModal({
           err?.message ??
           "Unable to remove this person.",
       );
+    }
+  };
+
+  const confirmTransferOwnership = async () => {
+    if (!transferTarget || !canTransferOwnership || isTransferringOwnership) return;
+    setError("");
+    setSuccess("");
+    setIsTransferringOwnership(true);
+    try {
+      await groupChatApi.transferOwnership(groupId, transferTarget.id);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: groupKeys.members(groupId) }),
+        queryClient.invalidateQueries({ queryKey: groupKeys.all }),
+        queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) }),
+      ]);
+      await refetchMembers().catch(() => undefined);
+      setSuccess(`Group ownership transferred to ${transferTarget.name}.`);
+      setTransferTarget(null);
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ??
+          err?.message ??
+          "Unable to transfer group ownership. Make sure the server supports the ownership-transfer endpoint.",
+      );
+    } finally {
+      setIsTransferringOwnership(false);
     }
   };
 
@@ -382,6 +419,37 @@ export default function GroupMembersModal({
             )}
           </section>
 
+          {transferTarget && canTransferOwnership ? (
+            <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+              <div className="flex items-start gap-2.5">
+                <Crown size={17} className="mt-0.5 shrink-0 text-amber-600" />
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-amber-900">Transfer group ownership?</h3>
+                  <p className="mt-1 text-xs leading-5 text-amber-800">
+                    {transferTarget.name} will become the owner. You may lose owner-only controls after this change.
+                  </p>
+                  <div className="mt-3 flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={isTransferringOwnership}
+                      onClick={() => setTransferTarget(null)}
+                      className="min-h-9 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-900 disabled:opacity-50"
+                    >Cancel</button>
+                    <button
+                      type="button"
+                      disabled={isTransferringOwnership}
+                      onClick={() => void confirmTransferOwnership()}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {isTransferringOwnership ? <Loader2 size={13} className="animate-spin" /> : <ArrowRightLeft size={13} />}
+                      Confirm transfer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
           <section>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -458,6 +526,21 @@ export default function GroupMembersModal({
                     >
                       {role}
                     </span>
+                    {canTransferOwnership && id !== resolvedCurrentUserId ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTransferTarget({ id, name: user.full_name });
+                          setError("");
+                          setSuccess("");
+                        }}
+                        title={`Transfer ownership to ${user.full_name}`}
+                        aria-label={`Transfer ownership to ${user.full_name}`}
+                        className="rounded-full p-2 text-amber-600 transition hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                      >
+                        <ArrowRightLeft size={15} />
+                      </button>
+                    ) : null}
                     {canManageMembers && id !== resolvedCurrentUserId ? (
                       <button
                         type="button"
@@ -485,10 +568,10 @@ export default function GroupMembersModal({
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Add people
+                    Invite people
                   </h3>
                   <p className="mt-0.5 text-[11px] text-gray-400">
-                    Members already in this group are hidden.
+                    Invite existing Bouwnce users to this group.
                   </p>
                 </div>
                 {isFetchingNextPage ? (
@@ -563,7 +646,7 @@ export default function GroupMembersModal({
                           onClick={() => void handleAdd(id)}
                           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange/10 px-3 py-1.5 text-xs font-semibold text-orange transition hover:bg-orange/15 disabled:opacity-50"
                         >
-                          <UserPlus size={13} /> Add
+                          <UserPlus size={13} /> Invite
                         </button>
                       ) : (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1.5 text-[11px] font-medium text-emerald-600">
@@ -596,6 +679,11 @@ export default function GroupMembersModal({
           ) : null}
         </div>
 
+        {success ? (
+          <p role="status" className="border-t border-emerald-100 bg-emerald-50 px-5 py-3 text-xs text-emerald-700">
+            {success}
+          </p>
+        ) : null}
         {error ? (
           <p
             role="alert"

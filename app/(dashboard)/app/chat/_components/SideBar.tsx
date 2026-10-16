@@ -17,6 +17,7 @@ import { User } from "@/app/_utils/types/buyer";
 import { ChatUser } from "@/app/_utils/types/chat";
 import { useRouter } from "next/navigation";
 import { useGroups } from "@/app/hooks/use-groups";
+import { prefetchGroupMessageHistory } from "@/app/hooks/use-group-socket";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CreateGroupModal from "./CreateGroupModal";
 
@@ -297,6 +298,14 @@ const ChatSidebar = ({
                         `/app/chat?groupId=${encodeURIComponent(groupId)}`,
                       )
                     }
+                    onPointerEnter={() => {
+                      void prefetchGroupMessageHistory(queryClient, groupId).catch((error) => {
+                        console.debug("[GROUP CHAT] hover prefetch skipped", { groupId, error });
+                      });
+                    }}
+                    onFocus={() => {
+                      void prefetchGroupMessageHistory(queryClient, groupId).catch(() => undefined);
+                    }}
                     className={`flex w-full items-center gap-3 rounded-xl border-b border-black/5 px-2 py-3 text-left transition hover:bg-gray-50 ${isActive ? "bg-orange/5" : ""}`}
                   >
                     <span className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange/10 text-orange">

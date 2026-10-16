@@ -8,11 +8,15 @@ import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "@/app/context/NotificationContext";
 import { ShieldAlert } from "lucide-react";
 import GroupChatWindow from "./GroupChatWindow";
+import GroupInvitePreview from "@/app/group-invite/[groupId]/GroupInvitePreview";
 import type { GroupSocketController } from "@/app/hooks/use-group-socket";
 
 interface ChatWindowProps {
   selectedUser?: User;
   selectedGroupId?: string;
+  isGroupMember: boolean;
+  isGroupMembershipLoading: boolean;
+  isGroupMembershipError: boolean;
   groupChat: GroupSocketController;
   currentUserId?: string;
   isConversationLoading: boolean;
@@ -22,6 +26,9 @@ interface ChatWindowProps {
 const ChatWindow = ({
   selectedUser,
   selectedGroupId,
+  isGroupMember,
+  isGroupMembershipLoading,
+  isGroupMembershipError,
   groupChat,
   currentUserId,
   isConversationLoading,
@@ -46,7 +53,48 @@ const ChatWindow = ({
   }, [chatId]);
 
   if (selectedGroupId) {
-    return <GroupChatWindow groupId={selectedGroupId} chat={groupChat} currentUserId={currentUserId} />;
+    if (isGroupMembershipLoading) {
+      return (
+        <div className="flex min-w-0 flex-1 items-center justify-center bg-[#fafafa] px-6">
+          <div className="w-full max-w-md animate-pulse space-y-4 rounded-3xl border border-gray-100 bg-white p-7">
+            <div className="mx-auto size-16 rounded-2xl bg-gray-100" />
+            <div className="mx-auto h-5 w-44 rounded bg-gray-100" />
+            <div className="mx-auto h-3 w-64 max-w-full rounded bg-gray-100" />
+            <div className="h-20 rounded-xl bg-gray-50" />
+          </div>
+        </div>
+      );
+    }
+    if (isGroupMembershipError) {
+      return (
+        <div className="flex min-w-0 flex-1 flex-col items-center justify-center bg-[#fafafa] px-6 text-center">
+          <ShieldAlert className="size-8 text-gray-400" />
+          <h2 className="mt-3 text-base font-semibold text-gray-900">
+            Could not verify group access
+          </h2>
+          <p className="mt-1 max-w-sm text-sm leading-6 text-gray-500">
+            We couldn’t load your group list. Please refresh and try opening
+            this group again.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-full bg-orange px-4 py-2 text-sm font-semibold text-white"
+          >
+            Refresh group access
+          </button>
+        </div>
+      );
+    }
+    if (!isGroupMember)
+      return <GroupInvitePreview groupId={selectedGroupId} inApp />;
+    return (
+      <GroupChatWindow
+        groupId={selectedGroupId}
+        chat={groupChat}
+        currentUserId={currentUserId}
+      />
+    );
   }
 
   return (
@@ -101,7 +149,7 @@ const ChatWindow = ({
       {/* Input Area */}
       {chatId ? (
         !selectedUser ? (
-          <div className="flex h-[70px] shrink-0 items-center gap-3 border-t border-[#0000004D] bg-white px-4">
+          <div className="flex h-17.5 shrink-0 items-center gap-3 border-t border-[#0000004D] bg-white px-4">
             <div className="h-10 flex-1 animate-pulse rounded-xl bg-gray-100" />
             <div className="size-10 animate-pulse rounded-full bg-gray-100" />
           </div>

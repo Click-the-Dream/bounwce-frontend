@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FormEvent } from "react";
 import {
   ArrowLeft,
-  ArrowUp,
   Info,
   MessageCircle,
   Users,
@@ -16,6 +14,7 @@ import {
   Image as ImageIcon,
   Plus,
   FileText,
+  Share2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
@@ -32,6 +31,9 @@ import ChatMediaMessage from "./ChatMediaMessage";
 import DeleteMessageDialog from "./DeleteMessageDialog";
 import ReplyPreview from "./ReplyPreview";
 import ImageViewer from "./ImageViewer";
+import ChatComposer from "./ChatComposer";
+import { isWithinMessageManagementWindow } from "./use-message-management-window";
+import GroupMentionPicker, { type GroupMentionOption } from "./GroupMentionPicker";
 
 const avatarFrom = (user: any) => {
   const pic = user?.profile_pic;
@@ -44,6 +46,9 @@ const isMediaMessage = (message: GroupChatMessage) =>
   ["image", "video", "file", "audio"].includes(
     String(message.media_type ?? ""),
   );
+
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export default function GroupChatWindow({
   groupId,
@@ -81,11 +86,35 @@ export default function GroupChatWindow({
     [members],
   );
   const [draft, setDraft] = useState("");
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const mentionOptions = useMemo<GroupMentionOption[]>(() => {
+    return members
+      .filter((member: any) => member.is_active !== false)
+      .map((member: any) => {
+        const user = member.user && typeof member.user === "object" ? member.user : member;
+        const id = String(member.user_id ?? user.id ?? (!member.user ? member.id : "") ?? "");
+        const fullName = String(user.full_name ?? member.full_name ?? user.username ?? member.username ?? "Group member").trim();
+        const username = String(user.username ?? member.username ?? fullName.replace(/\s+/g, "_")).trim().replace(/^@/, "");
+        return { id, username, fullName, avatar: avatarFrom(user) };
+      })
+      .filter((member) => member.id && member.username && member.id !== String(resolvedCurrentUserId ?? ""));
+  }, [members, resolvedCurrentUserId]);
+  const mentionQueryMatch = /(?:^|\s)@([A-Za-z0-9_.-]*)$/.exec(draft);
+  const mentionQuery = mentionQueryMatch ? mentionQueryMatch[1] : null;
+  const mentionedUserIds = useMemo(() => {
+    return mentionOptions
+      .filter((member) => {
+        const pattern = new RegExp(`(^|\\s)@${escapeRegExp(member.username)}(?=$|[\\s,.!?])`, "i");
+        return pattern.test(draft);
+      })
+      .map((member) => member.id);
+  }, [draft, mentionOptions]);
   const [showMembers, setShowMembers] = useState(false);
   const [replyTarget, setReplyTarget] = useState<GroupChatMessage | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [sendError, setSendError] = useState("");
+  const [shareNotice, setShareNotice] = useState("");
   const [pendingDeleteMessage, setPendingDeleteMessage] =
     useState<GroupChatMessage | null>(null);
   const [isSendingMedia, setIsSendingMedia] = useState(false);
@@ -216,14 +245,8 @@ export default function GroupChatWindow({
         : `${chat.typingUsers.length} people are typing…`
       : "";
 
-  const autoResizeComposer = (element: HTMLTextAreaElement) => {
-    element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, 112)}px`;
-  };
-
-  const handleDraft = (value: string, element?: HTMLTextAreaElement) => {
+  const handleDraft = (value: string) => {
     setDraft(value);
-    if (element) autoResizeComposer(element);
     const typing = Boolean(value.trim());
     const now = Date.now();
 
@@ -265,13 +288,13 @@ export default function GroupChatWindow({
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
   };
 
-  const send = (event: FormEvent) => {
-    event.preventDefault();
-    if (!draft.trim()) return;
+  const send = () => {
+    if (!draft.trim() || !chat.isConnected || isSendingMedia) return;
     try {
       setSendError("");
       chat.sendMessage(draft.trim(), {
         reply_to_message_id: replyTarget?.id ? String(replyTarget.id) : null,
+        mentioned_user_ids: mentionedUserIds,
       });
       clearComposer();
     } catch (error: any) {
@@ -308,6 +331,7 @@ export default function GroupChatWindow({
         media_urls: [uploaded.secure_url],
         media_names: [file.name],
         reply_to_message_id: replyTarget?.id ? String(replyTarget.id) : null,
+        mentioned_user_ids: mentionedUserIds,
       });
       clearComposer();
     } catch (error: any) {
@@ -323,6 +347,10 @@ export default function GroupChatWindow({
   };
 
   const handleEditMessage = (message: any, body: string) => {
+    if (!isWithinMessageManagementWindow(message)) {
+      setSendError("Messages can only be edited or deleted within 15 minutes of sending.");
+      return false;
+    }
     const accepted = chat.editMessage(String(message.id), body);
     if (!accepted)
       setSendError(
@@ -336,6 +364,10 @@ export default function GroupChatWindow({
 
   const handleDeleteMessage = (message: GroupChatMessage) => {
     if (!message?.id) return false;
+    if (!isWithinMessageManagementWindow(message)) {
+      setSendError("Messages can only be edited or deleted within 15 minutes of sending.");
+      return false;
+    }
     setSendError("");
     setPendingDeleteMessage(message);
     return true;
@@ -343,6 +375,11 @@ export default function GroupChatWindow({
 
   const confirmDeleteMessage = () => {
     if (!pendingDeleteMessage?.id) return false;
+    if (!isWithinMessageManagementWindow(pendingDeleteMessage)) {
+      setPendingDeleteMessage(null);
+      setSendError("The 15-minute message-management window has expired.");
+      return false;
+    }
     const accepted = chat.deleteMessage(String(pendingDeleteMessage.id));
     if (!accepted) {
       setSendError(
@@ -354,6 +391,48 @@ export default function GroupChatWindow({
       setSendError("");
     }
     return accepted;
+  };
+
+  const selectMention = (member: GroupMentionOption) => {
+    const match = /(^|\s)@[A-Za-z0-9_.-]*$/.exec(draft);
+    const prefix = match ? draft.slice(0, match.index) : draft;
+    const separator = prefix && !/\s$/.test(prefix) ? " " : "";
+    const nextDraft = `${prefix}${separator}@${member.username} `;
+    setDraft(nextDraft);
+    requestAnimationFrame(() => {
+      const input = document.getElementById("group-chat-composer") as HTMLTextAreaElement | null;
+      if (!input) return;
+      input.focus();
+      input.setSelectionRange(nextDraft.length, nextDraft.length);
+    });
+  };
+
+  const shareGroup = async () => {
+    const url = new URL(`/group-invite/${encodeURIComponent(groupId)}`, window.location.origin);
+    const shareUrl = url.toString();
+    const shareTitle = `${group?.name ?? "Group chat"} · Bouwnce`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: shareTitle,
+          text: `You are invited to view ${group?.name ?? "this group"} on Bouwnce. View the group and contact its admin to request access.`,
+          url: shareUrl,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      setShareNotice("Group invitation link copied. People can view group details and request to join.");
+      window.setTimeout(() => setShareNotice(""), 4500);
+    } catch (error: any) {
+      if (error?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareNotice("Group invitation link copied. People can view group details and request to join.");
+        window.setTimeout(() => setShareNotice(""), 4500);
+      } catch {
+        setSendError("Unable to share the group link from this browser.");
+      }
+    }
   };
 
   const scrollToMessage = async (messageId: string) => {
@@ -414,6 +493,7 @@ export default function GroupChatWindow({
       media_urls: message.media_urls,
       media_names: message.media_names,
       reply_to_message_id: message.reply_to_message_id ?? null,
+      mentioned_user_ids: message.mentioned_user_ids ?? [],
     });
   };
 
@@ -441,8 +521,9 @@ export default function GroupChatWindow({
             )}
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-medium leading-tight text-black">
-              {group?.name ?? "Group chat"}
+            <h2 className="flex min-w-0 items-center gap-1.5 truncate text-sm font-medium leading-tight text-black">
+              <span className="truncate">{group?.name ?? "Group chat"}</span>
+              <span className="shrink-0 rounded-full bg-violet-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-700">Group</span>
             </h2>
             <p className="mt-0.5 truncate text-[10px] font-medium text-green-600">
               {typingText || membersText}
@@ -459,6 +540,15 @@ export default function GroupChatWindow({
           </span>
           <button
             type="button"
+            onClick={() => void shareGroup()}
+            aria-label="Share group link"
+            title="Share group link"
+            className="flex size-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:border-orange/30 hover:bg-orange/5 hover:text-orange"
+          >
+            <Share2 size={15} />
+          </button>
+          <button
+            type="button"
             onClick={() => setShowMembers(true)}
             className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
           >
@@ -467,6 +557,12 @@ export default function GroupChatWindow({
           </button>
         </div>
       </header>
+
+      {shareNotice ? (
+        <p role="status" className="border-b border-violet-100 bg-violet-50 px-4 py-2 text-xs text-violet-700">
+          {shareNotice}
+        </p>
+      ) : null}
 
       <div
         ref={listRef}
@@ -595,6 +691,7 @@ export default function GroupChatWindow({
                   );
                   const commonProps = {
                     msg: displayMessage,
+                    mentionUsers: mentionOptions,
                     senderName,
                     senderAvatar: avatarFrom(sender),
                     onReply: (value: GroupChatMessage) => handleReply(value),
@@ -654,10 +751,7 @@ export default function GroupChatWindow({
           </button>
         </div>
       )}
-      <form
-        onSubmit={send}
-        className="flex shrink-0 items-end gap-2 border-t border-[#0000004D] bg-white px-3 py-3 md:px-5"
-      >
+      <div className="shrink-0 border-t border-[#0000004D] bg-white px-3 py-3 md:px-5">
         <input
           ref={fileInputRef}
           type="file"
@@ -669,76 +763,85 @@ export default function GroupChatWindow({
             if (file) void uploadAndSendFile(file);
           }}
         />
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowAttachmentMenu((open) => !open)}
-            disabled={!chat.isConnected || isSendingMedia}
-            aria-label="Add attachment"
-            title="Attach a photo, video, or file"
-            className="flex size-10 items-center justify-center rounded-full text-gray-500 transition hover:bg-orange/10 hover:text-orange disabled:opacity-50"
-          >
-            {isSendingMedia ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Plus size={20} />
-            )}
-          </button>
-          {showAttachmentMenu && (
-            <div className="absolute bottom-12 left-0 z-30 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl">
-              {[
-                { label: "Photo", accept: "image/*", Icon: ImageIcon },
-                { label: "Video", accept: "video/*", Icon: Video },
-                {
-                  label: "Document or file",
-                  accept:
-                    ".pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv",
-                  Icon: FileText,
-                },
-              ].map(({ label, accept, Icon }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => {
-                    setAttachmentAccept(accept);
-                    setShowAttachmentMenu(false);
-                    window.setTimeout(() => fileInputRef.current?.click(), 0);
-                  }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 transition hover:bg-orange/5 hover:text-orange"
-                >
-                  <Icon size={17} className="text-orange" />
-                  {label}
-                </button>
-              ))}
+        <ChatComposer
+          value={draft}
+          onChange={(value) => handleDraft(value)}
+          onSend={send}
+          inputId="group-chat-composer"
+          placeholder="Message the group…"
+          ariaLabel="Message the group"
+          canSend={Boolean(draft.trim())}
+          disabled={!chat.isConnected || isSendingMedia}
+          isSending={isSendingMedia}
+          sendButtonVisible={Boolean(isComposerFocused || draft || isSendingMedia)}
+          onFocus={() => setIsComposerFocused(true)}
+          onBlur={() => setIsComposerFocused(false)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || event.shiftKey) return;
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(
+              navigator.userAgent,
+            );
+            if (isMobile) return;
+            event.preventDefault();
+            if (event.nativeEvent.isComposing) return;
+            send();
+          }}
+          leading={(
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAttachmentMenu((open) => !open)}
+                disabled={!chat.isConnected || isSendingMedia}
+                aria-label="Add attachment"
+                aria-expanded={showAttachmentMenu}
+                title="Attach a photo, video, or file"
+                className="flex size-8 items-center justify-center rounded-full border border-black/10 text-gray-500 transition hover:bg-white hover:text-orange disabled:opacity-50"
+              >
+                {isSendingMedia ? (
+                  <Loader2 size={17} className="animate-spin" />
+                ) : (
+                  <Plus size={19} />
+                )}
+              </button>
+              {showAttachmentMenu && (
+                <div className="absolute bottom-12 left-0 z-30 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl">
+                  {[
+                    { label: "Photo", accept: "image/*", Icon: ImageIcon },
+                    { label: "Video", accept: "video/*", Icon: Video },
+                    {
+                      label: "Document or file",
+                      accept: ".pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv",
+                      Icon: FileText,
+                    },
+                  ].map(({ label, accept, Icon }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => {
+                        setAttachmentAccept(accept);
+                        setShowAttachmentMenu(false);
+                        window.setTimeout(() => fileInputRef.current?.click(), 0);
+                      }}
+                      className="flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 transition hover:bg-orange/5 hover:text-orange"
+                    >
+                      <Icon size={17} className="text-orange" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </div>
-        <textarea
-          id="group-chat-composer"
-          value={draft}
-          onChange={(event) =>
-            handleDraft(event.target.value, event.currentTarget)
-          }
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              send(event as any);
-            }
-          }}
-          rows={1}
-          maxLength={4000}
-          placeholder="Message the group…"
-          className="max-h-28 min-h-10 flex-1 resize-none rounded-2xl border border-[#00000014] bg-[#F5F6F7] px-4 py-2.5 text-sm leading-5 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-orange/50 focus:bg-white focus:ring-2 focus:ring-orange/10"
-        />
-        <button
-          type="submit"
-          disabled={!draft.trim() || !chat.isConnected || isSendingMedia}
-          aria-label="Send message"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange text-white transition hover:bg-[#ea4325] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <ArrowUp size={19} strokeWidth={2.4} />
-        </button>
-      </form>
+          {mentionQuery !== null ? (
+            <GroupMentionPicker
+              query={mentionQuery}
+              members={mentionOptions}
+              onSelect={selectMention}
+            />
+          ) : null}
+        </ChatComposer>
+      </div>
       <ImageViewer
         media={mediaMessages}
         startIndex={viewerIndex}

@@ -25,13 +25,30 @@ self.addEventListener("push", (event) => {
 
   const notificationType =
     notificationData.type || payload.event_type || payload.type || null;
-    const isGroupNotification =
-    notificationType === "group_message" ||
-    notificationType === "group_chat_message" ||
-    notificationData.type === "group_message" ||
-    payload.event_type === "group_message" ||
-    payload.type === "group_message" ||
-    payload.category === "group_chat";
+
+  const nestedPayload =
+    notificationData.payload && typeof notificationData.payload === "object"
+      ? notificationData.payload
+      : payload?.payload && typeof payload.payload === "object"
+        ? payload.payload
+        : {};
+  const normalizedType = String(
+    notificationType || nestedPayload.event_type || nestedPayload.type || "",
+  ).toLowerCase();
+  const isGroupNotification =
+    [
+      "group_message",
+      "group_chat_message",
+      "group_mention",
+      "group_invite",
+      "group_chat_invite",
+      "group_message_mention",
+    ].includes(normalizedType) ||
+    String(notificationData.category || payload.category || nestedPayload.category || "").toLowerCase() === "group_chat" ||
+    Boolean(
+      notificationData.group_id || notificationData.groupId || payload.group_id ||
+      payload.groupId || nestedPayload.group_id || nestedPayload.groupId
+    );
 
   const isChatNotification =
     notificationData.type === "chat_message" ||
@@ -47,7 +64,34 @@ self.addEventListener("push", (event) => {
     payload.groupId ||
     notificationData.group?.id ||
     payload.group?.id ||
+    nestedPayload.group_id ||
+    nestedPayload.groupId ||
+    nestedPayload.group?.id ||
     null;
+
+  const groupName = String(
+    notificationData.group_name ||
+      notificationData.groupName ||
+      notificationData.group?.name ||
+      payload.group_name ||
+      payload.groupName ||
+      payload.group?.name ||
+      nestedPayload.group_name ||
+      nestedPayload.groupName ||
+      nestedPayload.group?.name ||
+      "Group chat",
+  );
+
+  const isMention = Boolean(
+    notificationData.mentioned ||
+      notificationData.is_mention ||
+      payload.mentioned ||
+      payload.is_mention ||
+      nestedPayload.mentioned ||
+      nestedPayload.is_mention ||
+      normalizedType === "group_mention" ||
+      normalizedType === "group_message_mention",
+  );
 
   const senderProfileImage =
     typeof notificationData.sender_profile_image === "string"
@@ -55,19 +99,17 @@ self.addEventListener("push", (event) => {
       : notificationData.sender_profile_image?.url ||
         notificationData.sender?.profile_pic?.url ||
         payload.sender?.profile_pic?.url ||
+        nestedPayload.sender_profile_image?.url ||
+        nestedPayload.sender?.profile_pic?.url ||
         null;
 
   const senderIcon = senderProfileImage || notificationData.icon || null;
   const appIcon = "/icons/icon-192.png";
 
   let targetUrl =
-    notificationData.url ||
-    payload.url ||
-    (isGroupNotification && groupId
+    isGroupNotification && groupId
       ? `/app/chat?groupId=${encodeURIComponent(String(groupId))}`
-      : isChatNotification
-        ? "/app/chat"
-        : "/");
+      : notificationData.url || payload.url || (isChatNotification ? "/app/chat" : "/");
 
   if (!/^https?:\/\//i.test(targetUrl)) {
     targetUrl = targetUrl.startsWith("/") ? targetUrl : `/${targetUrl}`;
@@ -86,12 +128,21 @@ self.addEventListener("push", (event) => {
     (notificationId ? `bouwnce-notification:${notificationId}` : undefined);
 
   const options = {
-    body:
-      payload.body ||
-      notificationData.body ||
-      payload.message ||
-      notificationData.message ||
-      "New notification",
+    body: isGroupNotification
+      ? `${isMention ? "You were mentioned · " : ""}${
+          payload.body ||
+          notificationData.body ||
+          payload.message ||
+          notificationData.message ||
+          nestedPayload.body ||
+          nestedPayload.message ||
+          "New group message"
+        }`
+      : payload.body ||
+        notificationData.body ||
+        payload.message ||
+        notificationData.message ||
+        "New notification",
 
     // Chat notifications use the sender's avatar as the primary notification
     // icon (the familiar messaging-app pattern). Other notifications retain
@@ -118,7 +169,11 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     self.registration.showNotification(
-      payload.title || notificationData.title || "Bouwnce",
+      isGroupNotification
+        ? isMention
+          ? `Mentioned in ${groupName}`
+          : `Group · ${groupName}`
+        : payload.title || notificationData.title || "Bouwnce",
       options,
     ),
   );
