@@ -17,7 +17,10 @@ import {
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import useChat from "@/app/hooks/use-chat";
-import type { GroupChatMessage, GroupSocketController } from "@/app/hooks/use-group-socket";
+import type {
+  GroupChatMessage,
+  GroupSocketController,
+} from "@/app/hooks/use-group-socket";
 import { useGroupMembers, useGroups } from "@/app/hooks/use-groups";
 import { formatMessageDate } from "@/app/_utils/formatters";
 import GroupMembersModal from "./GroupMembersModal";
@@ -35,7 +38,9 @@ const avatarFrom = (user: any) => {
 
 const isMediaMessage = (message: GroupChatMessage) =>
   Boolean(message.media_urls?.length) ||
-  ["image", "video", "file", "audio"].includes(String(message.media_type ?? ""));
+  ["image", "video", "file", "audio"].includes(
+    String(message.media_type ?? ""),
+  );
 
 export default function GroupChatWindow({
   groupId,
@@ -48,7 +53,9 @@ export default function GroupChatWindow({
 }) {
   const { authDetails } = useAuth();
   const router = useRouter();
-  const resolvedCurrentUserId = currentUserId ?? (authDetails?.user?.id ? String(authDetails.user.id) : undefined);
+  const resolvedCurrentUserId =
+    currentUserId ??
+    (authDetails?.user?.id ? String(authDetails.user.id) : undefined);
   const { groups } = useGroups();
   const { members } = useGroupMembers(groupId);
   const group = useMemo(
@@ -56,10 +63,18 @@ export default function GroupChatWindow({
     [groups, groupId],
   );
   const memberById = useMemo(
-    () => new Map(members.map((member: any) => [
-      String(member.user_id ?? member.user?.id ?? (!member.user ? member.id : "") ?? ""),
-      member,
-    ])),
+    () =>
+      new Map(
+        members.map((member: any) => [
+          String(
+            member.user_id ??
+              member.user?.id ??
+              (!member.user ? member.id : "") ??
+              "",
+          ),
+          member,
+        ]),
+      ),
     [members],
   );
   const [draft, setDraft] = useState("");
@@ -68,7 +83,8 @@ export default function GroupChatWindow({
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [sendError, setSendError] = useState("");
-  const [pendingDeleteMessage, setPendingDeleteMessage] = useState<GroupChatMessage | null>(null);
+  const [pendingDeleteMessage, setPendingDeleteMessage] =
+    useState<GroupChatMessage | null>(null);
   const [isSendingMedia, setIsSendingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -85,15 +101,18 @@ export default function GroupChatWindow({
   const mediaMessages = useMemo(() => {
     const flattened: any[] = [];
     for (const message of chat.messages) {
-      if (message.media_type !== "image" || !Array.isArray(message.media_urls)) continue;
-      message.media_urls.forEach((url, index) => flattened.push({
-        src: url,
-        id: `${message.id}-${index}`,
-        parent_id: message.id,
-        created_at: message.created_at,
-        sender: (message as any).sender,
-        sender_id: message.sender_id,
-      }));
+      if (message.media_type !== "image" || !Array.isArray(message.media_urls))
+        continue;
+      message.media_urls.forEach((url, index) =>
+        flattened.push({
+          src: url,
+          id: `${message.id}-${index}`,
+          parent_id: message.id,
+          created_at: message.created_at,
+          sender: (message as any).sender,
+          sender_id: message.sender_id,
+        }),
+      );
     }
     return flattened;
   }, [chat.messages]);
@@ -118,14 +137,24 @@ export default function GroupChatWindow({
 
   const groupedMessages = useMemo(() => {
     const sorted = [...chat.messages].sort(
-      (a, b) => new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime(),
+      (a, b) =>
+        new Date(a.created_at ?? 0).getTime() -
+        new Date(b.created_at ?? 0).getTime(),
     );
-    const groups: Array<{ label: string; timestamp: number; messages: GroupChatMessage[] }> = [];
+    const groups: Array<{
+      label: string;
+      timestamp: number;
+      messages: GroupChatMessage[];
+    }> = [];
     for (const message of sorted) {
       const label = formatMessageDate(message.created_at);
       let bucket = groups.find((item) => item.label === label);
       if (!bucket) {
-        bucket = { label, timestamp: new Date(message.created_at).getTime(), messages: [] };
+        bucket = {
+          label,
+          timestamp: new Date(message.created_at).getTime(),
+          messages: [],
+        };
         groups.push(bucket);
       }
       bucket.messages.push(message);
@@ -157,22 +186,28 @@ export default function GroupChatWindow({
     if (chat.actionError) setSendError(chat.actionError);
   }, [chat.actionError]);
 
-  useEffect(() => () => {
-    if (typingTimeout.current) clearTimeout(typingTimeout.current);
-    isTypingRef.current = false;
-    lastTypingSentAtRef.current = 0;
-    chat.setTyping(false);
-  // `chat.setTyping` is stable for a given group.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId]);
+  useEffect(
+    () => () => {
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+      isTypingRef.current = false;
+      lastTypingSentAtRef.current = 0;
+      chat.setTyping(false);
+      // `chat.setTyping` is stable for a given group.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [groupId],
+  );
 
   const visibleMemberCount = group?.member_count || members.length;
-  const membersText = visibleMemberCount ? `${visibleMemberCount} members` : "Group conversation";
-  const typingText = chat.typingUsers.length > 0
-    ? chat.typingUsers.length === 1
-      ? `${chat.typingUsers[0].username || "Someone"} is typing…`
-      : `${chat.typingUsers.length} people are typing…`
-    : "";
+  const membersText = visibleMemberCount
+    ? `${visibleMemberCount} members`
+    : "Group conversation";
+  const typingText =
+    chat.typingUsers.length > 0
+      ? chat.typingUsers.length === 1
+        ? `${chat.typingUsers[0].username || "Someone"} is typing…`
+        : `${chat.typingUsers.length} people are typing…`
+      : "";
 
   const handleDraft = (value: string) => {
     setDraft(value);
@@ -181,7 +216,10 @@ export default function GroupChatWindow({
 
     // The receiving hook expires typing state after 3.5s. Refresh the signal
     // during sustained typing, without emitting one frame for every keystroke.
-    if (typing && (!isTypingRef.current || now - lastTypingSentAtRef.current >= 1200)) {
+    if (
+      typing &&
+      (!isTypingRef.current || now - lastTypingSentAtRef.current >= 1200)
+    ) {
       chat.setTyping(true);
       isTypingRef.current = true;
       lastTypingSentAtRef.current = now;
@@ -225,15 +263,29 @@ export default function GroupChatWindow({
   };
 
   const uploadAndSendFile = async (file: File) => {
-    const mediaType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "file";
+    const mediaType = file.type.startsWith("image/")
+      ? "image"
+      : file.type.startsWith("video/")
+        ? "video"
+        : "file";
     setIsSendingMedia(true);
     setSendError("");
     try {
-      const signatureResponse: any = await getChatSignature({ upload_type: mediaType, count: 1, file_name: file.name });
-      const signedFields = signatureResponse?.items?.[0] ?? signatureResponse?.fields;
-      if (!signedFields) throw new Error("The upload service did not return a signature.");
-      const uploaded: any = await uploadToCloudinary(file, { fields: signedFields, constraints: signatureResponse?.constraints });
-      if (!uploaded?.secure_url) throw new Error("The uploaded file did not return a secure URL.");
+      const signatureResponse: any = await getChatSignature({
+        upload_type: mediaType,
+        count: 1,
+        file_name: file.name,
+      });
+      const signedFields =
+        signatureResponse?.items?.[0] ?? signatureResponse?.fields;
+      if (!signedFields)
+        throw new Error("The upload service did not return a signature.");
+      const uploaded: any = await uploadToCloudinary(file, {
+        fields: signedFields,
+        constraints: signatureResponse?.constraints,
+      });
+      if (!uploaded?.secure_url)
+        throw new Error("The uploaded file did not return a secure URL.");
       chat.sendMessage(draft.trim() || file.name, {
         media_type: mediaType,
         media_urls: [uploaded.secure_url],
@@ -242,7 +294,11 @@ export default function GroupChatWindow({
       });
       clearComposer();
     } catch (error: any) {
-      setSendError(error?.response?.data?.message ?? error?.message ?? "Unable to upload this attachment.");
+      setSendError(
+        error?.response?.data?.message ??
+          error?.message ??
+          "Unable to upload this attachment.",
+      );
     } finally {
       setIsSendingMedia(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -251,7 +307,12 @@ export default function GroupChatWindow({
 
   const handleEditMessage = (message: any, body: string) => {
     const accepted = chat.editMessage(String(message.id), body);
-    if (!accepted) setSendError(chat.isConnected ? "Unable to edit this message." : "You are offline. Reconnect before editing this message.");
+    if (!accepted)
+      setSendError(
+        chat.isConnected
+          ? "Unable to edit this message."
+          : "You are offline. Reconnect before editing this message.",
+      );
     else setSendError("");
     return accepted;
   };
@@ -267,7 +328,11 @@ export default function GroupChatWindow({
     if (!pendingDeleteMessage?.id) return false;
     const accepted = chat.deleteMessage(String(pendingDeleteMessage.id));
     if (!accepted) {
-      setSendError(chat.isConnected ? "Unable to delete this message." : "You are offline. Reconnect before deleting this message.");
+      setSendError(
+        chat.isConnected
+          ? "Unable to delete this message."
+          : "You are offline. Reconnect before deleting this message.",
+      );
     } else {
       setSendError("");
     }
@@ -275,9 +340,10 @@ export default function GroupChatWindow({
   };
 
   const scrollToMessage = async (messageId: string) => {
-    const findTarget = () => listRef.current?.querySelector(
-      `[data-message-id="${CSS.escape(messageId)}"]`,
-    ) as HTMLElement | null;
+    const findTarget = () =>
+      listRef.current?.querySelector(
+        `[data-message-id="${CSS.escape(messageId)}"]`,
+      ) as HTMLElement | null;
 
     let target = findTarget();
     let canLoadMore = chat.hasNextPage;
@@ -297,11 +363,15 @@ export default function GroupChatWindow({
     }
 
     if (!target) {
-      setSendError("The original message is no longer available in the loaded conversation.");
+      setSendError(
+        "The original message is no longer available in the loaded conversation.",
+      );
       return;
     }
     target.scrollIntoView({ behavior: "smooth", block: "center" });
-    window.dispatchEvent(new CustomEvent("highlight-message", { detail: { messageId } }));
+    window.dispatchEvent(
+      new CustomEvent("highlight-message", { detail: { messageId } }),
+    );
   };
 
   const handleReply = (message: GroupChatMessage) => {
@@ -334,24 +404,49 @@ export default function GroupChatWindow({
     <div className="flex min-h-0 flex-1 flex-col bg-white">
       <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-[#00000033] bg-white px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <button type="button" onClick={() => router.push("/app/chat")} aria-label="Back to chats" className="-ml-2 rounded-full p-1 transition hover:bg-gray-100 md:hidden">
+          <button
+            type="button"
+            onClick={() => router.push("/app/chat")}
+            aria-label="Back to chats"
+            className="-ml-2 rounded-full p-1 transition hover:bg-gray-100 md:hidden"
+          >
             <ArrowLeft className="size-6 text-black" />
           </button>
-          <div className="flex size-[37px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-orange/10 text-orange">
-            {group?.avatar_url || group?.icon_url ? <img src={String(group.avatar_url ?? group.icon_url)} alt="" className="size-full object-cover" /> : <Users size={20} />}
+          <div className="flex size-9.25 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-orange/10 text-orange">
+            {group?.avatar_url || group?.icon_url ? (
+              <img
+                src={String(group.avatar_url ?? group.icon_url)}
+                alt=""
+                className="size-full object-cover"
+              />
+            ) : (
+              <Users size={20} />
+            )}
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-medium leading-tight text-black">{group?.name ?? "Group chat"}</h2>
-            <p className="mt-0.5 truncate text-[10px] font-medium text-green-600">{typingText || membersText}</p>
+            <h2 className="truncate text-sm font-medium leading-tight text-black">
+              {group?.name ?? "Group chat"}
+            </h2>
+            <p className="mt-0.5 truncate text-[10px] font-medium text-green-600">
+              {typingText || membersText}
+            </p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <span title={chat.isConnected ? "Connected" : "Reconnecting"} className={`hidden items-center gap-1 rounded-full px-2 py-1 text-[10px] sm:flex ${chat.isConnected ? "text-emerald-600" : "text-amber-600"}`}>
+          <span
+            title={chat.isConnected ? "Connected" : "Reconnecting"}
+            className={`hidden items-center gap-1 rounded-full px-2 py-1 text-[10px] sm:flex ${chat.isConnected ? "text-emerald-600" : "text-amber-600"}`}
+          >
             {chat.isConnected ? <Wifi size={13} /> : <WifiOff size={13} />}
             {chat.isConnected ? "Live" : "Reconnecting"}
           </span>
-          <button type="button" onClick={() => setShowMembers(true)} className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50">
-            <Info size={15} /><span className="hidden sm:inline">Group info</span>
+          <button
+            type="button"
+            onClick={() => setShowMembers(true)}
+            className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            <Info size={15} />
+            <span className="hidden sm:inline">Group info</span>
           </button>
         </div>
       </header>
@@ -360,7 +455,8 @@ export default function GroupChatWindow({
         ref={listRef}
         onScroll={(event) => {
           const node = event.currentTarget;
-          nearBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 100;
+          nearBottomRef.current =
+            node.scrollHeight - node.scrollTop - node.clientHeight < 100;
           if (
             node.scrollTop <= 72 &&
             chat.hasNextPage &&
@@ -368,14 +464,18 @@ export default function GroupChatWindow({
             !loadingOlderRef.current
           ) {
             loadingOlderRef.current = true;
-            priorScrollMetricsRef.current = { height: node.scrollHeight, top: node.scrollTop };
+            priorScrollMetricsRef.current = {
+              height: node.scrollHeight,
+              top: node.scrollTop,
+            };
             void chat.fetchNextPage().finally(() => {
               requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                   const currentNode = listRef.current;
                   if (currentNode) {
                     const { height, top } = priorScrollMetricsRef.current;
-                    currentNode.scrollTop = top + (currentNode.scrollHeight - height);
+                    currentNode.scrollTop =
+                      top + (currentNode.scrollHeight - height);
                   }
                   loadingOlderRef.current = false;
                 });
@@ -391,68 +491,116 @@ export default function GroupChatWindow({
             Loading older messages…
           </div>
         ) : chat.hasNextPage ? (
-          <div className="py-1 text-center text-[10px] text-gray-300">Scroll up to load older messages</div>
+          <div className="py-1 text-center text-[10px] text-gray-300">
+            Scroll up to load older messages
+          </div>
         ) : null}
         {chat.isLoading ? (
           <div className="space-y-3 py-4">
-            {[1, 2, 3].map((index) => <div key={index} className={`h-14 max-w-[70%] animate-pulse rounded-xl bg-gray-100 ${index % 2 ? "mr-auto" : "ml-auto"}`} />)}
+            {[1, 2, 3].map((index) => (
+              <div
+                key={index}
+                className={`h-14 max-w-[70%] animate-pulse rounded-xl bg-gray-100 ${index % 2 ? "mr-auto" : "ml-auto"}`}
+              />
+            ))}
           </div>
         ) : chat.messages.length === 0 ? (
           <div className="flex h-full min-h-48 flex-col items-center justify-center text-center text-gray-400">
-            <div className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-orange/10 text-orange"><MessageCircle size={25} /></div>
-            <h3 className="text-sm font-semibold text-gray-800">Start the conversation</h3>
-            <p className="mt-1 max-w-xs text-xs leading-5 text-gray-500">Messages sent here will be shared with everyone in this group.</p>
-          </div>
-        ) : groupedMessages.map((messageGroup) => (
-          <div key={messageGroup.label}>
-            <div className="sticky top-0 z-10 my-4 flex justify-center">
-              <span className="rounded-full bg-white/90 px-2 py-0.5 text-xs text-gray-500 shadow-sm">{messageGroup.label}</span>
+            <div className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-orange/10 text-orange">
+              <MessageCircle size={25} />
             </div>
-            <div className="space-y-2">
-              {messageGroup.messages.map((message) => {
-                const member = memberById.get(String(message.sender_id));
-                const sender = (message as any).sender ?? (message as any).user ?? member?.user ?? member;
-                const senderName = sender?.full_name ?? sender?.username ?? (String(message.sender_id) === String(resolvedCurrentUserId) ? "You" : "Group member");
-                const replyId = message.reply_to_message_id ?? (message as any).reply_to?.id ?? (message as any).reply_to_message?.id ?? null;
-                const nestedReply = (message as any).reply_to_message;
-                const locallyLoadedReply = replyId ? messageById.get(String(replyId)) : undefined;
-                const replyMessage = nestedReply && typeof nestedReply === "object"
-                  ? { ...(locallyLoadedReply ?? {}), ...nestedReply, sender: nestedReply.sender ?? locallyLoadedReply?.sender }
-                  : locallyLoadedReply ?? (replyId ? {
-                      id: String(replyId),
-                      sender_id: "",
-                      body: "Original message is not loaded yet",
-                    } : undefined);
-                const displayMessage = {
-                  ...message,
-                  sender,
-                  ...(replyId ? { reply_to: { id: String(replyId) }, reply_to_message: replyMessage } : {}),
-                };
-                const key = String(message.render_id ?? message.client_id ?? message.id);
-                const commonProps = {
-                  msg: displayMessage,
-                  senderName,
-                  senderAvatar: avatarFrom(sender),
-                  onReply: (value: GroupChatMessage) => handleReply(value),
-                  onScrollToMessage: scrollToMessage,
-                  onEdit: handleEditMessage,
-                  onDelete: handleDeleteMessage,
-                };
+            <h3 className="text-sm font-semibold text-gray-800">
+              Start the conversation
+            </h3>
+            <p className="mt-1 max-w-xs text-xs leading-5 text-gray-500">
+              Messages sent here will be shared with everyone in this group.
+            </p>
+          </div>
+        ) : (
+          groupedMessages.map((messageGroup) => (
+            <div key={messageGroup.label}>
+              <div className="sticky top-0 z-10 my-4 flex justify-center">
+                <span className="rounded-full bg-white/90 px-2 py-0.5 text-xs text-gray-500 shadow-sm">
+                  {messageGroup.label}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {messageGroup.messages.map((message) => {
+                  const member = memberById.get(String(message.sender_id));
+                  const sender =
+                    (message as any).sender ??
+                    (message as any).user ??
+                    member?.user ??
+                    member;
+                  const senderName =
+                    sender?.full_name ??
+                    sender?.username ??
+                    (String(message.sender_id) === String(resolvedCurrentUserId)
+                      ? "You"
+                      : "Group member");
+                  const replyId =
+                    message.reply_to_message_id ??
+                    (message as any).reply_to?.id ??
+                    (message as any).reply_to_message?.id ??
+                    null;
+                  const nestedReply = (message as any).reply_to_message;
+                  const locallyLoadedReply = replyId
+                    ? messageById.get(String(replyId))
+                    : undefined;
+                  const replyMessage =
+                    nestedReply && typeof nestedReply === "object"
+                      ? {
+                          ...(locallyLoadedReply ?? {}),
+                          ...nestedReply,
+                          sender:
+                            nestedReply.sender ?? locallyLoadedReply?.sender,
+                        }
+                      : (locallyLoadedReply ??
+                        (replyId
+                          ? {
+                              id: String(replyId),
+                              sender_id: "",
+                              body: "Original message is not loaded yet",
+                            }
+                          : undefined));
+                  const displayMessage = {
+                    ...message,
+                    sender,
+                    ...(replyId
+                      ? {
+                          reply_to: { id: String(replyId) },
+                          reply_to_message: replyMessage,
+                        }
+                      : {}),
+                  };
+                  const key = String(
+                    message.render_id ?? message.client_id ?? message.id,
+                  );
+                  const commonProps = {
+                    msg: displayMessage,
+                    senderName,
+                    senderAvatar: avatarFrom(sender),
+                    onReply: (value: GroupChatMessage) => handleReply(value),
+                    onScrollToMessage: scrollToMessage,
+                    onEdit: handleEditMessage,
+                    onDelete: handleDeleteMessage,
+                  };
 
-                return isMediaMessage(message) ? (
-                  <ChatMediaMessage
-                    key={key}
-                    {...commonProps}
-                    onOpen={handleOpenImage}
-                    onRetry={retryMedia}
-                  />
-                ) : (
-                  <ChatMessage key={key} {...commonProps} />
-                );
-              })}
+                  return isMediaMessage(message) ? (
+                    <ChatMediaMessage
+                      key={key}
+                      {...commonProps}
+                      onOpen={handleOpenImage}
+                      onRetry={retryMedia}
+                    />
+                  ) : (
+                    <ChatMessage key={key} {...commonProps} />
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
         {chat.typingUsers.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -466,37 +614,78 @@ export default function GroupChatWindow({
         )}
       </div>
 
-      {sendError && <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-1.5 text-xs text-red-600">{sendError}</p>}
+      {sendError && (
+        <p
+          role="alert"
+          className="border-t border-red-100 bg-red-50 px-4 py-1.5 text-xs text-red-600"
+        >
+          {sendError}
+        </p>
+      )}
       {replyTarget && (
         <div className="flex shrink-0 items-start gap-2 border-t border-black/10 bg-gray-50 px-4 pt-2">
           <div className="min-w-0 flex-1">
             <ReplyPreview reply={replyTarget} isSender={true} />
           </div>
-          <button type="button" onClick={() => setReplyTarget(null)} aria-label="Cancel reply" className="mt-1 rounded-full p-1 text-gray-500 hover:bg-gray-200"><X size={15} /></button>
+          <button
+            type="button"
+            onClick={() => setReplyTarget(null)}
+            aria-label="Cancel reply"
+            className="mt-1 rounded-full p-1 text-gray-500 hover:bg-gray-200"
+          >
+            <X size={15} />
+          </button>
         </div>
       )}
-      <form onSubmit={send} className="flex shrink-0 items-end gap-2 border-t border-[#0000004D] bg-white px-3 py-3 md:px-5">
+      <form
+        onSubmit={send}
+        className="flex shrink-0 items-end gap-2 border-t border-[#0000004D] bg-white px-3 py-3 md:px-5"
+      >
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*,video/*,.pdf,.doc,.docx,.zip,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
           className="hidden"
           disabled={isSendingMedia}
-          onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAndSendFile(file); }}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void uploadAndSendFile(file);
+          }}
         />
-        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!chat.isConnected || isSendingMedia} aria-label="Attach a file" title="Attach a photo, video, or file" className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-orange disabled:opacity-50">
-          {isSendingMedia ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={!chat.isConnected || isSendingMedia}
+          aria-label="Attach a file"
+          title="Attach a photo, video, or file"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-orange disabled:opacity-50"
+        >
+          {isSendingMedia ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Paperclip size={18} />
+          )}
         </button>
         <textarea
           value={draft}
           onChange={(event) => handleDraft(event.target.value)}
-          onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); send(event as any); } }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              send(event as any);
+            }
+          }}
           rows={1}
           maxLength={4000}
           placeholder="Message the group…"
           className="max-h-32 min-h-10 flex-1 resize-y rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none transition focus:border-orange focus:bg-white"
         />
-        <button type="submit" disabled={!draft.trim() || !chat.isConnected || isSendingMedia} aria-label="Send message" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange text-white transition hover:bg-[#ea4325] disabled:cursor-not-allowed disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={!draft.trim() || !chat.isConnected || isSendingMedia}
+          aria-label="Send message"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange text-white transition hover:bg-[#ea4325] disabled:cursor-not-allowed disabled:opacity-50"
+        >
           <Send size={17} />
         </button>
       </form>
@@ -506,11 +695,21 @@ export default function GroupChatWindow({
         onClose={() => setViewerOpen(false)}
         viewerOpen={viewerOpen}
       />
-      <GroupMembersModal groupId={groupId} groupName={group?.name ?? "Group chat"} groupDescription={group?.description ?? ""} isOpen={showMembers} onClose={() => setShowMembers(false)} currentUserId={resolvedCurrentUserId} />
+      <GroupMembersModal
+        groupId={groupId}
+        groupName={group?.name ?? "Group chat"}
+        groupDescription={group?.description ?? ""}
+        isOpen={showMembers}
+        onClose={() => setShowMembers(false)}
+        currentUserId={resolvedCurrentUserId}
+      />
       <DeleteMessageDialog
         open={Boolean(pendingDeleteMessage)}
         scope="group"
-        preview={pendingDeleteMessage?.body ?? (pendingDeleteMessage?.media_type ? "Attachment" : null)}
+        preview={
+          pendingDeleteMessage?.body ??
+          (pendingDeleteMessage?.media_type ? "Attachment" : null)
+        }
         onCancel={() => setPendingDeleteMessage(null)}
         onConfirm={confirmDeleteMessage}
       />

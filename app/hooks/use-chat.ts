@@ -709,7 +709,11 @@ const useChat = () => {
   // MEDIA UPLOAD
   const useGetChatSignature = () =>
     useMutation({
-      mutationFn: async (payload: { upload_type: string; count: number }) => {
+      mutationFn: async (payload: {
+        upload_type: string;
+        count: number;
+        file_name?: string;
+      }) => {
         const res = await api.post("/uploads/chat/sign", payload);
         return res.data?.data;
       },
