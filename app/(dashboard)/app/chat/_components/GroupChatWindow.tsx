@@ -536,7 +536,7 @@ export default function GroupChatWindow({
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white">
       <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-[#00000033] bg-white px-4 md:px-6">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex w-full items-center gap-3">
           <button
             type="button"
             onClick={() => router.push("/app/chat")}
